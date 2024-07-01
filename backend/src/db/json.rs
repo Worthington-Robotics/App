@@ -31,6 +31,13 @@ impl Database for JSONDatabase {
 	}
 }
 
+impl JSONDatabase {
+	/// Debug the database by printing it out
+	pub fn debug(&self) {
+		dbg!(serde_json::to_string_pretty(&self.contents).unwrap());
+	}
+}
+
 #[derive(Serialize, Deserialize, Default)]
 struct DatabaseContents {
 	members: HashMap<String, Member>,
