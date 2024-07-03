@@ -25,8 +25,8 @@ impl SessionManager {
 	}
 
 	/// Create a new session, returning it's ID
-	pub fn new_session(&mut self, member_id: &str) -> String {
-		let session_id = generate_session_id(&mut self.rng, &mut self.base64);
+	pub fn create(&mut self, member_id: &str) -> String {
+		let session_id = generate_id(&mut self.rng, &mut self.base64);
 
 		let session = Session {
 			member: member_id.to_string(),
@@ -38,13 +38,19 @@ impl SessionManager {
 	}
 
 	/// Get a session
-	pub fn get_session(&self, session_id: &str) -> Option<&Session> {
+	pub fn get(&self, session_id: &str) -> Option<&Session> {
 		self.sessions.get(session_id)
 	}
 }
 
-/// Generate the ID for a new session
-fn generate_session_id<R>(rng: &mut R, base64: &mut GeneralPurpose) -> String
+/// A single session
+pub struct Session {
+	/// The member ID associated with this session
+	pub member: String,
+}
+
+/// Generate the ID for something like a session or login
+fn generate_id<R>(rng: &mut R, base64: &mut GeneralPurpose) -> String
 where
 	R: Rng + CryptoRng,
 {
@@ -57,14 +63,8 @@ where
 	base64.encode(out)
 }
 
-/// A single session
-pub struct Session {
-	/// The member ID associated with this session
-	pub member: String,
-}
-
 /// Privilege level of a user or session
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Privilege {
 	Standard,

@@ -1,3 +1,4 @@
+use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 
 use crate::auth::Privilege;
@@ -11,10 +12,14 @@ pub struct Member {
 	pub name: String,
 	/// The kind of this member
 	pub kind: MemberKind,
+	/// This member's password, likely to be hashed
+	pub password: String,
+	/// This member's password salt
+	pub password_salt: Option<String>,
 }
 
 /// What kind of a member a member is
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, FromFormField)]
 #[serde(rename_all = "snake_case")]
 pub enum MemberKind {
 	Standard,

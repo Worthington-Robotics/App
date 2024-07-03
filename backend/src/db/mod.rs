@@ -12,4 +12,7 @@ pub trait Database {
 
 	/// Get a member by ID
 	fn get_member(&self, id: &str) -> Option<Member>;
+
+	/// Create a new member
+	fn create_member(&mut self, member: Member) -> anyhow::Result<()>;
 }

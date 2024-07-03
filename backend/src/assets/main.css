@@ -1,0 +1,12 @@
+* {
+	font-family: "Rockwell Regular";
+}
+
+h1 {
+	text-align: center;
+}
+
+@font-face {
+	font-family: Rockwell Regular;
+	src: url(/assets/rockwell_regular.otf);
+}
