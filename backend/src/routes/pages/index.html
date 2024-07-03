@@ -1,0 +1,22 @@
+<h1>WorBots 4145</h1>
+<div class="login-info container">
+	<h2>Logged in as {name}</h2>
+	<button id="logout-button">Logout</button>
+</div>
+<script>
+	function onLogout(event) {
+		event.preventDefault();
+		fetch("/api/logout", {
+			method: "POST",
+		}).then(() => {
+			window.location.href = "/login";
+		});
+	}
+
+	document.getElementById("logout-button").addEventListener("click", onLogout);
+</script>
+<style>
+	#logout-button {
+		display: inline;
+	}
+</style>

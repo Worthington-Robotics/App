@@ -4,12 +4,15 @@ pub mod login;
 use argon2::PasswordHasher;
 use password_hash::SaltString;
 use rand::{rngs::StdRng, SeedableRng};
+use rocket::response::{
+	content::{RawHtml, RawJson},
+	Redirect,
+};
 use rocket::{
 	form::Form,
 	http::Status,
 	request::{FromRequest, Outcome},
-	response::content::RawJson,
-	FromForm, Request,
+	FromForm, Request, Responder,
 };
 use serde::Serialize;
 use tracing::{error, event, span, Level};
@@ -18,8 +21,41 @@ use crate::{auth::Privilege, member::Member, State};
 use crate::{db::Database, member::MemberKind};
 
 #[rocket::get("/")]
-pub fn index() -> String {
-	"Hello from rocket!".into()
+pub async fn index(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<IndexResponse, Status> {
+	let redirect = IndexResponse::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.id else {
+		return Ok(redirect);
+	};
+
+	let Some(requesting_member_id) = ({
+		let lock = state.session_manager.lock().await;
+		lock.get(session_id).map(|x| x.member.clone())
+	}) else {
+		error!("Unknown session ID {}", session_id);
+		return Ok(redirect);
+	};
+
+	let Some(member) = ({
+		let lock = state.db.lock().await;
+		lock.get_member(&requesting_member_id)
+	}) else {
+		error!("Unknown requesting member ID {}", requesting_member_id);
+		return Ok(redirect);
+	};
+
+	let page = create_page("WorBots 4145", include_str!("pages/index.html"));
+	let page = page.replace("{name}", &member.name);
+
+	Ok(IndexResponse::Page(RawHtml(page)))
+}
+
+#[derive(Responder)]
+pub enum IndexResponse {
+	Page(RawHtml<String>),
+	Redirect(Redirect),
 }
 
 #[rocket::get("/api/member/<id>")]
@@ -148,23 +184,41 @@ pub struct SessionID<'r> {
 
 #[async_trait::async_trait]
 impl<'r> FromRequest<'r> for SessionID<'r> {
+	type Error = &'static str;
+
+	async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+		let Some(session_id) = get_session_id(request) else {
+			return Outcome::Error((
+				Status::BadRequest,
+				"Session ID not found in cookie or header",
+			));
+		};
+
+		Outcome::Success(Self { id: session_id })
+	}
+}
+
+/// Request guard for an optional session ID
+pub struct OptionalSessionID<'r> {
+	id: Option<&'r str>,
+}
+
+#[async_trait::async_trait]
+impl<'r> FromRequest<'r> for OptionalSessionID<'r> {
 	type Error = String;
 
 	async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-		let session_id = if let Some(session_id) = request.headers().get("SessionID").next() {
-			session_id
-		} else {
-			let Some(session_id) = request.cookies().get("session_id") else {
-				return Outcome::Error((
-					Status::BadRequest,
-					"Session ID not found in cookie or header".into(),
-				));
-			};
+		let session_id = get_session_id(request);
 
-			session_id.value()
-		};
+		Outcome::Success(Self { id: session_id })
+	}
+}
 
-		Outcome::Success(SessionID { id: session_id })
+fn get_session_id<'r>(request: &'r Request) -> Option<&'r str> {
+	if let Some(session_id) = request.headers().get("SessionID").next() {
+		Some(session_id)
+	} else {
+		Some(request.cookies().get("session_id")?.value())
 	}
 }
 

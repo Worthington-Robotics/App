@@ -1,16 +1,13 @@
 <h1>Login</h1>
-<div>
+<form id="login-form" class="container">
 	<input type="text" name="id" id="id-field" placeholder="Enter Username..." />
-	<input
-		type="password"
-		name="password"
-		id="password-field"
-		placeholder="Enter Password..."
-	/>
-	<button type="button" id="submit">Submit</button>
-</div>
+	<input type="password" name="password" id="password-field" placeholder="Enter Password..." />
+	<input type="submit" id="submit" value="Submit" />
+</form>
 <script>
-	function onSubmit() {
+	function onSubmit(event) {
+		event.preventDefault();
+
 		console.log("Submitting...");
 		const id = document.getElementById("id-field").value;
 		const password = document.getElementById("password-field").value;
@@ -30,5 +27,7 @@
 		});
 	}
 
-	document.getElementById("submit").addEventListener("click", onSubmit);
+	document.getElementById("login-form").addEventListener("submit", onSubmit);
 </script>
+<style>
+</style>

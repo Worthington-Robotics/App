@@ -10,3 +10,11 @@ h1 {
 	font-family: Rockwell Regular;
 	src: url(/assets/rockwell_regular.otf);
 }
+
+.container {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	gap: 1.1rem;
+}

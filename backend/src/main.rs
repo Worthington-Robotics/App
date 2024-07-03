@@ -14,7 +14,7 @@ fn rocket() -> _ {
 
 	let mut session_manager = SessionManager::new();
 
-	let session_id = session_manager.create("carbon");
+	let session_id = session_manager.create("admin");
 	println!("Session ID: {session_id}");
 
 	let db = JSONDatabase::open().expect("Failed to open database");
@@ -45,7 +45,8 @@ fn rocket() -> _ {
 			routes::assets::main_css,
 			routes::assets::rockwell,
 			routes::login::login,
-			routes::login::authenticate
+			routes::login::authenticate,
+			routes::login::logout
 		],
 	)
 }

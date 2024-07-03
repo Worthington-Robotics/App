@@ -41,6 +41,11 @@ impl SessionManager {
 	pub fn get(&self, session_id: &str) -> Option<&Session> {
 		self.sessions.get(session_id)
 	}
+
+	/// Remove a session
+	pub fn remove(&mut self, session_id: &str) -> Option<Session> {
+		self.sessions.remove(session_id)
+	}
 }
 
 /// A single session
