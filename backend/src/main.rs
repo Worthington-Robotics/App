@@ -44,6 +44,7 @@ fn rocket() -> _ {
 			routes::assets::favicon,
 			routes::assets::main_css,
 			routes::assets::rockwell,
+			routes::assets::icon_home,
 			routes::login::login,
 			routes::login::authenticate,
 			routes::login::logout

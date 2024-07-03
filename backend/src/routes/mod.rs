@@ -24,8 +24,8 @@ use crate::{db::Database, member::MemberKind};
 pub async fn index(
 	session_id: OptionalSessionID<'_>,
 	state: &State,
-) -> Result<IndexResponse, Status> {
-	let redirect = IndexResponse::Redirect(Redirect::to("/login"));
+) -> Result<PageOrRedirect, Status> {
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
 	let Some(session_id) = session_id.id else {
 		return Ok(redirect);
 	};
@@ -49,11 +49,11 @@ pub async fn index(
 	let page = create_page("WorBots 4145", include_str!("pages/index.html"));
 	let page = page.replace("{name}", &member.name);
 
-	Ok(IndexResponse::Page(RawHtml(page)))
+	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
 #[derive(Responder)]
-pub enum IndexResponse {
+pub enum PageOrRedirect {
 	Page(RawHtml<String>),
 	Redirect(Redirect),
 }
@@ -262,21 +262,7 @@ pub fn create_page(title: &str, body: &str) -> String {
 	static HEAD: &str = include_str!("pages/head.html");
 	let head = HEAD.replace("{title}", title);
 	let out = head.replace("{body}", body);
+	let out = out.replace("{footer}", include_str!("components/footer.html"));
 
 	out
 }
-
-// /// Error for API responses
-// #[derive(thiserror::Error, Debug, Responder)]
-// enum Error {
-// 	/// An unknown error with just a status
-// 	Status(Status),
-// }
-
-// impl<'r, 'o> Responder<'r, 'o> for Error {
-// 	fn respond_to(self, request: &'r Request<'_>) -> rocket::response::Result<'o> {
-// 		match self {
-// 			Self::Status(status) => Err(status),
-// 		}
-// 	}
-// }

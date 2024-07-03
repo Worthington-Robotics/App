@@ -52,7 +52,7 @@ impl JSONDatabase {
 	}
 
 	fn write(&self) -> anyhow::Result<()> {
-		let path = PathBuf::from("./db.json");
+		let path = Self::get_path();
 		let mut file = BufWriter::new(File::create(path).context("Failed to open database file")?);
 		serde_json::to_writer_pretty(&mut file, &self.contents)
 			.context("Failed to write database contents")?;
