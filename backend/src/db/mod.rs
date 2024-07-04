@@ -16,6 +16,9 @@ pub trait Database {
 	/// Create a new member
 	fn create_member(&mut self, member: Member) -> anyhow::Result<()>;
 
+	/// Get all members
+	fn get_members(&self) -> impl Iterator<Item = &Member>;
+
 	/// Get all events
 	fn get_events(&self) -> impl Iterator<Item = &Event>;
 }

@@ -10,6 +10,11 @@ pub fn main_css() -> RawCss<&'static str> {
 	RawCss(include_str!("../assets/main.css"))
 }
 
+#[rocket::get("/assets/worbots-logo.png")]
+pub fn logo() -> Png {
+	Png(include_bytes!("../assets/worbots-logo.png"))
+}
+
 #[rocket::get("/assets/rockwell_regular.otf")]
 pub fn rockwell() -> &'static [u8] {
 	include_bytes!("../assets/Rockwell Regular.otf")
@@ -32,3 +37,7 @@ pub struct Ico(&'static [u8]);
 #[derive(Responder)]
 #[response(content_type = "image/svg+xml")]
 pub struct Svg(&'static str);
+
+#[derive(Responder)]
+#[response(content_type = "image/png")]
+pub struct Png(&'static [u8]);

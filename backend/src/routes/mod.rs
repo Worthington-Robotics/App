@@ -277,6 +277,10 @@ pub fn create_page(title: &str, body: &str) -> String {
 	let head = HEAD.replace("{title}", title);
 	let out = head.replace("{body}", body);
 	let out = out.replace("{footer}", include_str!("components/footer.html"));
+	let out = out.replace(
+		"{worbots-header}",
+		include_str!("components/worbots-header.html"),
+	);
 
 	out
 }

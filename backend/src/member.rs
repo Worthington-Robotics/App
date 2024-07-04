@@ -53,3 +53,13 @@ pub enum MemberGroup {
 	Coach,
 	Mentor,
 }
+
+/// Count the number of members in a group
+pub fn count_group_members<'a>(
+	members: impl Iterator<Item = &'a Member>,
+	group: &MemberGroup,
+) -> usize {
+	members
+		.filter(|member| member.groups.contains(group))
+		.count()
+}

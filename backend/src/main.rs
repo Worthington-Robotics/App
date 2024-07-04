@@ -44,6 +44,7 @@ fn rocket() -> _ {
 			routes::create_member,
 			routes::assets::favicon,
 			routes::assets::main_css,
+			routes::assets::logo,
 			routes::assets::rockwell,
 			routes::assets::icon_home,
 			routes::assets::icon_clock,

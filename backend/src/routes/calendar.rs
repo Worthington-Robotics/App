@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use chrono::DateTime;
 use rocket::{
 	http::Status,
@@ -5,7 +7,12 @@ use rocket::{
 };
 use tracing::{error, span, Level};
 
-use crate::{auth::Privilege, db::Database};
+use crate::{
+	auth::Privilege,
+	db::Database,
+	events::{Event, EventInvite},
+	member::count_group_members,
+};
 use crate::{events::get_relevant_events, State};
 
 use super::{create_page, OptionalSessionID, PageOrRedirect};
@@ -49,19 +56,38 @@ pub async fn calendar(
 	let event_component = include_str!("components/event.html");
 	let mut events_content = String::with_capacity(relevant_events.len() * event_component.len());
 	for event in relevant_events {
-		let date = DateTime::parse_from_rfc2822(&event.date)
-			.map(|x| x.to_string())
-			.unwrap_or_else(|e| {
-				error!("Failed to parse date {}: {}", event.date, e);
-				"Invalid date".into()
-			});
-		let event_component = event_component.replace("{date}", &date);
-		let event_component = event_component.replace("{name}", &event.name);
-		events_content.push_str(&event_component);
+		events_content.push_str(&render_event(event, lock.deref()));
 	}
 
 	let page = include_str!("pages/calendar.html");
 	let page = page.replace("{events}", &events_content);
 	let page = create_page("Calendar", &page);
 	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+/// Renders an event component
+fn render_event(event: &Event, db: &impl Database) -> String {
+	let event_component = include_str!("components/event.html");
+
+	let date = DateTime::parse_from_rfc2822(&event.date)
+		.map(|x| x.format("%A %B %d, %Y at %I:%M %p").to_string())
+		.unwrap_or_else(|e| {
+			error!("Failed to parse date {}: {}", event.date, e);
+			"Invalid date".into()
+		});
+	let event_component = event_component.replace("{date}", &date);
+	let event_component = event_component.replace("{name}", &event.name);
+
+	let total_invites = event.invites.iter().fold(0, |acc, x| {
+		acc + match x {
+			EventInvite::Member(_) => 1,
+			EventInvite::Group(group) => count_group_members(db.get_members(), group),
+		}
+	});
+	let total_rsvps = event.rsvp.len();
+	let event_component = event_component.replace("{kind}", &event.kind.to_string());
+	let event_component = event_component.replace("{invites}", &total_invites.to_string());
+	let event_component = event_component.replace("{going}", &total_rsvps.to_string());
+
+	event_component
 }

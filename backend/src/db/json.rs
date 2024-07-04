@@ -40,6 +40,10 @@ impl Database for JSONDatabase {
 		self.write()
 	}
 
+	fn get_members(&self) -> impl Iterator<Item = &Member> {
+		self.contents.members.values()
+	}
+
 	fn get_events(&self) -> impl Iterator<Item = &Event> {
 		self.contents.events.values()
 	}

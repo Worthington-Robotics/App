@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 use serde::{Deserialize, Serialize};
 
@@ -38,7 +38,7 @@ impl Event {
 	pub fn invites_member(&self, member: &Member) -> bool {
 		for invite in &self.invites {
 			let matches = match invite {
-				EventInvite::Single(check) => check == &member.id,
+				EventInvite::Member(check) => check == &member.id,
 				EventInvite::Group(group) => member.groups.contains(group),
 			};
 			if matches {
@@ -58,6 +58,22 @@ pub enum EventKind {
 	Meeting,
 	Competition,
 	Outreach,
+	Fundraising,
+}
+
+impl Display for EventKind {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				Self::Meeting => "Meeting",
+				Self::Competition => "Competition",
+				Self::Outreach => "Outreach",
+				Self::Fundraising => "Fundraising",
+			}
+		)
+	}
 }
 
 /// Urgency for an event
@@ -83,7 +99,7 @@ pub enum EventVisibility {
 #[serde(rename_all = "snake_case")]
 pub enum EventInvite {
 	/// A single member ID
-	Single(String),
+	Member(String),
 	/// A group of members
 	Group(MemberGroup),
 }

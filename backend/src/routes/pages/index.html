@@ -1,4 +1,4 @@
-<h1>WorBots 4145</h1>
+{worbots-header}
 <div class="login-info container">
 	<h3>Logged in as {name}</h3>
 	<button id="logout-button">Logout</button>
@@ -16,6 +16,10 @@
 	document.getElementById("logout-button").addEventListener("click", onLogout);
 </script>
 <style>
+	.login-info {
+		padding: 1.5rem;
+	}
+
 	#logout-button {
 		display: inline;
 	}
