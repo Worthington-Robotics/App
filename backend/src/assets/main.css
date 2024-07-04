@@ -8,6 +8,8 @@
 	--bg: #141414;
 	--bg2: #1b1b1b;
 	--bg3: #2b2b2b;
+	--wbred: #d80001;
+	--wbblue: #2134d9;
 
 	--scale: 2.8;
 }
@@ -30,7 +32,7 @@
 
 button,
 input {
-	background-color: var(--bg2);
+	background-color: var(--wbblue);
 	padding: 0.5rem;
 	color: var(--fg);
 }
@@ -69,5 +71,5 @@ button,
 input {
 	border-style: solid;
 	border-width: 0px;
-	border-radius: 4px;
+	border-radius: 5px;
 }

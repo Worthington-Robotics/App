@@ -1,14 +1,25 @@
-<div id="calendar">
+<div id="calendar" class="container">
 	<h1>Events</h1>
-	<div id="events-container">
-		{events}
-	</div>
+	<div id="events-container" class="container">{events}</div>
 </div>
 <style>
+	#calendar {
+		width: 100%;
+		flex-direction: column;
+		row-gap: 0.1rem;
+	}
+
+	#events-container {
+		flex-direction: column;
+		row-gap: 0.5rem;
+	}
+
 	.event {
 		padding: 1.4rem;
 		background-color: var(--bg2);
 		flex-direction: column;
+		width: 90%;
+		box-sizing: border-box;
 	}
 
 	.event-subtext {
