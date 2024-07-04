@@ -20,3 +20,7 @@ strum_macros = { version = "0.26.3" }
 thiserror = "1.0.61"
 tracing = "0.1.40"
 tzfile = "0.1.3"
+
+[build-dependencies]
+minify-html = "0.15.0"
+lightningcss = "1.0.0-alpha.57"

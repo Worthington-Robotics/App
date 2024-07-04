@@ -1,4 +1,7 @@
-use rocket::{response::content::RawCss, Responder};
+use rocket::{
+	http::Header,
+	response::{content::RawCss, Responder},
+};
 
 #[rocket::get("/favicon.ico")]
 pub fn favicon() -> Ico {
@@ -7,12 +10,12 @@ pub fn favicon() -> Ico {
 
 #[rocket::get("/assets/main.css")]
 pub fn main_css() -> RawCss<&'static str> {
-	RawCss(include_str!("../assets/main.css"))
+	RawCss(include_str!("../assets/main.min.css"))
 }
 
-#[rocket::get("/assets/worbots-logo.png")]
-pub fn logo() -> Png {
-	Png(include_bytes!("../assets/worbots-logo.png"))
+#[rocket::get("/assets/logo-gears.svg")]
+pub fn logo() -> CacheFor<Svg> {
+	CacheFor(Svg(include_str!("../assets/logo-gears.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/rockwell_regular.otf")]
@@ -21,13 +24,13 @@ pub fn rockwell() -> &'static [u8] {
 }
 
 #[rocket::get("/assets/icons/home.svg")]
-pub fn icon_home() -> Svg {
-	Svg(include_str!("../assets/icons/home.svg"))
+pub fn icon_home() -> CacheFor<Svg> {
+	CacheFor(Svg(include_str!("../assets/icons/home.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/clock.svg")]
-pub fn icon_clock() -> Svg {
-	Svg(include_str!("../assets/icons/clock.svg"))
+pub fn icon_clock() -> CacheFor<Svg> {
+	CacheFor(Svg(include_str!("../assets/icons/clock.svg")), ONE_WEEK)
 }
 
 #[derive(Responder)]
@@ -41,3 +44,21 @@ pub struct Svg(&'static str);
 #[derive(Responder)]
 #[response(content_type = "image/png")]
 pub struct Png(&'static [u8]);
+
+/// Simple responder to set cache headers for asset responses
+pub struct CacheFor<R>(R, usize);
+
+impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for CacheFor<R> {
+	fn respond_to(self, request: &'r rocket::Request<'_>) -> rocket::response::Result<'o> {
+		let mut out = self.0.respond_to(request);
+		if let Ok(out) = &mut out {
+			let control = format!("max-age={}, public", self.1);
+			out.set_header(Header::new("Cache-Control", control));
+		}
+
+		out
+	}
+}
+
+const ONE_YEAR: usize = 31536000;
+const ONE_WEEK: usize = 604800;

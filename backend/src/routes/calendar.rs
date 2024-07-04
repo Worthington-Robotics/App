@@ -53,21 +53,21 @@ pub async fn calendar(
 	relevant_events
 		.sort_by_cached_key(|x| DateTime::parse_from_rfc2822(&x.date).unwrap_or_default());
 
-	let event_component = include_str!("components/event.html");
+	let event_component = include_str!("components/event.min.html");
 	let mut events_content = String::with_capacity(relevant_events.len() * event_component.len());
 	for event in relevant_events {
 		events_content.push_str(&render_event(event, lock.deref()));
 	}
 
-	let page = include_str!("pages/calendar.html");
-	let page = page.replace("{events}", &events_content);
+	let page = include_str!("pages/calendar.min.html");
+	let page = page.replace("{{events}}", &events_content);
 	let page = create_page("Calendar", &page);
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
 /// Renders an event component
 fn render_event(event: &Event, db: &impl Database) -> String {
-	let event_component = include_str!("components/event.html");
+	let event_component = include_str!("components/event.min.html");
 
 	let date = DateTime::parse_from_rfc2822(&event.date)
 		.map(|x| x.format("%A %B %d, %Y at %I:%M %p").to_string())
@@ -75,8 +75,8 @@ fn render_event(event: &Event, db: &impl Database) -> String {
 			error!("Failed to parse date {}: {}", event.date, e);
 			"Invalid date".into()
 		});
-	let event_component = event_component.replace("{date}", &date);
-	let event_component = event_component.replace("{name}", &event.name);
+	let event_component = event_component.replace("{{date}}", &date);
+	let event_component = event_component.replace("{{name}}", &event.name);
 
 	let total_invites = event.invites.iter().fold(0, |acc, x| {
 		acc + match x {
@@ -85,9 +85,9 @@ fn render_event(event: &Event, db: &impl Database) -> String {
 		}
 	});
 	let total_rsvps = event.rsvp.len();
-	let event_component = event_component.replace("{kind}", &event.kind.to_string());
-	let event_component = event_component.replace("{invites}", &total_invites.to_string());
-	let event_component = event_component.replace("{going}", &total_rsvps.to_string());
+	let event_component = event_component.replace("{{kind}}", &event.kind.to_string());
+	let event_component = event_component.replace("{{invites}}", &total_invites.to_string());
+	let event_component = event_component.replace("{{going}}", &total_rsvps.to_string());
 
 	event_component
 }

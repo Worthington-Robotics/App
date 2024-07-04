@@ -56,8 +56,8 @@ pub async fn index(
 		return Ok(redirect);
 	};
 
-	let page = create_page("WorBots 4145", include_str!("pages/index.html"));
-	let page = page.replace("{name}", &member.name);
+	let page = create_page("WorBots 4145", include_str!("pages/index.min.html"));
+	let page = page.replace("{{name}}", &member.name);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
@@ -274,12 +274,12 @@ impl<'r> SessionID<'r> {
 
 pub fn create_page(title: &str, body: &str) -> String {
 	static HEAD: &str = include_str!("pages/head.html");
-	let head = HEAD.replace("{title}", title);
-	let out = head.replace("{body}", body);
-	let out = out.replace("{footer}", include_str!("components/footer.html"));
+	let head = HEAD.replace("{{title}}", title);
+	let out = head.replace("{{body}}", body);
+	let out = out.replace("{{footer}}", include_str!("components/footer.min.html"));
 	let out = out.replace(
-		"{worbots-header}",
-		include_str!("components/worbots-header.html"),
+		"{{worbots-header}}",
+		include_str!("components/worbots-header.min.html"),
 	);
 
 	out
