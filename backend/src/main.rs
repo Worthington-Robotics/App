@@ -12,6 +12,9 @@ mod routes;
 #[rocket::launch]
 fn rocket() -> _ {
 	println!("Starting server...");
+	let subscriber = tracing_subscriber::FmtSubscriber::new();
+	tracing::subscriber::set_global_default(subscriber)
+		.expect("Failed to set global tracing subscriber");
 
 	let mut session_manager = SessionManager::new();
 
