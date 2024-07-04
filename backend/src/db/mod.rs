@@ -1,4 +1,4 @@
-use crate::member::Member;
+use crate::{events::Event, member::Member};
 
 /// Simple JSON database
 pub mod json;
@@ -15,4 +15,7 @@ pub trait Database {
 
 	/// Create a new member
 	fn create_member(&mut self, member: Member) -> anyhow::Result<()>;
+
+	/// Get all events
+	fn get_events(&self) -> impl Iterator<Item = &Event>;
 }

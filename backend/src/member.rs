@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +14,9 @@ pub struct Member {
 	pub name: String,
 	/// The kind of this member
 	pub kind: MemberKind,
+	/// The groups of this member
+	#[serde(default)]
+	pub groups: HashSet<MemberGroup>,
 	/// This member's password, likely to be hashed
 	pub password: String,
 	/// This member's password salt
@@ -34,4 +39,17 @@ impl MemberKind {
 			Self::Admin => Privilege::Elevated,
 		}
 	}
+}
+
+/// Different member groups
+#[derive(Serialize, Deserialize, Clone, Copy, FromFormField, PartialEq, Eq, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum MemberGroup {
+	Member,
+	NewMember,
+	PitCrew,
+	Lead,
+	President,
+	Coach,
+	Mentor,
 }

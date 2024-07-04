@@ -8,7 +8,7 @@ use std::{
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
-use crate::member::Member;
+use crate::{events::Event, member::Member};
 
 use super::Database;
 
@@ -39,6 +39,10 @@ impl Database for JSONDatabase {
 		self.contents.members.insert(member.id.clone(), member);
 		self.write()
 	}
+
+	fn get_events(&self) -> impl Iterator<Item = &Event> {
+		self.contents.events.values()
+	}
 }
 
 impl JSONDatabase {
@@ -64,4 +68,5 @@ impl JSONDatabase {
 #[derive(Serialize, Deserialize, Default)]
 struct DatabaseContents {
 	members: HashMap<String, Member>,
+	events: HashMap<String, Event>,
 }

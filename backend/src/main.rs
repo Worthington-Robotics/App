@@ -5,6 +5,7 @@ use rocket::{routes, tokio::sync::Mutex};
 
 mod auth;
 mod db;
+mod events;
 mod member;
 mod routes;
 
@@ -45,9 +46,11 @@ fn rocket() -> _ {
 			routes::assets::main_css,
 			routes::assets::rockwell,
 			routes::assets::icon_home,
+			routes::assets::icon_clock,
 			routes::login::login,
 			routes::login::authenticate,
-			routes::login::logout
+			routes::login::logout,
+			routes::calendar::calendar,
 		],
 	)
 }

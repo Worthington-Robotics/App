@@ -1,5 +1,8 @@
 pub mod assets;
+pub mod calendar;
 pub mod login;
+
+use std::collections::HashSet;
 
 use argon2::PasswordHasher;
 use password_hash::SaltString;
@@ -17,7 +20,11 @@ use rocket::{
 use serde::Serialize;
 use tracing::{error, event, span, Level};
 
-use crate::{auth::Privilege, member::Member, State};
+use crate::{
+	auth::Privilege,
+	member::{Member, MemberGroup},
+	State,
+};
 use crate::{db::Database, member::MemberKind};
 
 #[rocket::get("/")]
@@ -25,6 +32,9 @@ pub async fn index(
 	session_id: OptionalSessionID<'_>,
 	state: &State,
 ) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Index");
+	let _enter = span.enter();
+
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
 	let Some(session_id) = session_id.id else {
 		return Ok(redirect);
@@ -150,10 +160,13 @@ pub async fn create_member(
 		return Err(Status::InternalServerError);
 	};
 
+	let mut groups = HashSet::with_capacity(member.groups.len());
+	groups.extend(member.groups.clone());
 	let new_member = Member {
 		id: member.id.clone(),
 		name: member.name.clone(),
 		kind: member.kind,
+		groups,
 		password: hashed_password,
 		password_salt: salt.map(|x| x.to_string()),
 	};
@@ -174,6 +187,7 @@ pub struct MemberForm {
 	id: String,
 	name: String,
 	kind: MemberKind,
+	groups: Vec<MemberGroup>,
 	password: String,
 }
 

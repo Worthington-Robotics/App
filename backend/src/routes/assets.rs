@@ -20,6 +20,11 @@ pub fn icon_home() -> Svg {
 	Svg(include_str!("../assets/icons/home.svg"))
 }
 
+#[rocket::get("/assets/icons/clock.svg")]
+pub fn icon_clock() -> Svg {
+	Svg(include_str!("../assets/icons/clock.svg"))
+}
+
 #[derive(Responder)]
 #[response(content_type = "image/x-icon")]
 pub struct Ico(&'static [u8]);
