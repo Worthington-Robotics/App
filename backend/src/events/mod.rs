@@ -1,5 +1,6 @@
 use std::{collections::HashSet, fmt::Display};
 
+use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
 };
 
 /// A single event, stored in the database or code
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Event {
 	/// The unique ID for this event
 	pub id: String,
@@ -51,7 +52,7 @@ impl Event {
 }
 
 /// Different kinds of events
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, FromFormField, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum EventKind {
 	#[default]
@@ -77,7 +78,7 @@ impl Display for EventKind {
 }
 
 /// Urgency for an event
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, FromFormField, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum EventUrgency {
 	#[default]
@@ -86,7 +87,7 @@ pub enum EventUrgency {
 }
 
 /// Visibility for an event
-#[derive(Serialize, Deserialize, PartialEq, Eq, Default)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Default, FromFormField, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum EventVisibility {
 	#[default]
@@ -95,7 +96,7 @@ pub enum EventVisibility {
 }
 
 /// Invites for an event
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum EventInvite {
 	/// A single member ID

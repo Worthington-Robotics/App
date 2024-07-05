@@ -1,12 +1,14 @@
+{{worbots-header}}
+<h1>Events</h1>
 <div id="calendar" class="container">
-	<h1>Events</h1>
 	<div id="events-container" class="container">{{events}}</div>
+	{{add-event}}
 </div>
 <style>
 	#calendar {
 		width: 100%;
 		flex-direction: column;
-		row-gap: 0.1rem;
+		row-gap: 1rem;
 	}
 
 	#events-container {
@@ -22,14 +24,19 @@
 		box-sizing: border-box;
 	}
 
+	.event-date {
+		font-size: calc(1.3vw * var(--scale));
+		color: var(--fg2);
+	}
+
 	.event-subtext {
 		font-size: calc(1.2vw * var(--scale));
 		color: var(--fg3);
 	}
 
 	.dot {
-		height: 0.6rem;
-		width: 0.6rem;
+		height: 0.45rem;
+		width: 0.45rem;
 		background-color: var(--bg3);
 		border-radius: 50%;
 	}

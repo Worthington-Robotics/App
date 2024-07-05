@@ -1,6 +1,11 @@
 use argon2::Argon2;
 use auth::SessionManager;
+use base64::{
+	engine::{GeneralPurpose, GeneralPurposeConfig},
+	Engine,
+};
 use db::{json::JSONDatabase, Database};
+use rand::{rngs::StdRng, RngCore, SeedableRng};
 use rocket::{routes, tokio::sync::Mutex};
 
 mod auth;
@@ -51,10 +56,14 @@ fn rocket() -> _ {
 			routes::assets::rockwell,
 			routes::assets::icon_home,
 			routes::assets::icon_clock,
+			routes::assets::icon_plus,
+			routes::assets::icon_mail,
 			routes::login::login,
 			routes::login::authenticate,
 			routes::login::logout,
 			routes::calendar::calendar,
+			routes::calendar::create_event,
+			routes::calendar::create_event_api,
 		],
 	)
 }
@@ -67,3 +76,16 @@ pub struct AppState {
 }
 
 pub type State = rocket::State<AppState>;
+
+/// Generate the ID for something like an event
+fn generate_id() -> String {
+	let mut rng = StdRng::from_entropy();
+	let base64 = GeneralPurpose::new(&base64::alphabet::STANDARD, GeneralPurposeConfig::new());
+	const LENGTH: usize = 32;
+	let mut out = [0; LENGTH];
+	for i in 0..LENGTH {
+		out[i] = rng.next_u64() as u8;
+	}
+
+	base64.encode(out)
+}

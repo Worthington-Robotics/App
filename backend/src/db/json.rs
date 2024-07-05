@@ -44,6 +44,15 @@ impl Database for JSONDatabase {
 		self.contents.members.values()
 	}
 
+	fn get_event(&self, id: &str) -> Option<Event> {
+		self.contents.events.get(id).cloned()
+	}
+
+	fn create_event(&mut self, event: Event) -> anyhow::Result<()> {
+		self.contents.events.insert(event.id.clone(), event);
+		self.write()
+	}
+
 	fn get_events(&self) -> impl Iterator<Item = &Event> {
 		self.contents.events.values()
 	}

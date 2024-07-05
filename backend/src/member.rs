@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
@@ -52,6 +52,38 @@ pub enum MemberGroup {
 	President,
 	Coach,
 	Mentor,
+}
+
+impl Display for MemberGroup {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				Self::Member => "Member",
+				Self::NewMember => "New Member",
+				Self::PitCrew => "Pit Crew",
+				Self::Lead => "Lead",
+				Self::President => "President",
+				Self::Coach => "Coach",
+				Self::Mentor => "Mentor",
+			}
+		)
+	}
+}
+
+impl MemberGroup {
+	pub fn to_plural_string(&self) -> &'static str {
+		match self {
+			Self::Member => "Members",
+			Self::NewMember => "New Members",
+			Self::PitCrew => "Pit Crew",
+			Self::Lead => "Leads",
+			Self::President => "Presidents",
+			Self::Coach => "Coaches",
+			Self::Mentor => "Mentors",
+		}
+	}
 }
 
 /// Count the number of members in a group

@@ -6,8 +6,8 @@
 	--fg2: #cecece;
 	--fg3: #979797;
 	--bg: #141414;
-	--bg2: #1b1b1b;
-	--bg3: #2b2b2b;
+	--bg2: #1c1c1c;
+	--bg3: #2e2e2e;
 	--wbred: #d80001;
 	--wbblue: #2134d9;
 
@@ -31,10 +31,19 @@
 }
 
 button,
-input {
-	background-color: var(--wbblue);
+input,
+select {
 	padding: 0.5rem;
+}
+
+button,
+input[type="submit"] {
 	color: var(--fg);
+	background-color: var(--wbblue);
+}
+
+input[type="checkbox"] {
+	padding: 2rem;
 }
 
 h1 {
@@ -43,10 +52,12 @@ h1 {
 }
 
 h2 {
+	text-align: center;
 	font-size: calc(3vw * var(--scale));
 }
 
 h3 {
+	text-align: center;
 	font-size: calc(2vw * var(--scale));
 }
 

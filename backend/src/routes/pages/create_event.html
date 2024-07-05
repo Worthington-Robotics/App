@@ -1,0 +1,105 @@
+{{worbots-header}}
+<h2>Create/Edit Event</h2>
+<form id="event-form" class="container make-col">
+	<input
+		type="text"
+		name="name"
+		id="name-field"
+		class="create-event-field"
+		placeholder="Enter event name..."
+		value="{{name}}"
+	/>
+	<input
+		type="datetime-local"
+		name="date"
+		id="date-field"
+		placeholder="Enter event date..."
+		value="{{date}}"
+	/>
+	<label for="kind">Event Kind</label>
+	<select
+		name="kind"
+		id="kind-field"
+		class="create-event-field"
+		value="{{kind}}"
+	>
+		<option value="meeting">Meeting</option>
+		<option value="competition">Competition</option>
+		<option value="outreach">Outreach</option>
+		<option value="fundraising">Fundraising</option>
+	</select>
+	<label for="urgency">Event Urgency</label>
+	<select
+		name="urgency"
+		id="urgency-field"
+		class="create-event-field"
+		value="{{urgency}}"
+	>
+		<option value="Optional">Optional</option>
+		<option value="Mandatory">Mandatory</option>
+	</select>
+	<label for="visibility">Event Visibility</label>
+	<select
+		name="visibility"
+		id="visibility-field"
+		class="create-event-field"
+		value="{{visibility}}"
+	>
+		<option value="Everyone">Everyone</option>
+		<option value="InviteOnly">Invite-Only</option>
+	</select>
+	<div id="invites">
+		<h3>Invites</h3>
+		{{invites}}
+	</div>
+
+	<input type="submit" id="submit" value="Save" />
+</form>
+<script>
+	function onSubmit(event) {
+		event.preventDefault();
+		const id = "{{id}}";
+		const name = document.getElementById("name-field").value;
+		const date = document.getElementById("date-field").value;
+		const kind = document.getElementById("kind-field").value;
+		const urgency = document.getElementById("urgency-field").value;
+		const visibility = document.getElementById("visibility-field").value;
+
+		// Iterate over checkboxes
+		let invites = [];
+		for (let i = 0; ; i++) {
+			const checkbox = document.getElementById(`invite-checkbox-${i}`);
+			if (checkbox == null) {
+				break;
+			}
+			if (checkbox.checked) {
+				invites.push(checkbox.name);
+			}
+		}
+		let invitesString = JSON.stringify(invites);
+
+		fetch("/api/create_event", {
+			method: "POST",
+			body: `id=${id}&name=${name}&date=${date}&kind=${kind}&urgency=${urgency}&visibility=${visibility}&invites=${invitesString}`,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((_) => {
+			window.location.href = "/calendar";
+		});
+	}
+
+	document.getElementById("event-form").addEventListener("submit", onSubmit);
+</script>
+<style>
+	.create-event-field {
+		width: 40%;
+	}
+
+	.group-invite-label {
+		color: lightcoral;
+	}
+
+	.invite-checkbox > input {
+		margin-left: auto;
+	}
+</style>
+{{footer}}
