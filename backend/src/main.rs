@@ -64,6 +64,7 @@ fn rocket() -> _ {
 			routes::calendar::calendar,
 			routes::calendar::create_event,
 			routes::calendar::create_event_api,
+			routes::inbox::inbox,
 		],
 	)
 }

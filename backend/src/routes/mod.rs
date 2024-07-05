@@ -1,5 +1,6 @@
 pub mod assets;
 pub mod calendar;
+pub mod inbox;
 pub mod login;
 
 use std::collections::HashSet;
