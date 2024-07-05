@@ -3,10 +3,8 @@ use std::{collections::HashSet, fmt::Display};
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-	auth::Privilege,
-	member::{Member, MemberGroup},
-};
+use crate::auth::Privilege;
+use crate::member::{Member, MemberMention};
 
 /// A single event, stored in the database or code
 #[derive(Serialize, Deserialize, Clone)]
@@ -28,7 +26,7 @@ pub struct Event {
 	pub visibility: EventVisibility,
 	/// Invites for this event
 	#[serde(default)]
-	pub invites: HashSet<EventInvite>,
+	pub invites: HashSet<MemberMention>,
 	/// People attending the event, as a set of member IDs
 	#[serde(default)]
 	pub rsvp: HashSet<String>,
@@ -37,17 +35,7 @@ pub struct Event {
 impl Event {
 	/// Check if this event invites a user
 	pub fn invites_member(&self, member: &Member) -> bool {
-		for invite in &self.invites {
-			let matches = match invite {
-				EventInvite::Member(check) => check == &member.id,
-				EventInvite::Group(group) => member.groups.contains(group),
-			};
-			if matches {
-				return true;
-			}
-		}
-
-		false
+		self.invites.iter().any(|x| x.mentions_member(member))
 	}
 }
 
@@ -93,16 +81,6 @@ pub enum EventVisibility {
 	#[default]
 	Everyone,
 	InviteOnly,
-}
-
-/// Invites for an event
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-#[serde(rename_all = "snake_case")]
-pub enum EventInvite {
-	/// A single member ID
-	Member(String),
-	/// A group of members
-	Group(MemberGroup),
 }
 
 /// Get all of the events relevant to a given member

@@ -14,9 +14,10 @@ use tracing::{error, span, Level};
 use crate::{
 	auth::Privilege,
 	db::Database,
-	events::{Event, EventInvite, EventKind, EventUrgency, EventVisibility},
+	events::{Event, EventKind, EventUrgency, EventVisibility},
 	generate_id,
-	member::{count_group_members, MemberGroup},
+	member::{count_group_members, MemberGroup, MemberMention},
+	render_date,
 };
 use crate::{events::get_relevant_events, State};
 
@@ -85,13 +86,7 @@ fn render_event(event: &Event, db: &impl Database) -> String {
 	let event_component = include_str!("components/event.min.html");
 
 	let date = DateTime::parse_from_rfc2822(&event.date)
-		.map(|x| {
-			// Nice formatting with pointless info removed so it's a bit more clean
-			x.format("%a %B %d, %I:%M %p")
-				.to_string()
-				.replace(":00", "")
-				.replace(" 0", " ")
-		})
+		.map(|x| render_date(x))
 		.unwrap_or_else(|e| {
 			error!("Failed to parse date {}: {}", event.date, e);
 			"Invalid date".into()
@@ -101,8 +96,8 @@ fn render_event(event: &Event, db: &impl Database) -> String {
 
 	let total_invites = event.invites.iter().fold(0, |acc, x| {
 		acc + match x {
-			EventInvite::Member(_) => 1,
-			EventInvite::Group(group) => count_group_members(db.get_members(), group),
+			MemberMention::Member(_) => 1,
+			MemberMention::Group(group) => count_group_members(db.get_members(), group),
 		}
 	});
 	let total_rsvps = event.rsvp.len();
@@ -265,14 +260,14 @@ pub async fn create_event_api(
 	let invites = invites
 		.into_iter()
 		.map(|x| match x.as_str() {
-			"@Member" => EventInvite::Group(MemberGroup::Member),
-			"@New Member" => EventInvite::Group(MemberGroup::NewMember),
-			"@Pit Crew" => EventInvite::Group(MemberGroup::PitCrew),
-			"@Lead" => EventInvite::Group(MemberGroup::Lead),
-			"@President" => EventInvite::Group(MemberGroup::President),
-			"@Coach" => EventInvite::Group(MemberGroup::Coach),
-			"@Mentor" => EventInvite::Group(MemberGroup::Mentor),
-			_ => EventInvite::Member(x),
+			"@Member" => MemberMention::Group(MemberGroup::Member),
+			"@New Member" => MemberMention::Group(MemberGroup::NewMember),
+			"@Pit Crew" => MemberMention::Group(MemberGroup::PitCrew),
+			"@Lead" => MemberMention::Group(MemberGroup::Lead),
+			"@President" => MemberMention::Group(MemberGroup::President),
+			"@Coach" => MemberMention::Group(MemberGroup::Coach),
+			"@Mentor" => MemberMention::Group(MemberGroup::Mentor),
+			_ => MemberMention::Member(x),
 		})
 		.collect();
 

@@ -8,7 +8,7 @@ use std::{
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
-use crate::{events::Event, member::Member};
+use crate::{announcements::Announcement, events::Event, member::Member};
 
 use super::Database;
 
@@ -56,6 +56,21 @@ impl Database for JSONDatabase {
 	fn get_events(&self) -> impl Iterator<Item = &Event> {
 		self.contents.events.values()
 	}
+
+	fn get_announcement(&self, announcement: &str) -> Option<Announcement> {
+		self.contents.announcements.get(announcement).cloned()
+	}
+
+	fn create_announcement(&mut self, announcement: Announcement) -> anyhow::Result<()> {
+		self.contents
+			.announcements
+			.insert(announcement.id.clone(), announcement);
+		self.write()
+	}
+
+	fn get_announcements(&self) -> impl Iterator<Item = &Announcement> {
+		self.contents.announcements.values()
+	}
 }
 
 impl JSONDatabase {
@@ -82,4 +97,6 @@ impl JSONDatabase {
 struct DatabaseContents {
 	members: HashMap<String, Member>,
 	events: HashMap<String, Event>,
+	#[serde(default)]
+	announcements: HashMap<String, Announcement>,
 }

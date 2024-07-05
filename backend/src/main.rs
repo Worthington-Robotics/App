@@ -1,13 +1,17 @@
+use std::fmt::Display;
+
 use argon2::Argon2;
 use auth::SessionManager;
 use base64::{
 	engine::{GeneralPurpose, GeneralPurposeConfig},
 	Engine,
 };
+use chrono::{DateTime, Offset, TimeZone};
 use db::{json::JSONDatabase, Database};
 use rand::{rngs::StdRng, RngCore, SeedableRng};
 use rocket::{routes, tokio::sync::Mutex};
 
+mod announcements;
 mod auth;
 mod db;
 mod events;
@@ -89,4 +93,15 @@ fn generate_id() -> String {
 	}
 
 	base64.encode(out)
+}
+
+/// Render a nice date
+fn render_date<T: TimeZone + Offset>(date: DateTime<T>) -> String
+where
+	T::Offset: Display,
+{
+	date.format("%a %B %d, %I:%M %p")
+		.to_string()
+		.replace(":00", "")
+		.replace(" 0", " ")
 }

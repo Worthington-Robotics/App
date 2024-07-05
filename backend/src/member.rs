@@ -95,3 +95,23 @@ pub fn count_group_members<'a>(
 		.filter(|member| member.groups.contains(group))
 		.count()
 }
+
+/// A mention of a member or group of members
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum MemberMention {
+	/// A single member ID
+	Member(String),
+	/// A group of members
+	Group(MemberGroup),
+}
+
+impl MemberMention {
+	/// Check if a member is mentioned by this
+	pub fn mentions_member(&self, member: &Member) -> bool {
+		match self {
+			Self::Member(check) => check == &member.id,
+			Self::Group(group) => member.groups.contains(group),
+		}
+	}
+}

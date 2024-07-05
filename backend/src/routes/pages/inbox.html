@@ -1,3 +1,40 @@
 {{worbots-header}}
-<div id="inbox"></div>
+<h1>Inbox</h1>
+<div id="inbox">
+	<div id="announcements-container" class="container">{{announcements}}</div>
+</div>
+<style>
+	#inbox {
+		width: 100%;
+		flex-direction: column;
+		row-gap: 1rem;
+	}
+
+	#announcements-container {
+		flex-direction: column;
+		row-gap: 0.5rem;
+	}
+
+	.announcement {
+		padding: 1.4rem;
+		background-color: var(--bg2);
+		flex-direction: column;
+		width: 90%;
+		box-sizing: border-box;
+	}
+
+	.announcement-date {
+		font-size: calc(1.3vw * var(--scale));
+		color: var(--fg2);
+	}
+
+	.announcement-title {
+		font-size: calc(1.6vw * var(--scale));
+	}
+
+	.announcement-body {
+		font-size: calc(1.2vw * var(--scale));
+		color: var(--fg3);
+	}
+</style>
 {{footer}}
