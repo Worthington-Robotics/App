@@ -1,7 +1,7 @@
 use std::{fmt::Display, ops::Deref};
 
 use anyhow::Context;
-use chrono::{DateTime, NaiveDate, NaiveTime, Offset, TimeZone, Utc};
+use chrono::{DateTime, Duration, NaiveDate, NaiveTime, Offset, TimeZone, Utc};
 use itertools::Itertools;
 use rocket::{
 	form::Form,
@@ -18,6 +18,7 @@ use crate::{
 	generate_id,
 	member::{count_group_members, MemberGroup, MemberMention},
 	render_date,
+	util::{get_days_from_month, ToDropdown},
 };
 use crate::{events::get_relevant_events, State};
 
@@ -52,6 +53,8 @@ pub async fn calendar(
 		return Ok(redirect);
 	};
 
+	let is_elevated = member.kind.get_privilege() == Privilege::Elevated;
+
 	let lock = state.db.lock().await;
 	let mut relevant_events = get_relevant_events(&member, lock.get_events());
 	relevant_events
@@ -60,13 +63,12 @@ pub async fn calendar(
 	let event_component = include_str!("components/event.min.html");
 	let mut events_content = String::with_capacity(relevant_events.len() * event_component.len());
 	for event in relevant_events {
-		events_content.push_str(&render_event(event, lock.deref()));
+		events_content.push_str(&render_event(event, lock.deref(), is_elevated));
 	}
 
 	let page = include_str!("pages/calendar.min.html");
 	let page = page.replace("{{events}}", &events_content);
 
-	let is_elevated = member.kind.get_privilege() == Privilege::Elevated;
 	let new_button = if is_elevated {
 		format!(
 			"<a href=\"/create_event\">{}</a>",
@@ -82,7 +84,7 @@ pub async fn calendar(
 }
 
 /// Renders an event component
-fn render_event(event: &Event, db: &impl Database) -> String {
+fn render_event(event: &Event, db: &impl Database, is_elevated: bool) -> String {
 	let event_component = include_str!("components/event.min.html");
 
 	let date = DateTime::parse_from_rfc2822(&event.date)
@@ -104,6 +106,14 @@ fn render_event(event: &Event, db: &impl Database) -> String {
 	let event_component = event_component.replace("{{kind}}", &event.kind.to_string());
 	let event_component = event_component.replace("{{invites}}", &total_invites.to_string());
 	let event_component = event_component.replace("{{going}}", &total_rsvps.to_string());
+
+	let edit_event_button = if is_elevated {
+		let edit_event_button = include_str!("components/edit-event.min.html");
+		edit_event_button.replace("{{id}}", &event.id)
+	} else {
+		String::new()
+	};
+	let event_component = event_component.replace("{{edit-event}}", &edit_event_button);
 
 	event_component
 }
@@ -156,11 +166,10 @@ pub async fn create_event(
 		Event {
 			id,
 			name: String::new(),
-			date: date_to_js(
-				Utc::now()
-					.with_time(NaiveTime::from_hms_opt(12, 0, 0).unwrap())
-					.unwrap(),
-			),
+			date: Utc::now()
+				.with_time(NaiveTime::from_hms_opt(12, 0, 0).unwrap())
+				.unwrap()
+				.to_rfc2822(),
 			kind: Default::default(),
 			urgency: Default::default(),
 			visibility: Default::default(),
@@ -172,15 +181,25 @@ pub async fn create_event(
 	let page = include_str!("pages/create_event.html");
 	let page = page.replace("{{id}}", &event.id);
 	let page = page.replace("{{name}}", &event.name);
-	let page = page.replace("{{date}}", &event.date);
-	let page = page.replace("{{kind}}", &serde_json::to_string(&event.kind).unwrap());
+
+	let date = DateTime::parse_from_rfc2822(&event.date).unwrap_or_else(|e| {
+		error!("Failed to parse date: {}", e);
+		Default::default()
+	});
+	let page = page.replace("{{date}}", &date_to_js(date));
+
+	// Create dropdown options
 	let page = page.replace(
-		"{{urgency}}",
-		&serde_json::to_string(&event.urgency).unwrap(),
+		"{{kind-options}}",
+		&EventKind::create_options(Some(&event.kind)),
 	);
 	let page = page.replace(
-		"{{visibility}}",
-		&serde_json::to_string(&event.visibility).unwrap(),
+		"{{urgency-options}}",
+		&EventUrgency::create_options(Some(&event.urgency)),
+	);
+	let page = page.replace(
+		"{{visibility-options}}",
+		&EventVisibility::create_options(Some(&event.visibility)),
 	);
 
 	// Generate invite checkboxes
@@ -195,12 +214,14 @@ pub async fn create_event(
 		MemberGroup::Coach,
 		MemberGroup::Mentor,
 	] {
+		let checked = event.invites.contains(&MemberMention::Group(group));
 		available_invites.push((
 			format!("@{}", group.to_string()),
 			format!(
 				"<div class=\"group-invite-label\">{}</div>",
 				group.to_plural_string().to_string()
 			),
+			checked,
 		));
 	}
 	available_invites.extend(
@@ -214,15 +235,19 @@ pub async fn create_event(
 						error!("Failed to get member {}", id);
 						id.clone()
 					});
-
-				(id, name)
+				let checked = event.invites.contains(&MemberMention::Member(id.clone()));
+				(id, name, checked)
 			})
 			.sorted_by_key(|x| x.1.clone()),
 	);
 
-	for (i, (invite, invite_pretty)) in available_invites.into_iter().enumerate() {
-		let invite =
-			format!("<div class=\"container invite-checkbox\"><label for=\"{invite}\">{invite_pretty}</label><input type=\"checkbox\" name=\"{invite}\" id=\"invite-checkbox-{i}\" /></div>");
+	for (i, (invite, invite_pretty, is_checked)) in available_invites.into_iter().enumerate() {
+		let label = format!("<label for=\"{invite}\">{invite_pretty}</label>");
+		let checked_string = if is_checked { " checked" } else { "" };
+		let checkbox = format!("<input type=\"checkbox\" name=\"{invite}\" id=\"invite-checkbox-{i}\" {checked_string} />");
+
+		let invite = format!("<div class=\"container invite-checkbox\">{label}{checkbox}</div>");
+
 		invites_string.push_str(&invite);
 	}
 	let page = page.replace("{{invites}}", &invites_string);
@@ -245,10 +270,10 @@ pub async fn create_event_api(
 
 	let event = event.into_inner();
 
-	let date = match date_from_js(event.date) {
+	let date = match date_from_js(event.date.clone()) {
 		Ok(date) => date,
 		Err(e) => {
-			error!("Failed to parse date: {}", e);
+			error!("Failed to parse date {}: {}", event.date, e);
 			return Err(Status::InternalServerError);
 		}
 	};
@@ -310,23 +335,42 @@ fn date_to_js<T: TimeZone + Offset>(date: DateTime<T>) -> String
 where
 	T::Offset: Display,
 {
+	// FIXME: Use the actual time zone instead of just assuming US East
+	let date = date - Duration::hours(4);
 	date.format("%Y-%m-%dT%H:%M").to_string()
 }
 
 /// Parses a date from JS/HTML's version
 fn date_from_js(date: String) -> anyhow::Result<DateTime<Utc>> {
 	let year = date[0..4].parse().context("Failed to parse year")?;
-	let month = date[5..7].parse().context("Failed to parse month")?;
-	let day = date[8..10].parse().context("Failed to parse day")?;
-	// FIXME: Use the actual time zone instead of just assuming US east
-	let hour = date[11..13]
+	let mut month = date[5..7].parse().context("Failed to parse month")?;
+	let mut day = date[8..10].parse().context("Failed to parse day")?;
+	// FIXME: Use the actual time zone instead of just assuming US East
+	let mut hour = date[11..13]
 		.parse::<u32>()
 		.context("Failed to parse hour")?
 		+ 4;
+	// Chrono doesn't accept overflows, so we move the hours into days instead
+	if hour >= 24 {
+		day += hour / 24;
+		hour %= 24;
+	}
 	let min = date[14..16].parse().context("Failed to parse minute")?;
 
-	let naive_dt = NaiveDate::from_ymd_opt(year, month, day)
-		.context("Failed to create date")?
+	// If the date fails, then we know that we overflowed the day from wrapping the hour. Try wrapping the day now.
+	let naive_date = NaiveDate::from_ymd_opt(year, month, day);
+	let naive_date = match naive_date {
+		Some(date) => Some(date),
+		None => {
+			let days_in_month = get_days_from_month(year, month) as u32;
+			month += day / days_in_month;
+			day %= days_in_month;
+			NaiveDate::from_ymd_opt(year, month, day)
+		}
+	}
+	.context("Failed to create date")?;
+
+	let naive_dt = naive_date
 		.and_hms_opt(hour, min, 0)
 		.context("Failed to add time to date")?;
 	Ok(naive_dt.and_utc())

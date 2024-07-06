@@ -2,9 +2,11 @@ use std::{collections::HashSet, fmt::Display};
 
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
 use crate::auth::Privilege;
 use crate::member::{Member, MemberMention};
+use crate::util::ToDropdown;
 
 /// A single event, stored in the database or code
 #[derive(Serialize, Deserialize, Clone)]
@@ -40,7 +42,7 @@ impl Event {
 }
 
 /// Different kinds of events
-#[derive(Serialize, Deserialize, Default, FromFormField, Clone, Copy)]
+#[derive(Serialize, Deserialize, Default, FromFormField, Clone, Copy, EnumIter, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum EventKind {
 	#[default]
@@ -48,6 +50,17 @@ pub enum EventKind {
 	Competition,
 	Outreach,
 	Fundraising,
+}
+
+impl ToDropdown for EventKind {
+	fn to_dropdown(&self) -> &'static str {
+		match self {
+			Self::Meeting => "Meeting",
+			Self::Competition => "Competition",
+			Self::Outreach => "Outreach",
+			Self::Fundraising => "Fundraising",
+		}
+	}
 }
 
 impl Display for EventKind {
@@ -66,7 +79,7 @@ impl Display for EventKind {
 }
 
 /// Urgency for an event
-#[derive(Serialize, Deserialize, Default, FromFormField, Clone, Copy)]
+#[derive(Serialize, Deserialize, Default, FromFormField, Clone, Copy, EnumIter, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum EventUrgency {
 	#[default]
@@ -74,13 +87,57 @@ pub enum EventUrgency {
 	Mandatory,
 }
 
+impl ToDropdown for EventUrgency {
+	fn to_dropdown(&self) -> &'static str {
+		match self {
+			Self::Optional => "Optional",
+			Self::Mandatory => "Mandatory",
+		}
+	}
+}
+
+impl Display for EventUrgency {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				Self::Optional => "Optional",
+				Self::Mandatory => "Mandatory",
+			}
+		)
+	}
+}
+
 /// Visibility for an event
-#[derive(Serialize, Deserialize, PartialEq, Eq, Default, FromFormField, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Default, FromFormField, Clone, Copy, EnumIter)]
 #[serde(rename_all = "snake_case")]
 pub enum EventVisibility {
 	#[default]
 	Everyone,
 	InviteOnly,
+}
+
+impl ToDropdown for EventVisibility {
+	fn to_dropdown(&self) -> &'static str {
+		match self {
+			Self::Everyone => "Everyone",
+			Self::InviteOnly => "InviteOnly",
+		}
+	}
+}
+
+impl Display for EventVisibility {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				Self::Everyone => "Everyone",
+				Self::InviteOnly => "Invite-Only",
+			}
+		)
+	}
 }
 
 /// Get all of the events relevant to a given member

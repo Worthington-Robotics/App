@@ -43,6 +43,11 @@ pub fn icon_mail() -> CacheFor<Svg> {
 	CacheFor(Svg(include_str!("../assets/icons/mail.svg")), ONE_WEEK)
 }
 
+#[rocket::get("/assets/icons/edit.svg")]
+pub fn icon_edit() -> CacheFor<Svg> {
+	CacheFor(Svg(include_str!("../assets/icons/edit.svg")), ONE_WEEK)
+}
+
 #[derive(Responder)]
 #[response(content_type = "image/x-icon")]
 pub struct Ico(&'static [u8]);

@@ -1,52 +1,20 @@
 {{worbots-header}}
 <h2>Create/Edit Event</h2>
 <form id="event-form" class="container make-col">
-	<input
-		type="text"
-		name="name"
-		id="name-field"
-		class="create-event-field"
-		placeholder="Enter event name..."
-		value="{{name}}"
-	/>
-	<input
-		type="datetime-local"
-		name="date"
-		id="date-field"
-		placeholder="Enter event date..."
-		value="{{date}}"
-	/>
+	<input type="text" name="name" id="name-field" class="create-event-field" placeholder="Enter event name..."
+		value="{{name}}" />
+	<input type="datetime-local" name="date" id="date-field" placeholder="Enter event date..." value="{{date}}" />
 	<label for="kind">Event Kind</label>
-	<select
-		name="kind"
-		id="kind-field"
-		class="create-event-field"
-		value="{{kind}}"
-	>
-		<option value="meeting">Meeting</option>
-		<option value="competition">Competition</option>
-		<option value="outreach">Outreach</option>
-		<option value="fundraising">Fundraising</option>
+	<select name="kind" id="kind-field" class="create-event-field">
+		{{kind-options}}
 	</select>
 	<label for="urgency">Event Urgency</label>
-	<select
-		name="urgency"
-		id="urgency-field"
-		class="create-event-field"
-		value="{{urgency}}"
-	>
-		<option value="Optional">Optional</option>
-		<option value="Mandatory">Mandatory</option>
+	<select name="urgency" id="urgency-field" class="create-event-field">
+		{{urgency-options}}
 	</select>
 	<label for="visibility">Event Visibility</label>
-	<select
-		name="visibility"
-		id="visibility-field"
-		class="create-event-field"
-		value="{{visibility}}"
-	>
-		<option value="Everyone">Everyone</option>
-		<option value="InviteOnly">Invite-Only</option>
+	<select name="visibility" id="visibility-field" class="create-event-field">
+		{{visibility-options}}
 	</select>
 	<div id="invites">
 		<h3>Invites</h3>
@@ -98,7 +66,7 @@
 		color: lightcoral;
 	}
 
-	.invite-checkbox > input {
+	.invite-checkbox>input {
 		margin-left: auto;
 	}
 </style>

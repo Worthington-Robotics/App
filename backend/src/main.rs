@@ -18,6 +18,7 @@ mod events;
 mod forms;
 mod member;
 mod routes;
+mod util;
 
 #[rocket::launch]
 fn rocket() -> _ {
@@ -63,6 +64,7 @@ fn rocket() -> _ {
 			routes::assets::icon_clock,
 			routes::assets::icon_plus,
 			routes::assets::icon_mail,
+			routes::assets::icon_edit,
 			routes::login::login,
 			routes::login::authenticate,
 			routes::login::logout,

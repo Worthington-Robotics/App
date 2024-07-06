@@ -84,3 +84,10 @@ input {
 	border-width: 0px;
 	border-radius: 5px;
 }
+
+.icon-button {
+	width: 0.8rem;
+	height: 0.8rem;
+	border-radius: 50%;
+	background-color: var(--bg2);
+}
