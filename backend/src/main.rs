@@ -15,6 +15,7 @@ mod announcements;
 mod auth;
 mod db;
 mod events;
+mod forms;
 mod member;
 mod routes;
 

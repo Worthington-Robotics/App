@@ -47,6 +47,9 @@ pub async fn inbox(
 	);
 
 	for announcement in lock.get_announcements() {
+		if !announcement.can_member_see(&member) {
+			continue;
+		}
 		announcements_string.push_str(&render_announcement(announcement));
 	}
 	let page = page.replace("{{announcements}}", &announcements_string);

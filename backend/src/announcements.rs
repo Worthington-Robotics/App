@@ -2,7 +2,11 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::member::MemberMention;
+use crate::{
+	auth::Privilege,
+	db::Database,
+	member::{Member, MemberMention},
+};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Announcement {
@@ -21,4 +25,23 @@ pub struct Announcement {
 	/// Members mentioned in this announcement
 	#[serde(default)]
 	pub mentioned: HashSet<MemberMention>,
+	/// Members who have read this announcement
+	#[serde(default)]
+	pub read: HashSet<String>,
+}
+
+impl Announcement {
+	/// Checks if a member can see this announcement
+	pub fn can_member_see(&self, member: &Member) -> bool {
+		member.kind.get_privilege() == Privilege::Elevated
+			|| self.mentioned.iter().any(|x| x.mentions_member(&member))
+	}
+}
+
+/// Count the number of unread announcements a member has
+pub fn count_unread_announcements(member: &Member, db: &impl Database) -> usize {
+	db.get_announcements()
+		.filter(|x| x.can_member_see(member))
+		.filter(|x| !x.read.contains(&member.id))
+		.count()
 }
