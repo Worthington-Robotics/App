@@ -91,3 +91,9 @@ input {
 	border-radius: 50%;
 	background-color: var(--bg2);
 }
+.dot {
+	height: 0.45rem;
+	width: 0.45rem;
+	background-color: var(--bg3);
+	border-radius: 50%;
+}

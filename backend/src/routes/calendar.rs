@@ -16,7 +16,7 @@ use crate::{
 	db::Database,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	generate_id,
-	member::{count_group_members, MemberGroup, MemberMention},
+	member::{count_group_members, Member, MemberGroup, MemberMention},
 	render_date,
 	util::{get_days_from_month, ToDropdown},
 };
@@ -63,7 +63,7 @@ pub async fn calendar(
 	let event_component = include_str!("components/event.min.html");
 	let mut events_content = String::with_capacity(relevant_events.len() * event_component.len());
 	for event in relevant_events {
-		events_content.push_str(&render_event(event, lock.deref(), is_elevated));
+		events_content.push_str(&render_event(event, lock.deref(), &member));
 	}
 
 	let page = include_str!("pages/calendar.min.html");
@@ -84,8 +84,9 @@ pub async fn calendar(
 }
 
 /// Renders an event component
-fn render_event(event: &Event, db: &impl Database, is_elevated: bool) -> String {
+fn render_event(event: &Event, db: &impl Database, member: &Member) -> String {
 	let event_component = include_str!("components/event.min.html");
+	let event_component = event_component.replace("{{id}}", &event.id);
 
 	let date = DateTime::parse_from_rfc2822(&event.date)
 		.map(|x| render_date(x))
@@ -107,13 +108,12 @@ fn render_event(event: &Event, db: &impl Database, is_elevated: bool) -> String 
 	let event_component = event_component.replace("{{invites}}", &total_invites.to_string());
 	let event_component = event_component.replace("{{going}}", &total_rsvps.to_string());
 
-	let edit_event_button = if is_elevated {
-		let edit_event_button = include_str!("components/edit-event.min.html");
-		edit_event_button.replace("{{id}}", &event.id)
+	let edit = if member.kind.get_privilege() == Privilege::Elevated {
+		include_str!("components/edit.html")
 	} else {
-		String::new()
+		""
 	};
-	let event_component = event_component.replace("{{edit-event}}", &edit_event_button);
+	let event_component = event_component.replace("{{edit}}", edit);
 
 	event_component
 }

@@ -54,8 +54,9 @@ fn rocket() -> _ {
 		"/",
 		routes![
 			routes::index,
-			routes::get_member,
-			routes::create_member,
+			routes::members::get_member,
+			routes::members::create_member,
+			routes::members::member_list,
 			routes::assets::favicon,
 			routes::assets::main_css,
 			routes::assets::logo,
