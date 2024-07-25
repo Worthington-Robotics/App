@@ -9,7 +9,7 @@ use base64::{
 use chrono::{DateTime, Offset, TimeZone};
 use db::{json::JSONDatabase, Database};
 use rand::{rngs::StdRng, RngCore, SeedableRng};
-use rocket::{routes, tokio::sync::Mutex};
+use rocket::{catchers, routes, tokio::sync::Mutex};
 
 mod announcements;
 mod auth;
@@ -50,31 +50,34 @@ fn rocket() -> _ {
 		password_hash,
 	};
 
-	rocket::build().manage(state).mount(
-		"/",
-		routes![
-			routes::index,
-			routes::members::get_member,
-			routes::members::create_member,
-			routes::members::member_list,
-			routes::assets::favicon,
-			routes::assets::main_css,
-			routes::assets::logo,
-			routes::assets::rockwell,
-			routes::assets::icon_home,
-			routes::assets::icon_clock,
-			routes::assets::icon_plus,
-			routes::assets::icon_mail,
-			routes::assets::icon_edit,
-			routes::login::login,
-			routes::login::authenticate,
-			routes::login::logout,
-			routes::calendar::calendar,
-			routes::calendar::create_event,
-			routes::calendar::create_event_api,
-			routes::inbox::inbox,
-		],
-	)
+	rocket::build()
+		.manage(state)
+		.mount(
+			"/",
+			routes![
+				routes::index,
+				routes::members::get_member,
+				routes::members::create_member,
+				routes::members::member_list,
+				routes::assets::favicon,
+				routes::assets::main_css,
+				routes::assets::logo,
+				routes::assets::rockwell,
+				routes::assets::icon_home,
+				routes::assets::icon_clock,
+				routes::assets::icon_plus,
+				routes::assets::icon_mail,
+				routes::assets::icon_edit,
+				routes::login::login,
+				routes::login::authenticate,
+				routes::login::logout,
+				routes::calendar::calendar,
+				routes::calendar::create_event,
+				routes::calendar::create_event_api,
+				routes::inbox::inbox,
+			],
+		)
+		.register("/", catchers![routes::not_found, routes::internal_error])
 }
 
 /// Application state for Rocket
