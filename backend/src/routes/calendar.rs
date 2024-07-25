@@ -246,7 +246,7 @@ pub async fn create_event(
 		let checked_string = if is_checked { " checked" } else { "" };
 		let checkbox = format!("<input type=\"checkbox\" name=\"{invite}\" id=\"invite-checkbox-{i}\" {checked_string} />");
 
-		let invite = format!("<div class=\"container invite-checkbox\">{label}{checkbox}</div>");
+		let invite = format!("<div class=\"cont invite-checkbox\">{label}{checkbox}</div>");
 
 		invites_string.push_str(&invite);
 	}
