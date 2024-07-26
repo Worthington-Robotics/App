@@ -193,7 +193,7 @@ pub async fn member_list(
 		return Ok(PageOrRedirect::Redirect(Redirect::to("/login")));
 	}
 
-	let page = include_str!("pages/member_list.min.html");
+	let page = include_str!("pages/members/member_list.min.html");
 	let page = create_page("Members", page);
 
 	let mut member_list = String::new();
@@ -210,7 +210,7 @@ pub async fn member_list(
 
 	let new_button = format!(
 		"<a href=\"/create_member\">{}</a>",
-		include_str!("components/new.min.html")
+		include_str!("components/ui/new.min.html")
 	);
 
 	let page = page.replace("{{add-member}}", &new_button);
@@ -302,7 +302,7 @@ pub async fn create_member_page(
 		}
 	};
 
-	let page = include_str!("pages/create_member.html");
+	let page = include_str!("pages/members/create_member.html");
 	let page = page.replace("{{id}}", &member.id);
 	let page = page.replace("{{name}}", &member.name);
 

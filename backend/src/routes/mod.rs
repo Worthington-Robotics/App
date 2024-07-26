@@ -147,25 +147,31 @@ pub fn create_page(title: &str, body: &str) -> String {
 	static HEAD: &str = include_str!("pages/head.html");
 	let head = HEAD.replace("{{title}}", &format!("{title} - WorBots"));
 	let out = head.replace("{{body}}", body);
-	let out = out.replace("{{footer}}", include_str!("components/footer.min.html"));
+	let out = out.replace(
+		"{{footer}}",
+		include_str!("components/util/footer.min.html"),
+	);
 	let out = out.replace(
 		"{{worbots-header}}",
-		include_str!("components/worbots-header.min.html"),
+		include_str!("components/util/worbots-header.min.html"),
 	);
-	let out = out.replace("{{error}}", include_str!("components/error.min.html"));
+	let out = out.replace("{{error}}", include_str!("components/util/error.min.html"));
 
 	out
 }
 
 #[rocket::catch(404)]
 pub fn not_found() -> RawHtml<String> {
-	RawHtml(create_page("Not Found", include_str!("pages/404.min.html")))
+	RawHtml(create_page(
+		"Not Found",
+		include_str!("pages/errors/404.min.html"),
+	))
 }
 
 #[rocket::catch(500)]
 pub fn internal_error() -> RawHtml<String> {
 	RawHtml(create_page(
 		"Internal Error",
-		include_str!("pages/500.min.html"),
+		include_str!("pages/errors/500.min.html"),
 	))
 }
