@@ -10,6 +10,7 @@ use chrono::{DateTime, Offset, TimeZone};
 use db::{json::JSONDatabase, Database};
 use rand::{rngs::StdRng, RngCore, SeedableRng};
 use rocket::{catchers, routes, tokio::sync::Mutex};
+use routes::Ratelimit;
 
 mod announcements;
 mod auth;
@@ -60,6 +61,7 @@ fn rocket() -> _ {
 				routes::members::create_member,
 				routes::members::member_list,
 				routes::members::create_member_page,
+				routes::members::member_details,
 				routes::assets::favicon,
 				routes::assets::main_css,
 				routes::assets::logo,
@@ -79,6 +81,7 @@ fn rocket() -> _ {
 			],
 		)
 		.register("/", catchers![routes::not_found, routes::internal_error])
+		.attach(Ratelimit::new())
 }
 
 /// Application state for Rocket

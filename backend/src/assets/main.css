@@ -98,3 +98,20 @@ input {
 	background-color: var(--bg3);
 	border-radius: 50%;
 }
+
+a.nolink:link {
+	color: var(--fg);
+	text-decoration: none;
+}
+a.nolink:visited {
+	color: var(--fg);
+	text-decoration: none;
+}
+a.nolink:hover {
+	color: var(--fg);
+	text-decoration: none;
+}
+a.nolink:active {
+	color: var(--fg);
+	text-decoration: none;
+}

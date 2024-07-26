@@ -244,6 +244,7 @@ fn render_member_entry(member: &Member) -> String {
 		}
 	}
 	let element = element.replace("{{groups}}", &groups);
+	let element = element.replace("{{id}}", &member.id);
 
 	element
 }
@@ -283,8 +284,8 @@ pub async fn create_member_page(
 		return Ok(redirect);
 	}
 
-	let lock = state.db.lock().await;
 	let member = if let Some(id) = id {
+		let lock = state.db.lock().await;
 		// We are editing an existing member
 		lock.get_member(id).ok_or_else(|| {
 			error!("Member does not exist: {}", id);
@@ -347,6 +348,56 @@ pub async fn create_member_page(
 	let page = page.replace("{{groups}}", &groups_string);
 
 	let page = create_page("Create Member", &page);
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+#[rocket::get("/member/<id>")]
+pub async fn member_details(
+	id: &str,
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Member details page");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.id else {
+		return Ok(redirect);
+	};
+
+	let Some(requesting_member_id) = ({
+		let lock = state.session_manager.lock().await;
+		lock.get(session_id).map(|x| x.member.clone())
+	}) else {
+		error!("Unknown session ID {}", session_id);
+		return Ok(redirect);
+	};
+
+	let Some(requesting_member) = ({
+		let lock = state.db.lock().await;
+		lock.get_member(&requesting_member_id)
+	}) else {
+		error!("Unknown requesting member ID {}", requesting_member_id);
+		return Ok(redirect);
+	};
+
+	if requesting_member.kind.get_privilege() != Privilege::Elevated {
+		error!("Invalid permissions");
+		return Ok(redirect);
+	}
+
+	let lock = state.db.lock().await;
+	let member = lock.get_member(id).ok_or_else(|| {
+		error!("Member does not exist: {}", id);
+		Status::InternalServerError
+	})?;
+
+	let page = include_str!("pages/members/details.html");
+	let page = page.replace("{{id}}", &member.id);
+	let page = page.replace("{{name}}", &member.name);
+
+	let page = create_page("Member Details", &page);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
