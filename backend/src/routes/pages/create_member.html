@@ -1,0 +1,82 @@
+{{worbots-header}}
+<h2>Create/Edit Member</h2>
+<form id="member-form" class="cont make-col">
+	<input
+		type="text"
+		name="id"
+		id="id-field"
+		class="create-member-field"
+		placeholder="Enter member username..."
+		value="{{id}}"
+	/>
+	<input
+		type="text"
+		name="name"
+		id="name-field"
+		class="create-member-field"
+		placeholder="Enter member name..."
+		value="{{name}}"
+	/>
+	<label for="kind">Member Kind</label>
+	<select name="kind" id="kind-field" class="create-member-field">
+		{{kind-options}}
+	</select>
+	<div id="groups">
+		<h3>Groups</h3>
+		{{groups}}
+	</div>
+	{{password}}
+
+	<input type="submit" id="submit" value="Save" />
+</form>
+<script>
+	function onSubmit(event) {
+		event.preventDefault();
+		const id = document.getElementById("id-field").value;
+		const name = document.getElementById("name-field").value;
+		const kind = document.getElementById("kind-field").value;
+		// The password may not exist due to this member being edited instead
+		let password = null;
+		const passwordField = document.getElementById("password-field");
+		if (passwordField != null) {
+			password = passwordField.value;
+		}
+
+		// Iterate over checkboxes
+		let groups = [];
+		for (let i = 0; ; i++) {
+			const checkbox = document.getElementById(`group-checkbox-${i}`);
+			if (checkbox == null) {
+				break;
+			}
+			if (checkbox.checked) {
+				groups.push(checkbox.name);
+			}
+		}
+		let groupsString = JSON.stringify(groups);
+
+		let body = `id=${id}&name=${name}&kind=${kind}&groups=${groupsString}`;
+		if (password != null) {
+			body += `&password=${password}`;
+		}
+		fetch("/api/create_member", {
+			method: "POST",
+			body: body,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((_) => {
+			window.location.href = "/member_list";
+		});
+	}
+
+	document.getElementById("member-form").addEventListener("submit", onSubmit);
+</script>
+<style>
+	.create-member-field {
+		width: 60%;
+	}
+
+	.member-checkbox > input {
+		margin-left: auto;
+	}
+</style>
+{{footer}}

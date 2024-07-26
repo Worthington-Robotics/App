@@ -9,8 +9,11 @@ use rocket::response::content::{RawHtml, RawJson};
 use rocket::response::Redirect;
 use rocket::{form::Form, http::Status, FromForm};
 use serde::Serialize;
+use strum::IntoEnumIterator;
 use tracing::{error, span, Level};
 
+use crate::routes::OptionalSessionID;
+use crate::util::ToDropdown;
 use crate::{
 	auth::Privilege,
 	member::{Member, MemberGroup},
@@ -100,21 +103,57 @@ pub async fn create_member(
 
 	session_id.verify_elevated(state).await?;
 
-	let result = if let Some(hash) = &state.password_hash {
-		// Create salt
-		let salt = SaltString::generate(&mut StdRng::from_entropy());
-		hash.hash_password(member.password.as_bytes(), &salt.clone())
-			.map(|x| (x.to_string(), Some(salt)))
+	let (hashed_password, salt) = if let Some(password) = &member.password {
+		let result = if let Some(hash) = &state.password_hash {
+			// Create salt
+			let salt = SaltString::generate(&mut StdRng::from_entropy());
+			hash.hash_password(password.as_bytes(), &salt.clone())
+				.map(|x| (x.to_string(), Some(salt)))
+		} else {
+			Ok((password.clone(), None))
+		};
+		let Ok((hashed_password, salt)) = result else {
+			error!("Failed to hash password");
+			return Err(Status::InternalServerError);
+		};
+
+		(Some(hashed_password), salt)
 	} else {
-		Ok((member.password.clone(), None))
-	};
-	let Ok((hashed_password, salt)) = result else {
-		error!("Failed to hash password");
-		return Err(Status::InternalServerError);
+		(None, None)
 	};
 
-	let mut groups = HashSet::with_capacity(member.groups.len());
-	groups.extend(member.groups.clone());
+	// Don't replace the password for an existing member if it wasn't specified in the form
+	let hashed_password = if let Some(hashed_password) = hashed_password {
+		hashed_password
+	} else {
+		let existing_member = state.db.lock().await.get_member(&member.id);
+		let Some(existing_member) = existing_member else {
+			error!("Password not given when there is no existing member");
+			return Err(Status::Unauthorized);
+		};
+		existing_member.password.clone()
+	};
+
+	let groups = serde_json::from_str(&member.groups);
+	let Ok(groups) = groups else {
+		error!("Failed to deserialize groups: {}", member.groups);
+		return Err(Status::BadRequest);
+	};
+	let groups: Vec<String> = groups;
+	let groups = groups
+		.into_iter()
+		.map(|x| match x.as_str() {
+			"Member" => MemberGroup::Member,
+			"New Member" => MemberGroup::NewMember,
+			"Pit Crew" => MemberGroup::PitCrew,
+			"Lead" => MemberGroup::Lead,
+			"President" => MemberGroup::President,
+			"Coach" => MemberGroup::Coach,
+			"Mentor" => MemberGroup::Mentor,
+			_ => MemberGroup::Member,
+		})
+		.collect();
+
 	let new_member = Member {
 		id: member.id.clone(),
 		name: member.name.clone(),
@@ -140,8 +179,8 @@ pub struct MemberForm {
 	id: String,
 	name: String,
 	kind: MemberKind,
-	groups: Vec<MemberGroup>,
-	password: String,
+	groups: String,
+	password: Option<String>,
 }
 
 #[rocket::get("/member_list")]
@@ -168,6 +207,13 @@ pub async fn member_list(
 		member_list.push_str(&render_member_entry(member));
 	}
 	let page = page.replace("{{members}}", &member_list);
+
+	let new_button = format!(
+		"<a href=\"/create_member\">{}</a>",
+		include_str!("components/new.min.html")
+	);
+
+	let page = page.replace("{{add-member}}", &new_button);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
@@ -200,4 +246,107 @@ fn render_member_entry(member: &Member) -> String {
 	let element = element.replace("{{groups}}", &groups);
 
 	element
+}
+
+#[rocket::get("/create_member?<id>")]
+pub async fn create_member_page(
+	id: Option<&str>,
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Create member page");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.id else {
+		return Ok(redirect);
+	};
+
+	let Some(requesting_member_id) = ({
+		let lock = state.session_manager.lock().await;
+		lock.get(session_id).map(|x| x.member.clone())
+	}) else {
+		error!("Unknown session ID {}", session_id);
+		return Ok(redirect);
+	};
+
+	let Some(requesting_member) = ({
+		let lock = state.db.lock().await;
+		lock.get_member(&requesting_member_id)
+	}) else {
+		error!("Unknown requesting member ID {}", requesting_member_id);
+		return Ok(redirect);
+	};
+
+	if requesting_member.kind.get_privilege() != Privilege::Elevated {
+		error!("Invalid permissions");
+		return Ok(redirect);
+	}
+
+	let lock = state.db.lock().await;
+	let member = if let Some(id) = id {
+		// We are editing an existing member
+		lock.get_member(id).ok_or_else(|| {
+			error!("Member does not exist: {}", id);
+			Status::InternalServerError
+		})?
+	} else {
+		// We are making a new member
+		Member {
+			id: String::new(),
+			name: String::new(),
+			kind: MemberKind::Standard,
+			groups: HashSet::new(),
+			password: String::new(),
+			password_salt: None,
+		}
+	};
+
+	let page = include_str!("pages/create_member.html");
+	let page = page.replace("{{id}}", &member.id);
+	let page = page.replace("{{name}}", &member.name);
+
+	// Create dropdown options
+	let page = page.replace(
+		"{{kind-options}}",
+		&MemberKind::create_options(Some(&member.kind)),
+	);
+
+	// Generate group checkboxes
+	let mut groups_string = String::new();
+	let mut available_groups = Vec::new();
+	for group in MemberGroup::iter() {
+		let checked = member.groups.contains(&group);
+		available_groups.push((
+			group.to_dropdown(),
+			format!(
+				"<div class=\"group-label\">{}</div>",
+				group.to_plural_string().to_string()
+			),
+			checked,
+		));
+	}
+
+	// Create password field only if the member doesn't already exist
+	let password_field = if id.is_none() {
+		"<input type=password name=password id=password-field class=create-member-field placeholder=\"Enter member password...\" autocomplete=new-password />"
+	} else {
+		""
+	};
+	let page = page.replace("{{password}}", password_field);
+
+	for (i, (group, group_pretty, is_checked)) in available_groups.into_iter().enumerate() {
+		let label = format!("<label for=\"{group}\">{group_pretty}</label>");
+		let checked_string = if is_checked { " checked" } else { "" };
+		let checkbox = format!("<input type=\"checkbox\" name=\"{group}\" id=\"group-checkbox-{i}\" {checked_string} />");
+
+		let group = format!("<div class=\"cont group-checkbox\">{label}{checkbox}</div>");
+
+		groups_string.push_str(&group);
+	}
+	let page = page.replace("{{groups}}", &groups_string);
+
+	let page = create_page("Create Member", &page);
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
 }

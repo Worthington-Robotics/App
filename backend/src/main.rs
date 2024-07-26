@@ -59,6 +59,7 @@ fn rocket() -> _ {
 				routes::members::get_member,
 				routes::members::create_member,
 				routes::members::member_list,
+				routes::members::create_member_page,
 				routes::assets::favicon,
 				routes::assets::main_css,
 				routes::assets::logo,

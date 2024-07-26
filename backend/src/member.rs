@@ -2,8 +2,9 @@ use std::{collections::HashSet, fmt::Display};
 
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
-use crate::auth::Privilege;
+use crate::{auth::Privilege, util::ToDropdown};
 
 /// A member stored in the database and code
 #[derive(Serialize, Deserialize, Clone)]
@@ -24,7 +25,7 @@ pub struct Member {
 }
 
 /// What kind of a member a member is
-#[derive(Serialize, Deserialize, Clone, Copy, FromFormField, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Copy, FromFormField, PartialEq, Eq, EnumIter)]
 #[serde(rename_all = "snake_case")]
 pub enum MemberKind {
 	Standard,
@@ -54,8 +55,29 @@ impl Display for MemberKind {
 	}
 }
 
+impl ToDropdown for MemberKind {
+	fn to_dropdown(&self) -> &'static str {
+		match self {
+			Self::Standard => "Standard",
+			Self::Admin => "Admin",
+		}
+	}
+}
+
 /// Different member groups
-#[derive(Serialize, Deserialize, Clone, Copy, FromFormField, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+	Serialize,
+	Deserialize,
+	Clone,
+	Copy,
+	FromFormField,
+	PartialEq,
+	Eq,
+	Hash,
+	PartialOrd,
+	Ord,
+	EnumIter,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum MemberGroup {
 	Member,
@@ -95,6 +117,20 @@ impl MemberGroup {
 			Self::President => "Presidents",
 			Self::Coach => "Coaches",
 			Self::Mentor => "Mentors",
+		}
+	}
+}
+
+impl ToDropdown for MemberGroup {
+	fn to_dropdown(&self) -> &'static str {
+		match self {
+			Self::Member => "Member",
+			Self::NewMember => "NewMember",
+			Self::PitCrew => "PitCrew",
+			Self::Lead => "Lead",
+			Self::President => "President",
+			Self::Coach => "Coach",
+			Self::Mentor => "Mentor",
 		}
 	}
 }

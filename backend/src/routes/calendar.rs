@@ -157,8 +157,8 @@ pub async fn create_event(
 	let event = if let Some(id) = id {
 		// We are editing an existing event
 		lock.get_event(id).ok_or_else(|| {
-			error!("Event does not exist {}", id);
-			Status::Unauthorized
+			error!("Event does not exist: {}", id);
+			Status::InternalServerError
 		})?
 	} else {
 		// We are making a new event
