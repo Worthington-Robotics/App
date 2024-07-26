@@ -1,4 +1,4 @@
-{{worbots-header}}
+{{worbots-header}}{{error}}
 <h2>Create/Edit Member</h2>
 <form id="member-form" class="cont make-col">
 	<input
@@ -63,7 +63,11 @@
 			method: "POST",
 			body: body,
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-		}).then((_) => {
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to create member: " + response.statusText);
+				return;
+			}
 			window.location.href = "/member_list";
 		});
 	}

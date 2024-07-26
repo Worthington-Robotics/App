@@ -1,0 +1,30 @@
+<div id="error-cont" class="cont">
+	<div id="error" class="cont round" style="display: none"></div>
+</div>
+<style>
+	#error-cont {
+		width: 100vw;
+		position: fixed;
+		left: 0px;
+		top: 1.3rem;
+	}
+
+	#error {
+		width: 60%;
+		background-color: var(--wbred);
+		padding: 2rem;
+	}
+</style>
+<script>
+	function setError(error) {
+		let text = "Error: " + error;
+		console.error(text);
+		let containerElement = document.getElementById("error-inner-container");
+		let errorElement = document.getElementById("error");
+		errorElement.style.display = "flex";
+		errorElement.innerHTML = text;
+		setTimeout(() => {
+			errorElement.style.display = "none";
+		}, 3000);
+	}
+</script>

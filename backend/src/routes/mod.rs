@@ -152,6 +152,7 @@ pub fn create_page(title: &str, body: &str) -> String {
 		"{{worbots-header}}",
 		include_str!("components/worbots-header.min.html"),
 	);
+	let out = out.replace("{{error}}", include_str!("components/error.min.html"));
 
 	out
 }
