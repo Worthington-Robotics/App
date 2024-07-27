@@ -25,13 +25,26 @@ fn scan_dir(dir: impl AsRef<Path>) {
 				continue;
 			}
 			if let Some(extension) = path.extension() {
-				match extension.to_string_lossy().as_ref() {
+				let extension = extension.to_string_lossy();
+				match extension.as_ref() {
 					"html" | "css" => {
-						let text = std::fs::read_to_string(&path).unwrap();
+						let mut text = std::fs::read_to_string(&path).unwrap();
+						// We have to wrap the css in style tags to trick the formatter into actually minifying it
+						if extension.as_ref() == "css" {
+							text = format!("<style>{text}</style>");
+						}
+
 						let mut cfg = Cfg::new();
 						cfg.minify_css = true;
 						cfg.minify_js = true;
-						let out = minify_html::minify(text.as_bytes(), &cfg);
+						let mut out =
+							String::from_utf8(minify_html::minify(text.as_bytes(), &cfg)).unwrap();
+
+						if extension.as_ref() == "css" {
+							out = out.replace("<style>", "");
+							out = out.replace("</style>", "");
+						}
+
 						let new_file_name = format_min_file_name(&path);
 						std::fs::write(dir.as_ref().join(new_file_name), out).unwrap();
 					}

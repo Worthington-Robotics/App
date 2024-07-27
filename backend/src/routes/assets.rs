@@ -13,6 +13,11 @@ pub fn main_css() -> RawCss<&'static str> {
 	RawCss(include_str!("../assets/main.min.css"))
 }
 
+#[rocket::get("/assets/static.css")]
+pub fn static_css() -> CacheFor<RawCss<&'static str>> {
+	CacheFor(RawCss(include_str!("../assets/static.min.css")), ONE_DAY)
+}
+
 #[rocket::get("/assets/logo-gears.svg")]
 pub fn logo() -> CacheFor<Svg> {
 	CacheFor(Svg(include_str!("../assets/logo-gears.svg")), ONE_YEAR)
@@ -82,3 +87,4 @@ impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for CacheFor<R> {
 
 const ONE_YEAR: usize = 31536000;
 const ONE_WEEK: usize = 604800;
+const ONE_DAY: usize = 86400;

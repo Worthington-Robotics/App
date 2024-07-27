@@ -69,6 +69,7 @@ fn rocket() -> _ {
 				routes::members::delete_member,
 				routes::assets::favicon,
 				routes::assets::main_css,
+				routes::assets::static_css,
 				routes::assets::logo,
 				routes::assets::rockwell,
 				routes::assets::icon_home,

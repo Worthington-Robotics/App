@@ -1,33 +1,7 @@
-* {
-	font-family: "Rockwell Regular";
-
-	/* Colors */
-	--fg: #f5f5f5;
-	--fg2: #cecece;
-	--fg3: #979797;
-	--bg: #141414;
-	--bg2: #1c1c1c;
-	--bg3: #2e2e2e;
-	--wbred: #d80001;
-	--wbblue: #2134d9;
-
-	--scale: 2.8;
-}
-
 :root {
 	background-color: var(--bg);
 	color: var(--fg);
 	font-size: calc(1.4vw * var(--scale));
-}
-
-@media only screen and (min-width: 768px) {
-	* {
-		--scale: 1;
-	}
-
-	.make-col {
-		flex-direction: row;
-	}
 }
 
 button,
@@ -36,53 +10,26 @@ select {
 	padding: 0.5rem;
 }
 
-button,
-input[type="submit"] {
-	color: var(--fg);
-	background-color: var(--wbblue);
-}
-
 input[type="checkbox"] {
 	padding: 2rem;
 }
 
 h1 {
-	text-align: center;
 	font-size: calc(4vw * var(--scale));
 }
 
 h2 {
-	text-align: center;
 	font-size: calc(3vw * var(--scale));
 }
 
 h3 {
-	text-align: center;
 	font-size: calc(2vw * var(--scale));
 }
 
-@font-face {
-	font-family: Rockwell Regular;
-	src: url(/assets/rockwell_regular.otf);
-}
-
-.cont {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 1.1rem;
-}
-
-.make-col {
-	flex-direction: column;
-}
-
-.round,
-button,
-input {
-	border-style: solid;
-	border-width: 0px;
-	border-radius: 5px;
+h1,
+h2,
+h3 {
+	text-align: center;
 }
 
 .icon-button {
@@ -97,21 +44,4 @@ input {
 	width: 0.45rem;
 	background-color: var(--bg3);
 	border-radius: 50%;
-}
-
-a.nolink:link {
-	color: var(--fg);
-	text-decoration: none;
-}
-a.nolink:visited {
-	color: var(--fg);
-	text-decoration: none;
-}
-a.nolink:hover {
-	color: var(--fg);
-	text-decoration: none;
-}
-a.nolink:active {
-	color: var(--fg);
-	text-decoration: none;
 }
