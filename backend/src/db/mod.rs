@@ -1,4 +1,4 @@
-use crate::{announcements::Announcement, events::Event, member::Member};
+use crate::{announcements::Announcement, attendance::AttendanceEntry, events::Event, member::Member};
 
 /// Simple JSON database
 pub mod json;
@@ -36,4 +36,16 @@ pub trait Database {
 
 	/// Get all announcements
 	fn get_announcements(&self) -> impl Iterator<Item = &Announcement>;
+
+	/// Get all attendance records for a member
+	fn get_attendance(&self, member: &str) -> Vec<AttendanceEntry>;
+
+	/// Get the current attendance record for a member
+	fn get_current_attendance(&self, member: &str) -> Option<AttendanceEntry>;
+
+	/// Record attendance for a member
+	fn record_attendance(&mut self, member: &str, event: &str);
+
+	/// Finish attending an event
+	fn finish_attendance(&mut self, member: &str);
 }

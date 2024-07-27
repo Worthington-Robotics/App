@@ -6,9 +6,12 @@ use std::{
 };
 
 use anyhow::Context;
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-use crate::{announcements::Announcement, events::Event, member::Member};
+use crate::{
+	announcements::Announcement, attendance::AttendanceEntry, events::Event, member::Member,
+};
 
 use super::Database;
 
@@ -71,6 +74,44 @@ impl Database for JSONDatabase {
 	fn get_announcements(&self) -> impl Iterator<Item = &Announcement> {
 		self.contents.announcements.values()
 	}
+
+	fn get_attendance(&self, member: &str) -> Vec<AttendanceEntry> {
+		self.contents
+			.attendance
+			.get(member)
+			.cloned()
+			.unwrap_or_default()
+	}
+
+	fn get_current_attendance(&self, member: &str) -> Option<AttendanceEntry> {
+		self.contents
+			.attendance
+			.get(member)?
+			.iter()
+			.find(|x| x.end_time.is_none())
+			.cloned()
+	}
+
+	fn record_attendance(&mut self, member: &str, event: &str) {
+		self.contents
+			.attendance
+			.entry(member.to_string())
+			.or_default()
+			.push(AttendanceEntry {
+				start_time: Utc::now(),
+				end_time: None,
+				event: event.to_string(),
+			});
+	}
+
+	fn finish_attendance(&mut self, member: &str) {
+		let Some(entries) = self.contents.attendance.get_mut(member) else {
+			return;
+		};
+		if let Some(entry) = entries.iter_mut().find(|x| x.end_time.is_none()) {
+			entry.end_time = Some(Utc::now());
+		}
+	}
 }
 
 impl JSONDatabase {
@@ -99,4 +140,6 @@ struct DatabaseContents {
 	events: HashMap<String, Event>,
 	#[serde(default)]
 	announcements: HashMap<String, Announcement>,
+	#[serde(default)]
+	attendance: HashMap<String, Vec<AttendanceEntry>>,
 }

@@ -13,6 +13,7 @@ use rocket::{catchers, routes, tokio::sync::Mutex};
 use routes::Ratelimit;
 
 mod announcements;
+mod attendance;
 mod auth;
 mod db;
 mod events;
