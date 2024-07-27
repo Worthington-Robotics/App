@@ -3,7 +3,11 @@
 <form id="event-form" class="cont make-col">
 	<input type="text" name="name" id="name-field" class="create-event-field" placeholder="Enter event name..."
 		value="{{name}}" />
+	<label for="date">Event Date</label>
 	<input type="datetime-local" name="date" id="date-field" placeholder="Enter event date..." value="{{date}}" />
+	<label for="end-date">Event End Date (Optional)</label>
+	<input type="datetime-local" name="end-date" id="end-date-field" placeholder="Enter event end date..."
+		value="{{end-date}}" />
 	<label for="kind">Event Kind</label>
 	<select name="kind" id="kind-field" class="create-event-field">
 		{{kind-options}}
@@ -29,6 +33,7 @@
 		const id = "{{id}}";
 		const name = document.getElementById("name-field").value;
 		const date = document.getElementById("date-field").value;
+		const end_date = document.getElementById("end-date-field").value;
 		const kind = document.getElementById("kind-field").value;
 		const urgency = document.getElementById("urgency-field").value;
 		const visibility = document.getElementById("visibility-field").value;
@@ -48,7 +53,7 @@
 
 		fetch("/api/create_event", {
 			method: "POST",
-			body: `id=${id}&name=${name}&date=${date}&kind=${kind}&urgency=${urgency}&visibility=${visibility}&invites=${invitesString}`,
+			body: `id=${id}&name=${name}&date=${date}&end_date=${end_date}&kind=${kind}&urgency=${urgency}&visibility=${visibility}&invites=${invitesString}`,
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
 		}).then((response) => {
 			if (response.status != 200) {

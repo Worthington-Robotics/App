@@ -1,16 +1,23 @@
-{{worbots-header}}
+{{worbots-header}}{{error}}
 <div class="login-info cont">
 	<h3>Logged in as {{name}}</h3>
 	<button id="logout-button">Logout</button>
 </div>
-{{admin_panel}}
+{{admin-panel}}
+<br />
+<br />
+{{attendance-panel}}
 <script>
 	function onLogout(event) {
 		event.preventDefault();
 		fetch("/api/logout", {
 			method: "POST",
-		}).then(() => {
-			window.location.href = "/login";
+		}).then((resp) => {
+			if (resp.status == 200) {
+				window.location.href = "/login";
+			} else {
+				setError(resp.statusText);
+			}
 		});
 	}
 
@@ -19,6 +26,7 @@
 <style>
 	.login-info {
 		padding: 1.5rem;
+		margin-bottom: -0.8rem;
 	}
 
 	#logout-button {

@@ -163,13 +163,15 @@ pub async fn create_event(
 	} else {
 		// We are making a new event
 		let id = generate_id();
+		let date = Utc::now()
+			.with_time(NaiveTime::from_hms_opt(12, 0, 0).unwrap())
+			.unwrap()
+			.to_rfc2822();
 		Event {
 			id,
 			name: String::new(),
-			date: Utc::now()
-				.with_time(NaiveTime::from_hms_opt(12, 0, 0).unwrap())
-				.unwrap()
-				.to_rfc2822(),
+			date,
+			end_date: None,
 			kind: Default::default(),
 			urgency: Default::default(),
 			visibility: Default::default(),
@@ -186,7 +188,18 @@ pub async fn create_event(
 		error!("Failed to parse date: {}", e);
 		Default::default()
 	});
-	let page = page.replace("{{date}}", &date_to_js(date));
+	let date_str = date_to_js(date);
+	let page = page.replace("{{date}}", &date_str);
+	let end_date = if let Some(end_date) = &event.end_date {
+		date_to_js(DateTime::parse_from_rfc2822(end_date).unwrap_or_else(|e| {
+			error!("Failed to parse date: {}", e);
+			Default::default()
+		}))
+	} else {
+		// Use the same end date as start date so that they can easily leave it out
+		date_str
+	};
+	let page = page.replace("{{end-date}}", &end_date);
 
 	// Create dropdown options
 	let page = page.replace(
@@ -278,6 +291,25 @@ pub async fn create_event_api(
 		}
 	};
 
+	let end_date = if event.end_date.is_empty() {
+		None
+	} else {
+		let end_date = match date_from_js(event.end_date.clone()) {
+			Ok(date) => date,
+			Err(e) => {
+				error!("Failed to parse date {}: {}", event.date, e);
+				return Err(Status::InternalServerError);
+			}
+		};
+
+		// Setting the end date to the same as the start time means that it should be removed
+		if date == end_date {
+			None
+		} else {
+			Some(date.to_rfc2822())
+		}
+	};
+
 	let Ok(invites) = serde_json::from_str::<Vec<String>>(&event.invites) else {
 		error!("Failed to parse invites");
 		return Err(Status::InternalServerError);
@@ -304,6 +336,7 @@ pub async fn create_event_api(
 		id: event.id,
 		name: event.name,
 		date: date.to_rfc2822(),
+		end_date,
 		kind: event.kind,
 		urgency: event.urgency,
 		visibility: event.visibility,
@@ -324,6 +357,7 @@ pub struct EventForm {
 	id: String,
 	name: String,
 	date: String,
+	end_date: String,
 	kind: EventKind,
 	urgency: EventUrgency,
 	visibility: EventVisibility,

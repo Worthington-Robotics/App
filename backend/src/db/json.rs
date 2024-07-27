@@ -88,29 +88,32 @@ impl Database for JSONDatabase {
 			.attendance
 			.get(member)?
 			.iter()
-			.find(|x| x.end_time.is_none())
+			.find(|x| !x.is_complete())
 			.cloned()
 	}
 
-	fn record_attendance(&mut self, member: &str, event: &str) {
+	fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
 		self.contents
 			.attendance
 			.entry(member.to_string())
 			.or_default()
 			.push(AttendanceEntry {
-				start_time: Utc::now(),
+				start_time: Utc::now().to_rfc2822(),
 				end_time: None,
 				event: event.to_string(),
 			});
+		self.write()
 	}
 
-	fn finish_attendance(&mut self, member: &str) {
+	fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
 		let Some(entries) = self.contents.attendance.get_mut(member) else {
-			return;
+			return Ok(());
 		};
-		if let Some(entry) = entries.iter_mut().find(|x| x.end_time.is_none()) {
-			entry.end_time = Some(Utc::now());
+		if let Some(entry) = entries.iter_mut().find(|x| !x.is_complete()) {
+			entry.end_time = Some(Utc::now().to_rfc2822());
 		}
+
+		self.write()
 	}
 }
 

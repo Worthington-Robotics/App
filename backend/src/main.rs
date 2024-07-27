@@ -1,6 +1,7 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
 use argon2::Argon2;
+use attendance::AttendanceFairing;
 use auth::SessionManager;
 use base64::{
 	engine::{GeneralPurpose, GeneralPurposeConfig},
@@ -47,10 +48,12 @@ fn rocket() -> _ {
 	));
 
 	let state = AppState {
-		db: Mutex::new(db),
+		db: Arc::new(Mutex::new(db)),
 		session_manager: Mutex::new(session_manager),
 		password_hash,
 	};
+
+	let db_clone = state.db.clone();
 
 	rocket::build()
 		.manage(state)
@@ -79,15 +82,18 @@ fn rocket() -> _ {
 				routes::calendar::create_event,
 				routes::calendar::create_event_api,
 				routes::inbox::inbox,
+				routes::attendance::attend,
+				routes::attendance::unattend,
 			],
 		)
 		.register("/", catchers![routes::not_found, routes::internal_error])
 		.attach(Ratelimit::new())
+		.attach(AttendanceFairing::new(db_clone))
 }
 
 /// Application state for Rocket
 pub struct AppState {
-	pub db: Mutex<JSONDatabase>,
+	pub db: Arc<Mutex<JSONDatabase>>,
 	pub session_manager: Mutex<SessionManager>,
 	pub password_hash: Option<Argon2<'static>>,
 }
@@ -97,7 +103,7 @@ pub type State = rocket::State<AppState>;
 /// Generate the ID for something like an event
 fn generate_id() -> String {
 	let mut rng = StdRng::from_entropy();
-	let base64 = GeneralPurpose::new(&base64::alphabet::STANDARD, GeneralPurposeConfig::new());
+	let base64 = GeneralPurpose::new(&base64::alphabet::URL_SAFE, GeneralPurposeConfig::new());
 	const LENGTH: usize = 32;
 	let mut out = [0; LENGTH];
 	for i in 0..LENGTH {

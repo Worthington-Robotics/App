@@ -44,8 +44,8 @@ pub trait Database {
 	fn get_current_attendance(&self, member: &str) -> Option<AttendanceEntry>;
 
 	/// Record attendance for a member
-	fn record_attendance(&mut self, member: &str, event: &str);
+	fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()>;
 
 	/// Finish attending an event
-	fn finish_attendance(&mut self, member: &str);
+	fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()>;
 }

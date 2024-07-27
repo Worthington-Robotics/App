@@ -1,5 +1,7 @@
 use std::{collections::HashSet, fmt::Display};
 
+use anyhow::Context;
+use chrono::{DateTime, Duration, FixedOffset, Utc};
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
@@ -17,6 +19,9 @@ pub struct Event {
 	pub name: String,
 	/// The date for this event
 	pub date: String,
+	/// The end date for this event
+	#[serde(default)]
+	pub end_date: Option<String>,
 	/// The kind for this event
 	#[serde(default)]
 	pub kind: EventKind,
@@ -38,6 +43,18 @@ impl Event {
 	/// Check if this event invites a user
 	pub fn invites_member(&self, member: &Member) -> bool {
 		self.invites.iter().any(|x| x.mentions_member(member))
+	}
+
+	/// Get the end date of this event, or it's heuristic end date if it has none
+	pub fn get_end_date(&self) -> anyhow::Result<DateTime<FixedOffset>> {
+		if let Some(end_date) = &self.end_date {
+			DateTime::parse_from_rfc2822(end_date).context("Failed to parse date")
+		} else {
+			Ok(
+				DateTime::parse_from_rfc2822(&self.date).context("Failed to parse date")?
+					+ Duration::hours(EXPIRED_EVENT_THRESHOLD),
+			)
+		}
 	}
 }
 
@@ -159,4 +176,32 @@ pub fn get_relevant_events<'a>(
 	});
 
 	events.collect()
+}
+
+/// Threshold for how long ago events without end dates can be before they are not considered upcoming, in hours
+pub const EXPIRED_EVENT_THRESHOLD: i64 = 3;
+
+/// Get all of the events that are upcoming
+pub fn get_upcoming_events<'a>(events: Vec<&'a Event>) -> Vec<&'a Event> {
+	if events.is_empty() {
+		return events;
+	}
+
+	let now = Utc::now();
+	events
+		.into_iter()
+		.filter(|event| {
+			let Ok(end_date) = event.get_end_date() else {
+				return true;
+			};
+
+			let end_date = end_date.with_timezone(&Utc);
+			let diff = now.timestamp() - end_date.timestamp();
+			if diff > EXPIRED_EVENT_THRESHOLD * 3600 {
+				return false;
+			}
+
+			true
+		})
+		.collect()
 }

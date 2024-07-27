@@ -1,0 +1,65 @@
+<div id="attendance-panel" class="cont make-col">
+	<h3>Attendance</h3>
+	<div id="attendance-items" class="cont make-col">
+		{{items}}
+	</div>
+</div>
+<style>
+	#attendance-panel {
+		row-gap: 0.2rem;
+	}
+
+	.attend-item {
+		padding: 1.4rem;
+		background-color: var(--bg2);
+		width: 90%;
+		box-sizing: border-box;
+	}
+</style>
+<script>
+	for (let elem of document.getElementsByClassName("attend-button")) {
+		elem.addEventListener("click", clickItem);
+	}
+
+	function clickItem(event) {
+		let target = event.target.parentElement;
+		let button = event.target;
+
+		if (target.id == "attending") {
+			fetch(`/api/unattend`, {
+				method: "POST",
+			}).then((resp) => {
+				if (resp.status == 200) {
+					for (let item of document.getElementsByClassName("attend-item")) {
+						item.style.display = "flex";
+					}
+					if (button != null) {
+						button.innerText = "Attend";
+					}
+					target.id = null;
+				} else {
+					setError(resp.statusText);
+				}
+			});
+
+		} else {
+			fetch(`/api/attend/${target.dataset.event}`, {
+				method: "POST",
+			}).then((resp) => {
+				if (resp.status == 200) {
+					for (let item of document.getElementsByClassName("attend-item")) {
+						item.style.display = "none";
+					}
+					target.style.display = "flex";
+					console.log(target.style.display);
+					if (button != null) {
+						button.innerText = "Leave";
+					}
+					target.id = "attending";
+				} else {
+					setError(resp.statusText);
+				}
+			});
+		}
+	}
+</script>

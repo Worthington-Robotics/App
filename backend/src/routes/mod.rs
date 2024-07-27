@@ -1,4 +1,5 @@
 pub mod assets;
+pub mod attendance;
 pub mod calendar;
 pub mod inbox;
 pub mod login;
@@ -6,9 +7,11 @@ pub mod members;
 
 use std::collections::HashMap;
 use std::net::IpAddr;
+use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
+use attendance::create_attendance_panel;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::ContentType;
 use rocket::response::{content::RawHtml, Redirect};
@@ -60,7 +63,9 @@ pub async fn index(
 	} else {
 		""
 	};
-	let page = page.replace("{{admin_panel}}", admin_panel);
+	let page = page.replace("{{admin-panel}}", admin_panel);
+	let attendance_panel = create_attendance_panel(&member, state.db.lock().await.deref());
+	let page = page.replace("{{attendance-panel}}", &attendance_panel);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
