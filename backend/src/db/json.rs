@@ -43,6 +43,11 @@ impl Database for JSONDatabase {
 		self.write()
 	}
 
+	fn delete_member(&mut self, member: &str) -> anyhow::Result<()> {
+		self.contents.members.remove(member);
+		self.write()
+	}
+
 	fn get_members(&self) -> impl Iterator<Item = &Member> {
 		self.contents.members.values()
 	}

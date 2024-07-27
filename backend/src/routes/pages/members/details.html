@@ -1,6 +1,23 @@
-{{worbots-header}}
+{{worbots-header}}{{error}}
 <div class="cont make-col" id="member-details">
 	<h1>{{name}}</h1>
-	<a href="/member_list"><button>Back</button></a>
+	<div class="cont">
+		<a href="/member_list"><button>Back</button></a>
+		<a href="/create_member?id={{id}}">{{edit}}</a>
+		<div id="delete-button">{{delete}}</div>
+	</div>
 </div>
+<script>
+	document.getElementById("delete-button").addEventListener("click", () => {
+		fetch("/api/delete_member/{{id}}", {
+			method: "DELETE",
+		}).then((resp) => {
+			if (resp.status == 200) {
+				window.location.href = "/member_list";
+			} else {
+				setError(resp.statusText);
+			}
+		});
+	});
+</script>
 {{footer}}

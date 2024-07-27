@@ -158,7 +158,7 @@ impl<'r> SessionID<'r> {
 }
 
 pub fn create_page(title: &str, body: &str) -> String {
-	static HEAD: &str = include_str!("pages/head.html");
+	static HEAD: &str = include_str!("components/util/head.min.html");
 	let head = HEAD.replace("{{title}}", &format!("{title} - WorBots"));
 	let out = head.replace("{{body}}", body);
 	let out = out.replace(
@@ -253,7 +253,7 @@ impl Fairing for Ratelimit {
 			}
 		} else {
 			response.set_header(ContentType::Text);
-			response.set_status(Status::BadRequest);
+			response.set_status(Status::Forbidden);
 			response.set_streamed_body(std::io::Cursor::new("IP address is missing in request"));
 			error!("Client did not have an IP address");
 		}

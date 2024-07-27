@@ -10,7 +10,7 @@ use super::{create_page, SessionID};
 
 #[rocket::get("/login")]
 pub async fn login() -> Result<RawHtml<String>, Status> {
-	let page = create_page("Login", include_str!("pages/login.html"));
+	let page = create_page("Login", include_str!("pages/login.min.html"));
 	Ok(RawHtml(page))
 }
 

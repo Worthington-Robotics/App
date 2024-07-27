@@ -122,16 +122,19 @@ pub async fn create_member(
 		(None, None)
 	};
 
-	// Don't replace the password for an existing member if it wasn't specified in the form
-	let hashed_password = if let Some(hashed_password) = hashed_password {
-		hashed_password
+	// Don't replace the password or salt for an existing member if it wasn't specified in the form
+	let (hashed_password, salt) = if let Some(hashed_password) = hashed_password {
+		(hashed_password, salt.map(|x| x.to_string()))
 	} else {
 		let existing_member = state.db.lock().await.get_member(&member.id);
 		let Some(existing_member) = existing_member else {
 			error!("Password not given when there is no existing member");
 			return Err(Status::Unauthorized);
 		};
-		existing_member.password.clone()
+		(
+			existing_member.password.clone(),
+			existing_member.password_salt.clone(),
+		)
 	};
 
 	let groups = serde_json::from_str(&member.groups);
@@ -393,11 +396,38 @@ pub async fn member_details(
 		Status::InternalServerError
 	})?;
 
-	let page = include_str!("pages/members/details.html");
+	let page = include_str!("pages/members/details.min.html");
 	let page = page.replace("{{id}}", &member.id);
 	let page = page.replace("{{name}}", &member.name);
+	let page = page.replace("{{edit}}", include_str!("components/ui/edit.min.html"));
+	let page = page.replace("{{delete}}", include_str!("components/ui/delete.min.html"));
 
 	let page = create_page("Member Details", &page);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+#[rocket::delete("/api/delete_member/<id>")]
+pub async fn delete_member(
+	state: &State,
+	session_id: SessionID<'_>,
+	id: &str,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Deleting member");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	let mut lock = state.db.lock().await;
+	if lock.get_member(id).is_none() {
+		error!("Attempted to delete non-existent member {id}");
+		return Err(Status::BadRequest);
+	}
+
+	if let Err(e) = lock.delete_member(id) {
+		error!("Failed to delete member {id} in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
 }

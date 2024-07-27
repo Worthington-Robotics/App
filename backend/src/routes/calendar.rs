@@ -109,7 +109,7 @@ fn render_event(event: &Event, db: &impl Database, member: &Member) -> String {
 	let event_component = event_component.replace("{{going}}", &total_rsvps.to_string());
 
 	let edit = if member.kind.get_privilege() == Privilege::Elevated {
-		include_str!("components/ui/edit.html")
+		include_str!("components/ui/edit.min.html")
 	} else {
 		""
 	};
@@ -180,7 +180,7 @@ pub async fn create_event(
 		}
 	};
 
-	let page = include_str!("pages/events/create_event.html");
+	let page = include_str!("pages/events/create_event.min.html");
 	let page = page.replace("{{id}}", &event.id);
 	let page = page.replace("{{name}}", &event.name);
 
