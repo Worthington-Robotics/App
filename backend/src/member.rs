@@ -1,5 +1,6 @@
 use std::{collections::HashSet, fmt::Display};
 
+use chrono::Utc;
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
@@ -22,6 +23,13 @@ pub struct Member {
 	pub password: String,
 	/// This member's password salt
 	pub password_salt: Option<String>,
+	/// The date when this member was created
+	#[serde(default = "default_creation_date")]
+	pub creation_date: String,
+}
+
+fn default_creation_date() -> String {
+	Utc::now().to_rfc2822()
 }
 
 /// What kind of a member a member is

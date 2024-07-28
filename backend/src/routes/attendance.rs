@@ -14,6 +14,9 @@ pub fn create_attendance_panel(member: &Member, db: &impl Database) -> String {
 	let events = db.get_events();
 	let events = get_relevant_events(member, events);
 	let events = get_attendable_events(events);
+	if events.is_empty() {
+		return "<h4>No events to attend</h4>".into();
+	}
 
 	let current_attendance = db.get_current_attendance(&member.id);
 

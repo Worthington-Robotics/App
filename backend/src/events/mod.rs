@@ -1,7 +1,7 @@
 use std::{collections::HashSet, fmt::Display};
 
 use anyhow::Context;
-use chrono::{DateTime, Duration, FixedOffset, Utc};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, Utc};
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
@@ -204,4 +204,28 @@ pub fn get_upcoming_events<'a>(events: Vec<&'a Event>) -> Vec<&'a Event> {
 			true
 		})
 		.collect()
+}
+
+/// Get the competition season of a date
+pub fn get_season(date: &DateTime<Utc>) -> u32 {
+	// Pre-season
+	if date.month() >= 9 {
+		date.year() as u32 + 1
+	} else {
+		date.year() as u32
+	}
+}
+
+/// Format minutes as hours, minutes
+pub fn format_minutes(minutes: u32) -> String {
+	let hours = minutes / 60;
+	let minutes = minutes % 60;
+
+	let hours = if hours > 0 {
+		format!("{hours} hours, ")
+	} else {
+		String::new()
+	};
+
+	format!("{hours}{minutes} minutes")
 }

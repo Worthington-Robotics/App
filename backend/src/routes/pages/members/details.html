@@ -6,6 +6,14 @@
 		<a href="/create_member?id={{id}}">{{edit}}</a>
 		<div id="delete-button">{{delete}}</div>
 	</div>
+	<div>
+		<h3>Attendance Stats</h3>
+		<h4>Season</h4>
+		{{season-ratio}} ({{season-percentage}}), Avg {{season-average}}
+		<br />
+		<h4>Total</h4>
+		{{total-ratio}} ({{total-percentage}}), Avg {{total-average}}
+	</div>
 </div>
 <script>
 	document.getElementById("delete-button").addEventListener("click", () => {

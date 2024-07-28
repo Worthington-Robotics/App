@@ -1,7 +1,9 @@
 use std::cmp::Reverse;
 use std::collections::HashSet;
+use std::ops::Deref;
 
 use argon2::PasswordHasher;
+use chrono::Utc;
 use itertools::Itertools;
 use password_hash::SaltString;
 use rand::{rngs::StdRng, SeedableRng};
@@ -12,6 +14,7 @@ use serde::Serialize;
 use strum::IntoEnumIterator;
 use tracing::{error, span, Level};
 
+use crate::attendance::get_attendance_stats;
 use crate::routes::OptionalSessionID;
 use crate::util::ToDropdown;
 use crate::{
@@ -157,6 +160,14 @@ pub async fn create_member(
 		})
 		.collect();
 
+	// Don't replace the creation date for existing members either
+	let creation_date = if let Some(existing_member) = state.db.lock().await.get_member(&member.id)
+	{
+		existing_member.creation_date
+	} else {
+		Utc::now().to_rfc2822()
+	};
+
 	let new_member = Member {
 		id: member.id.clone(),
 		name: member.name.clone(),
@@ -164,6 +175,7 @@ pub async fn create_member(
 		groups,
 		password: hashed_password,
 		password_salt: salt.map(|x| x.to_string()),
+		creation_date,
 	};
 
 	{
@@ -303,6 +315,7 @@ pub async fn create_member_page(
 			groups: HashSet::new(),
 			password: String::new(),
 			password_salt: None,
+			creation_date: Utc::now().to_rfc2822(),
 		}
 	};
 
@@ -401,6 +414,15 @@ pub async fn member_details(
 	let page = page.replace("{{name}}", &member.name);
 	let page = page.replace("{{edit}}", include_str!("components/ui/edit.min.html"));
 	let page = page.replace("{{delete}}", include_str!("components/ui/delete.min.html"));
+
+	// Attendance stats
+	let (season_attendance, total_attendance) = get_attendance_stats(&member, lock.deref());
+	let page = page.replace("{{season-ratio}}", &season_attendance.format_ratio());
+	let page = page.replace("{{season-percentage}}", &season_attendance.format_percent());
+	let page = page.replace("{{season-average}}", &season_attendance.format_average());
+	let page = page.replace("{{total-ratio}}", &total_attendance.format_ratio());
+	let page = page.replace("{{total-percentage}}", &total_attendance.format_percent());
+	let page = page.replace("{{total-average}}", &total_attendance.format_average());
 
 	let page = create_page("Member Details", &page);
 
