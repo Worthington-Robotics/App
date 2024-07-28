@@ -56,6 +56,21 @@ impl Event {
 			)
 		}
 	}
+
+	/// Check if this event is upcoming
+	pub fn is_upcoming(&self, now: &DateTime<Utc>) -> bool {
+		let Ok(end_date) = self.get_end_date() else {
+			return true;
+		};
+
+		let end_date = end_date.with_timezone(&Utc);
+		let diff = now.timestamp() - end_date.timestamp();
+		if diff > EXPIRED_EVENT_THRESHOLD * 3600 {
+			return false;
+		}
+
+		true
+	}
 }
 
 /// Different kinds of events
@@ -190,19 +205,7 @@ pub fn get_upcoming_events<'a>(events: Vec<&'a Event>) -> Vec<&'a Event> {
 	let now = Utc::now();
 	events
 		.into_iter()
-		.filter(|event| {
-			let Ok(end_date) = event.get_end_date() else {
-				return true;
-			};
-
-			let end_date = end_date.with_timezone(&Utc);
-			let diff = now.timestamp() - end_date.timestamp();
-			if diff > EXPIRED_EVENT_THRESHOLD * 3600 {
-				return false;
-			}
-
-			true
-		})
+		.filter(|event| event.is_upcoming(&now))
 		.collect()
 }
 

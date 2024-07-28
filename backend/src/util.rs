@@ -20,7 +20,7 @@ pub trait ToDropdown {
 					""
 				};
 				format!(
-					"<option value=\"{}\" {selected_str}>{x}</option>",
+					"<option value=\"{}\"{selected_str}>{x}</option>",
 					x.to_dropdown()
 				)
 			})

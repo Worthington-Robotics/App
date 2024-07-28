@@ -1,9 +1,29 @@
 {{worbots-header}}
 <h1>Events</h1>
 <div id="calendar" class="cont col">
+	<select name="filter" id="filter">
+		<option value="upcoming">Upcoming Events</option>
+		<option value="all">All Events</option>
+	</select>
 	<div id="events-cont" class="cont col">{{events}}</div>
 	{{add-event}}
 </div>
+<script>
+	function changeFilter(e) {
+		let elems = document.getElementsByClassName("not-upcoming");
+		if (e.target.value === "all") {
+			for (let elem of elems) {
+				elem.style.display = "flex";
+			}
+		} else {
+			for (let elem of elems) {
+				elem.style.display = "none";
+			}
+		}
+	}
+
+	document.getElementById("filter").addEventListener("change", changeFilter);
+</script>
 <style>
 	#calendar {
 		width: 100%;
@@ -22,12 +42,12 @@
 		box-sizing: border-box;
 	}
 
-	.event-date {
+	.ev-date {
 		font-size: calc(1.3vw * var(--scale));
 		color: var(--fg2);
 	}
 
-	.event-subtext {
+	.ev-subtext {
 		font-size: calc(1.2vw * var(--scale));
 		color: var(--fg3);
 	}

@@ -1,15 +1,15 @@
-<div class="cont round event">
-	<div class="cont event-header">
-		<div class="event-date">{{date}}</div>
-		<div class="event-name">{{name}}</div>
+<div class="cont round event{{upcoming-class}}" {{upcoming-props}}>
+	<div class="cont ev-header">
+		<div class="ev-date">{{date}}</div>
+		<div class="ev-name">{{name}}</div>
 	</div>
-	<div class="cont event-subtext">
-		<div class="event-kind">{{kind}}</div>
+	<div class="cont ev-subtext">
+		<div class="ev-kind">{{kind}}</div>
 		<div class="dot"></div>
-		<div class="event-invites">{{invites}} invited</div>
+		<div class="ev-invites">{{invites}} invited</div>
 		<div class="dot"></div>
-		<div class="event-going">{{going}} going</div>
-		<div class="event-edit">
+		<div class="ev-going">{{going}} going</div>
+		<div class="ev-edit">
 			<a href="/create_event?id={{id}}">{{edit}}</a>
 		</div>
 	</div>

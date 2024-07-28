@@ -62,8 +62,9 @@ pub async fn calendar(
 
 	let event_component = include_str!("components/event.min.html");
 	let mut events_content = String::with_capacity(relevant_events.len() * event_component.len());
+	let now = Utc::now();
 	for event in relevant_events {
-		events_content.push_str(&render_event(event, lock.deref(), &member));
+		events_content.push_str(&render_event(event, lock.deref(), &member, &now));
 	}
 
 	let page = include_str!("pages/events/calendar.min.html");
@@ -84,7 +85,7 @@ pub async fn calendar(
 }
 
 /// Renders an event component
-fn render_event(event: &Event, db: &impl Database, member: &Member) -> String {
+fn render_event(event: &Event, db: &impl Database, member: &Member, now: &DateTime<Utc>) -> String {
 	let event_component = include_str!("components/event.min.html");
 	let event_component = event_component.replace("{{id}}", &event.id);
 
@@ -114,6 +115,15 @@ fn render_event(event: &Event, db: &impl Database, member: &Member) -> String {
 		""
 	};
 	let event_component = event_component.replace("{{edit}}", edit);
+
+	// Add the not-upcoming class and display style to relevant events so they can be filtered out in the UI
+	let (upcoming_class, upcoming_props) = if event.is_upcoming(now) {
+		("", "")
+	} else {
+		(" not-upcoming", " style=\"display:none\"")
+	};
+	let event_component = event_component.replace("{{upcoming-class}}", upcoming_class);
+	let event_component = event_component.replace("{{upcoming-props}}", upcoming_props);
 
 	event_component
 }
