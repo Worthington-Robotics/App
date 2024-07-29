@@ -28,6 +28,17 @@ pub struct Member {
 	pub creation_date: String,
 }
 
+impl Member {
+	/// Check if this member has elevated permissions
+	pub fn is_elevated(&self) -> bool {
+		if self.id == "admin" {
+			true
+		} else {
+			self.kind.get_privilege() == Privilege::Elevated
+		}
+	}
+}
+
 fn default_creation_date() -> String {
 	Utc::now().to_rfc2822()
 }

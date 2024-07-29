@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::{
 	collections::HashMap,
 	fs::File,
@@ -20,7 +22,7 @@ pub struct JSONDatabase {
 }
 
 impl Database for JSONDatabase {
-	fn open() -> anyhow::Result<Self> {
+	async fn open() -> anyhow::Result<Self> {
 		let path = Self::get_path();
 		let contents = if path.exists() {
 			serde_json::from_reader(BufReader::new(

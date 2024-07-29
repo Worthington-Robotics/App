@@ -6,7 +6,6 @@ use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-use crate::auth::Privilege;
 use crate::member::{Member, MemberMention};
 use crate::util::ToDropdown;
 
@@ -177,7 +176,7 @@ pub fn get_relevant_events<'a>(
 	member: &Member,
 	events: impl Iterator<Item = &'a Event>,
 ) -> Vec<&'a Event> {
-	let is_elevated = member.kind.get_privilege() == Privilege::Elevated;
+	let is_elevated = member.is_elevated();
 	let events = events.filter(|event| {
 		// If the member is not an admin which can see every event, hide invite-only events that this member is not invited to
 		if !is_elevated

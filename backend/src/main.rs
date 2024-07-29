@@ -8,7 +8,8 @@ use base64::{
 	Engine,
 };
 use chrono::{DateTime, Offset, TimeZone};
-use db::{json::JSONDatabase, Database};
+use db::{Database, DatabaseImpl};
+use dotenv::dotenv;
 use rand::{rngs::StdRng, RngCore, SeedableRng};
 use rocket::{catchers, routes, tokio::sync::Mutex};
 use routes::Ratelimit;
@@ -24,19 +25,20 @@ mod routes;
 mod util;
 
 #[rocket::launch]
-fn rocket() -> _ {
+async fn rocket() -> _ {
 	println!("Starting server...");
 	let subscriber = tracing_subscriber::FmtSubscriber::new();
 	tracing::subscriber::set_global_default(subscriber)
 		.expect("Failed to set global tracing subscriber");
+
+	dotenv().expect("Failed to load environment variables");
 
 	let mut session_manager = SessionManager::new();
 
 	let session_id = session_manager.create("admin");
 	println!("Session ID: {session_id}");
 
-	let db = JSONDatabase::open().expect("Failed to open database");
-	db.debug();
+	let db = DatabaseImpl::open().await.expect("Failed to open database");
 
 	// Load password hash
 	let params = argon2::Params::new(15000, 2, 1, None).expect("Failed to build Argon2 parameters");
@@ -96,7 +98,7 @@ fn rocket() -> _ {
 
 /// Application state for Rocket
 pub struct AppState {
-	pub db: Arc<Mutex<JSONDatabase>>,
+	pub db: Arc<Mutex<DatabaseImpl>>,
 	pub session_manager: Mutex<SessionManager>,
 	pub password_hash: Option<Argon2<'static>>,
 }

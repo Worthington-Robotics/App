@@ -33,7 +33,7 @@ pub struct Announcement {
 impl Announcement {
 	/// Checks if a member can see this announcement
 	pub fn can_member_see(&self, member: &Member) -> bool {
-		member.kind.get_privilege() == Privilege::Elevated
+		member.is_elevated()
 			|| self.mentioned.iter().any(|x| x.mentions_member(&member))
 	}
 }

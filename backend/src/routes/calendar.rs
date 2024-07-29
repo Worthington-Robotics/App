@@ -53,7 +53,7 @@ pub async fn calendar(
 		return Ok(redirect);
 	};
 
-	let is_elevated = member.kind.get_privilege() == Privilege::Elevated;
+	let is_elevated = member.is_elevated();
 
 	let lock = state.db.lock().await;
 	let mut relevant_events = get_relevant_events(&member, lock.get_events());
@@ -109,7 +109,7 @@ fn render_event(event: &Event, db: &impl Database, member: &Member, now: &DateTi
 	let event_component = event_component.replace("{{invites}}", &total_invites.to_string());
 	let event_component = event_component.replace("{{going}}", &total_rsvps.to_string());
 
-	let edit = if member.kind.get_privilege() == Privilege::Elevated {
+	let edit = if member.is_elevated() {
 		include_str!("components/ui/edit.min.html")
 	} else {
 		""

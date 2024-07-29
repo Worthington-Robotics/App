@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::{
-	db::{json::JSONDatabase, Database},
+	db::{Database, DatabaseImpl},
 	events::{format_minutes, get_season, get_upcoming_events, Event},
 	member::Member,
 };
@@ -173,11 +173,11 @@ pub fn get_attendance_stats(
 
 /// Fairing for managing attendance
 pub struct AttendanceFairing {
-	db: Arc<Mutex<JSONDatabase>>,
+	db: Arc<Mutex<DatabaseImpl>>,
 }
 
 impl AttendanceFairing {
-	pub fn new(db: Arc<Mutex<JSONDatabase>>) -> Self {
+	pub fn new(db: Arc<Mutex<DatabaseImpl>>) -> Self {
 		Self { db }
 	}
 }

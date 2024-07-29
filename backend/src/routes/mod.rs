@@ -58,7 +58,7 @@ pub async fn index(
 
 	let page = create_page("WorBots 4145", include_str!("pages/index.min.html"));
 	let page = page.replace("{{name}}", &member.name);
-	let admin_panel = if member.kind.get_privilege() == Privilege::Elevated {
+	let admin_panel = if member.is_elevated() {
 		include_str!("components/admin_panel.min.html")
 	} else {
 		""
