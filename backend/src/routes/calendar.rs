@@ -67,7 +67,7 @@ pub async fn calendar(
 	let mut events_content = String::with_capacity(relevant_events.len() * event_component.len());
 	let now = Utc::now();
 	for event in relevant_events {
-		events_content.push_str(&render_event(event, lock.deref(), &member, &now).await);
+		events_content.push_str(&render_event(event, lock.deref(), &member, &now).await?);
 	}
 
 	let page = include_str!("pages/events/calendar.min.html");
@@ -93,7 +93,7 @@ async fn render_event(
 	db: &impl Database,
 	member: &Member,
 	now: &DateTime<Utc>,
-) -> String {
+) -> Result<String, Status> {
 	let event_component = include_str!("components/event.min.html");
 	let event_component = event_component.replace("{{id}}", &event.id);
 
@@ -106,7 +106,14 @@ async fn render_event(
 	let event_component = event_component.replace("{{date}}", &date);
 	let event_component = event_component.replace("{{name}}", &event.name);
 
-	let group_members = db.get_members().await.collect::<Vec<_>>();
+	let group_members = db
+		.get_members()
+		.await
+		.map_err(|e| {
+			error!("Failed to get members from database: {e}");
+			Status::InternalServerError
+		})?
+		.collect::<Vec<_>>();
 	let total_invites = event.invites.iter().fold(0, |acc, x| {
 		acc + match x {
 			MemberMention::Member(_) => 1,
@@ -134,7 +141,7 @@ async fn render_event(
 	let event_component = event_component.replace("{{upcoming-class}}", upcoming_class);
 	let event_component = event_component.replace("{{upcoming-props}}", upcoming_props);
 
-	event_component
+	Ok(event_component)
 }
 
 #[rocket::get("/create_event?<id>")]
@@ -266,7 +273,15 @@ pub async fn create_event(
 			checked,
 		));
 	}
-	for member in lock.get_members().await.sorted_by_key(|x| x.name.clone()) {
+	for member in lock
+		.get_members()
+		.await
+		.map_err(|e| {
+			error!("Failed to get members from database: {e}");
+			Status::InternalServerError
+		})?
+		.sorted_by_key(|x| x.name.clone())
+	{
 		let id = member.id.clone();
 		let name = lock
 			.get_member(&id)

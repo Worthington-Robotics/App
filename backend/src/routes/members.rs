@@ -248,6 +248,10 @@ pub async fn member_list(
 		.await
 		.get_members()
 		.await
+		.map_err(|e| {
+			error!("Failed to get members from database: {e}");
+			Status::InternalServerError
+		})?
 		.sorted_by_key(|x| x.name.clone())
 	{
 		member_list.push_str(&render_member_entry(&member));
@@ -491,15 +495,10 @@ pub async fn delete_member(
 	session_id.verify_elevated(state).await?;
 
 	let mut lock = state.db.lock().await;
-	if lock
-		.get_member(id)
-		.await
-		.map_err(|e| {
-			error!("Failed to get member from database: {e}");
-			Status::InternalServerError
-		})?
-		.is_none()
-	{
+	if !lock.member_exists(id).await.map_err(|e| {
+		error!("Failed to get member from database: {e}");
+		Status::InternalServerError
+	})? {
 		error!("Attempted to delete non-existent member {id}");
 		return Err(Status::BadRequest);
 	}

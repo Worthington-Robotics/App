@@ -29,7 +29,10 @@ pub trait Database {
 	async fn delete_member(&mut self, member: &str) -> anyhow::Result<()>;
 
 	/// Get all members
-	async fn get_members(&self) -> impl Iterator<Item = Member>;
+	async fn get_members(&self) -> anyhow::Result<impl Iterator<Item = Member>>;
+
+	/// Check if a member exists
+	async fn member_exists(&self, member: &str) -> anyhow::Result<bool>;
 
 	/// Get an event by ID
 	fn get_event(&self, event: &str) -> Option<Event>;

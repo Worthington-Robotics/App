@@ -3,7 +3,6 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-	auth::Privilege,
 	db::Database,
 	member::{Member, MemberMention},
 };
@@ -33,8 +32,7 @@ pub struct Announcement {
 impl Announcement {
 	/// Checks if a member can see this announcement
 	pub fn can_member_see(&self, member: &Member) -> bool {
-		member.is_elevated()
-			|| self.mentioned.iter().any(|x| x.mentions_member(&member))
+		member.is_elevated() || self.mentioned.iter().any(|x| x.mentions_member(&member))
 	}
 }
 

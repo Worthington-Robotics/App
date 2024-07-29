@@ -50,8 +50,12 @@ impl Database for JSONDatabase {
 		self.write()
 	}
 
-	async fn get_members(&self) -> impl Iterator<Item = Member> {
-		self.contents.members.values().cloned()
+	async fn get_members(&self) -> anyhow::Result<impl Iterator<Item = Member>> {
+		Ok(self.contents.members.values().cloned())
+	}
+
+	async fn member_exists(&self, member: &str) -> anyhow::Result<bool> {
+		Ok(self.contents.members.contains_key(member))
 	}
 
 	fn get_event(&self, id: &str) -> Option<Event> {

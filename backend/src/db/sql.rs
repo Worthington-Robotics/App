@@ -5,7 +5,7 @@ use std::str::FromStr;
 use anyhow::{anyhow, Context};
 use rocket::futures::TryStreamExt;
 use sqlx::{
-	postgres::{PgConnectOptions, PgPoolOptions},
+	postgres::{PgConnectOptions, PgPoolOptions, PgRow},
 	Executor, Pool, Postgres, Row,
 };
 use tracing::error;
@@ -56,33 +56,9 @@ impl Database for SqlDatabase {
 				let Some(row) = row else {
 					return Ok(None);
 				};
-				let name: &str = row.try_get("name")?;
-				let kind: &str = row.try_get("kind")?;
-				let kind = match kind {
-					"Standard" => MemberKind::Standard,
-					"Admin" => MemberKind::Admin,
-					other => {
-						error!("Unknown member kind {other}");
-						return Err(anyhow!("Unknown member kind"));
-					}
-				};
-				let groups: Vec<String> = row.try_get("groups")?;
-				let groups = groups
-					.into_iter()
-					.filter_map(|x| MemberGroup::from_str(&x).ok());
-				let password: &str = row.try_get("password")?;
-				let password_salt: Option<String> = row.try_get("passwordsalt")?;
-				let creation_date: &str = row.try_get("creationdate")?;
+				let member = read_member(id, row).context("Failed to read member")?;
 
-				Ok(Some(Member {
-					id: id.to_string(),
-					name: name.to_string(),
-					kind,
-					groups: groups.collect(),
-					password: password.to_string(),
-					password_salt,
-					creation_date: creation_date.to_string(),
-				}))
+				Ok(Some(member))
 			}
 			Err(e) => {
 				error!("Failed to get member {id} from database: {e}");
@@ -128,8 +104,36 @@ impl Database for SqlDatabase {
 		Ok(())
 	}
 
-	async fn get_members(&self) -> impl Iterator<Item = Member> {
-		std::iter::empty()
+	async fn get_members(&self) -> anyhow::Result<impl Iterator<Item = Member>> {
+		let result = sqlx::query("SELECT * FROM members")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let id: String = row.try_get("id")?;
+					let member = read_member(&id, row).context("Failed to read member")?;
+					out.push(member);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get all members from database: {e}");
+				Err(anyhow!("Failed to get members from database"))
+			}
+		}
+	}
+
+	async fn member_exists(&self, member: &str) -> anyhow::Result<bool> {
+		let result = sqlx::query("SELECT 1 FROM members WHERE Id = $1")
+			.bind(member)
+			.execute(&self.pool)
+			.await
+			.context("Failed to query database for member")?;
+
+		Ok(result.rows_affected() > 0)
 	}
 
 	fn get_event(&self, event: &str) -> Option<Event> {
@@ -180,4 +184,35 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		.context("Failed to set up members table")?;
 
 	Ok(())
+}
+
+/// Read a member from the database
+fn read_member(id: &str, row: PgRow) -> anyhow::Result<Member> {
+	let name: &str = row.try_get("name")?;
+	let kind: &str = row.try_get("kind")?;
+	let kind = match kind {
+		"Standard" => MemberKind::Standard,
+		"Admin" => MemberKind::Admin,
+		other => {
+			error!("Unknown member kind {other}");
+			return Err(anyhow!("Unknown member kind"));
+		}
+	};
+	let groups: Vec<String> = row.try_get("groups")?;
+	let groups = groups
+		.into_iter()
+		.filter_map(|x| MemberGroup::from_str(&x).ok());
+	let password: &str = row.try_get("password")?;
+	let password_salt: Option<String> = row.try_get("passwordsalt")?;
+	let creation_date: &str = row.try_get("creationdate")?;
+
+	Ok(Member {
+		id: id.to_string(),
+		name: name.to_string(),
+		kind,
+		groups: groups.collect(),
+		password: password.to_string(),
+		password_salt,
+		creation_date: creation_date.to_string(),
+	})
 }
