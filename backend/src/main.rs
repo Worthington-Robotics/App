@@ -32,7 +32,7 @@ async fn rocket() -> _ {
 	tracing::subscriber::set_global_default(subscriber)
 		.expect("Failed to set global tracing subscriber");
 
-	dotenv().expect("Failed to load environment variables");
+	let _ = dotenv();
 
 	let mut session_manager = SessionManager::new();
 
