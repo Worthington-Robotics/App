@@ -25,7 +25,7 @@ use rocket::{Data, Orbit, Response, Rocket};
 use tracing::{error, event, span, Level};
 
 use crate::db::Database;
-use crate::{auth::Privilege, State};
+use crate::State;
 
 #[rocket::get("/")]
 pub async fn index(
@@ -50,7 +50,10 @@ pub async fn index(
 
 	let Some(member) = ({
 		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id)
+		lock.get_member(&requesting_member_id).await.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
 	}) else {
 		error!("Unknown requesting member ID {}", requesting_member_id);
 		return Ok(redirect);
@@ -138,14 +141,18 @@ impl<'r> SessionID<'r> {
 
 		let requesting_member = {
 			let lock = state.db.lock().await;
-			lock.get_member(&requesting_member_id)
+			lock.get_member(&requesting_member_id).await
 		}
+		.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::Unauthorized
+		})?
 		.ok_or_else(|| {
 			error!("Unknown requesting member ID {}", requesting_member_id);
 			Status::Unauthorized
 		})?;
 
-		if requesting_member.kind.get_privilege() != Privilege::Elevated {
+		if !requesting_member.is_elevated() {
 			event!(
 				Level::DEBUG,
 				"Requesting member does not have high enough permissions"

@@ -36,22 +36,22 @@ impl Database for JSONDatabase {
 		Ok(Self { contents })
 	}
 
-	fn get_member(&self, id: &str) -> Option<Member> {
-		self.contents.members.get(id).cloned()
+	async fn get_member(&self, id: &str) -> anyhow::Result<Option<Member>> {
+		Ok(self.contents.members.get(id).cloned())
 	}
 
-	fn create_member(&mut self, member: Member) -> anyhow::Result<()> {
+	async fn create_member(&mut self, member: Member) -> anyhow::Result<()> {
 		self.contents.members.insert(member.id.clone(), member);
 		self.write()
 	}
 
-	fn delete_member(&mut self, member: &str) -> anyhow::Result<()> {
+	async fn delete_member(&mut self, member: &str) -> anyhow::Result<()> {
 		self.contents.members.remove(member);
 		self.write()
 	}
 
-	fn get_members(&self) -> impl Iterator<Item = &Member> {
-		self.contents.members.values()
+	async fn get_members(&self) -> impl Iterator<Item = Member> {
+		self.contents.members.values().cloned()
 	}
 
 	fn get_event(&self, id: &str) -> Option<Event> {

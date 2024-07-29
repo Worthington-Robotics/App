@@ -47,7 +47,10 @@ pub async fn calendar(
 
 	let Some(member) = ({
 		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id)
+		lock.get_member(&requesting_member_id).await.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
 	}) else {
 		error!("Unknown requesting member ID {}", requesting_member_id);
 		return Ok(redirect);
@@ -64,7 +67,7 @@ pub async fn calendar(
 	let mut events_content = String::with_capacity(relevant_events.len() * event_component.len());
 	let now = Utc::now();
 	for event in relevant_events {
-		events_content.push_str(&render_event(event, lock.deref(), &member, &now));
+		events_content.push_str(&render_event(event, lock.deref(), &member, &now).await);
 	}
 
 	let page = include_str!("pages/events/calendar.min.html");
@@ -85,7 +88,12 @@ pub async fn calendar(
 }
 
 /// Renders an event component
-fn render_event(event: &Event, db: &impl Database, member: &Member, now: &DateTime<Utc>) -> String {
+async fn render_event(
+	event: &Event,
+	db: &impl Database,
+	member: &Member,
+	now: &DateTime<Utc>,
+) -> String {
 	let event_component = include_str!("components/event.min.html");
 	let event_component = event_component.replace("{{id}}", &event.id);
 
@@ -98,10 +106,11 @@ fn render_event(event: &Event, db: &impl Database, member: &Member, now: &DateTi
 	let event_component = event_component.replace("{{date}}", &date);
 	let event_component = event_component.replace("{{name}}", &event.name);
 
+	let group_members = db.get_members().await.collect::<Vec<_>>();
 	let total_invites = event.invites.iter().fold(0, |acc, x| {
 		acc + match x {
 			MemberMention::Member(_) => 1,
-			MemberMention::Group(group) => count_group_members(db.get_members(), group),
+			MemberMention::Group(group) => count_group_members(group_members.iter(), group),
 		}
 	});
 	let total_rsvps = event.rsvp.len();
@@ -152,7 +161,10 @@ pub async fn create_event(
 
 	let Some(member) = ({
 		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id)
+		lock.get_member(&requesting_member_id).await.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
 	}) else {
 		error!("Unknown requesting member ID {}", requesting_member_id);
 		return Ok(redirect);
@@ -254,22 +266,20 @@ pub async fn create_event(
 			checked,
 		));
 	}
-	available_invites.extend(
-		lock.get_members()
-			.map(|x| {
-				let id = x.id.clone();
-				let name = lock
-					.get_member(&id)
-					.map(|x| x.name.clone())
-					.unwrap_or_else(|| {
-						error!("Failed to get member {}", id);
-						id.clone()
-					});
-				let checked = event.invites.contains(&MemberMention::Member(id.clone()));
-				(id, name, checked)
-			})
-			.sorted_by_key(|x| x.1.clone()),
-	);
+	for member in lock.get_members().await.sorted_by_key(|x| x.name.clone()) {
+		let id = member.id.clone();
+		let name = lock
+			.get_member(&id)
+			.await
+			.ok()
+			.and_then(|x| x.map(|x| x.name.clone()))
+			.unwrap_or_else(|| {
+				error!("Failed to get member {}", id);
+				id.clone()
+			});
+		let checked = event.invites.contains(&MemberMention::Member(id.clone()));
+		available_invites.push((id, name, checked));
+	}
 
 	for (i, (invite, invite_pretty, is_checked)) in available_invites.into_iter().enumerate() {
 		let label = format!("<label for=\"{invite}\">{invite_pretty}</label>");

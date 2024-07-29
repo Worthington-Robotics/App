@@ -199,7 +199,7 @@ impl Fairing for AttendanceFairing {
 				rocket::tokio::time::sleep(Duration::from_secs(60)).await;
 				let mut lock = db.lock().await;
 				let now = Utc::now();
-				let members: Vec<_> = lock.get_members().map(|x| x.id.clone()).collect();
+				let members: Vec<_> = lock.get_members().await.map(|x| x.id.clone()).collect();
 				for member in members {
 					if let Some(current_attendance) = lock.get_current_attendance(&member) {
 						let Some(event) = lock.get_event(&current_attendance.event) else {

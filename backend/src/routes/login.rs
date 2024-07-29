@@ -27,8 +27,12 @@ pub async fn authenticate(state: &State, data: Form<AuthForm>) -> Result<String,
 
 	let member = {
 		let lock = state.db.lock().await;
-		lock.get_member(&data.id)
+		lock.get_member(&data.id).await
 	}
+	.map_err(|e| {
+		error!("Failed to get member from database: {e}");
+		Status::InternalServerError
+	})?
 	.ok_or_else(|| {
 		error!("Unknown member ID {}", data.id);
 		Status::Unauthorized

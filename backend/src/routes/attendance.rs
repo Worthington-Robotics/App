@@ -62,7 +62,15 @@ pub async fn attend(event: &str, session_id: SessionID<'_>, state: &State) -> Re
 		return Err(Status::Unauthorized);
 	};
 
-	if lock.get_member(&member).is_none() {
+	if lock
+		.get_member(&member)
+		.await
+		.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
+		.is_none()
+	{
 		error!("Member {member} does not exist");
 	}
 
@@ -104,7 +112,15 @@ pub async fn unattend(session_id: SessionID<'_>, state: &State) -> Result<(), St
 		return Err(Status::Unauthorized);
 	};
 
-	if lock.get_member(&member).is_none() {
+	if lock
+		.get_member(&member)
+		.await
+		.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
+		.is_none()
+	{
 		error!("Member {member} does not exist");
 	}
 

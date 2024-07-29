@@ -2,14 +2,19 @@
 
 use std::str::FromStr;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
+use rocket::futures::TryStreamExt;
 use sqlx::{
 	postgres::{PgConnectOptions, PgPoolOptions},
-	Executor, Pool, Postgres,
+	Executor, Pool, Postgres, Row,
 };
+use tracing::error;
 
 use crate::{
-	announcements::Announcement, attendance::AttendanceEntry, events::Event, member::Member,
+	announcements::Announcement,
+	attendance::AttendanceEntry,
+	events::Event,
+	member::{Member, MemberGroup, MemberKind},
 };
 
 use super::Database;
@@ -41,19 +46,89 @@ impl Database for SqlDatabase {
 		Ok(Self { pool })
 	}
 
-	fn get_member(&self, id: &str) -> Option<Member> {
-		None
+	async fn get_member(&self, id: &str) -> anyhow::Result<Option<Member>> {
+		let mut result = sqlx::query("SELECT * FROM members WHERE Id = $1")
+			.bind(id)
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let name: &str = row.try_get("name")?;
+				let kind: &str = row.try_get("kind")?;
+				let kind = match kind {
+					"Standard" => MemberKind::Standard,
+					"Admin" => MemberKind::Admin,
+					other => {
+						error!("Unknown member kind {other}");
+						return Err(anyhow!("Unknown member kind"));
+					}
+				};
+				let groups: Vec<String> = row.try_get("groups")?;
+				let groups = groups
+					.into_iter()
+					.filter_map(|x| MemberGroup::from_str(&x).ok());
+				let password: &str = row.try_get("password")?;
+				let password_salt: Option<String> = row.try_get("passwordsalt")?;
+				let creation_date: &str = row.try_get("creationdate")?;
+
+				Ok(Some(Member {
+					id: id.to_string(),
+					name: name.to_string(),
+					kind,
+					groups: groups.collect(),
+					password: password.to_string(),
+					password_salt,
+					creation_date: creation_date.to_string(),
+				}))
+			}
+			Err(e) => {
+				error!("Failed to get member {id} from database: {e}");
+				Err(anyhow!("Failed to get member from database"))
+			}
+		}
 	}
 
-	fn create_member(&mut self, member: Member) -> anyhow::Result<()> {
+	async fn create_member(&mut self, member: Member) -> anyhow::Result<()> {
+		// Remove the existing member
+		self.delete_member(&member.id)
+			.await
+			.context("Failed to delete existing member")?;
+		sqlx::query("INSERT INTO members (Id, Name, Kind, Groups, Password, PasswordSalt, CreationDate) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+			.bind(member.id)
+			.bind(member.name)
+			.bind(member.kind.to_string())
+			.bind(
+				member
+					.groups
+					.into_iter()
+					.map(|x| x.to_string())
+					.collect::<Vec<_>>(),
+			)
+			.bind(member.password)
+			.bind(member.password_salt)
+			.bind(member.creation_date)
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new member in database")?;
+
 		Ok(())
 	}
 
-	fn delete_member(&mut self, member: &str) -> anyhow::Result<()> {
+	async fn delete_member(&mut self, member: &str) -> anyhow::Result<()> {
+		let query = sqlx::query("DELETE FROM members WHERE Id = $1").bind(member);
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove member from database")?;
+
 		Ok(())
 	}
 
-	fn get_members(&self) -> impl Iterator<Item = &Member> {
+	async fn get_members(&self) -> impl Iterator<Item = Member> {
 		std::iter::empty()
 	}
 
@@ -100,9 +175,9 @@ impl Database for SqlDatabase {
 
 /// Setup the database
 async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
-	pool.execute("CREATE TABLE IF NOT EXISTS members (Id text, Name text, Kind text, Groups text[], Password text, PasswordSalt text, CreationDate text)")
+	pool.execute("CREATE TABLE IF NOT EXISTS members (Id text PRIMARY KEY, Name text, Kind text, Groups text[], Password text, PasswordSalt text, CreationDate text)")
 		.await
-		.context("Failed to setup members table")?;
+		.context("Failed to set up members table")?;
 
 	Ok(())
 }

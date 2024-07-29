@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::Display};
+use std::{collections::HashSet, fmt::Display, str::FromStr};
 
 use chrono::Utc;
 use rocket::FromFormField;
@@ -150,6 +150,22 @@ impl ToDropdown for MemberGroup {
 			Self::President => "President",
 			Self::Coach => "Coach",
 			Self::Mentor => "Mentor",
+		}
+	}
+}
+
+impl FromStr for MemberGroup {
+	type Err = ();
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"Member" => Ok(Self::Member),
+			"New Member" => Ok(Self::NewMember),
+			"Pit Crew" => Ok(Self::PitCrew),
+			"Lead" => Ok(Self::Lead),
+			"President" => Ok(Self::President),
+			"Coach" => Ok(Self::Coach),
+			"Mentor" => Ok(Self::Mentor),
+			_ => Err(()),
 		}
 	}
 }

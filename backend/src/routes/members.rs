@@ -44,8 +44,12 @@ pub async fn get_member(
 
 	let requesting_member = {
 		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id)
+		lock.get_member(&requesting_member_id).await
 	}
+	.map_err(|e| {
+		error!("Failed to get member from database: {e}");
+		Status::InternalServerError
+	})?
 	.ok_or_else(|| {
 		error!("Unknown requesting member ID {}", requesting_member_id);
 		Status::InternalServerError
@@ -53,10 +57,14 @@ pub async fn get_member(
 
 	let desired_member = {
 		let lock = state.db.lock().await;
-		lock.get_member(id)
+		lock.get_member(id).await
 	}
+	.map_err(|e| {
+		error!("Failed to get member from database: {e}");
+		Status::InternalServerError
+	})?
 	.ok_or_else(|| {
-		error!("Unknown member ID {}", id);
+		error!("Unknown member ID {}", requesting_member_id);
 		Status::InternalServerError
 	})?;
 
@@ -134,7 +142,16 @@ pub async fn create_member(
 	let (hashed_password, salt) = if let Some(hashed_password) = hashed_password {
 		(hashed_password, salt.map(|x| x.to_string()))
 	} else {
-		let existing_member = state.db.lock().await.get_member(&member.id);
+		let existing_member = state
+			.db
+			.lock()
+			.await
+			.get_member(&member.id)
+			.await
+			.map_err(|e| {
+				error!("Failed to get member from database: {e}");
+				Status::InternalServerError
+			})?;
 		let Some(existing_member) = existing_member else {
 			error!("Password not given when there is no existing member");
 			return Err(Status::Unauthorized);
@@ -166,8 +183,16 @@ pub async fn create_member(
 		.collect();
 
 	// Don't replace the creation date for existing members either
-	let creation_date = if let Some(existing_member) = state.db.lock().await.get_member(&member.id)
-	{
+	let creation_date = if let Some(existing_member) = state
+		.db
+		.lock()
+		.await
+		.get_member(&member.id)
+		.await
+		.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})? {
 		existing_member.creation_date
 	} else {
 		Utc::now().to_rfc2822()
@@ -185,7 +210,7 @@ pub async fn create_member(
 
 	{
 		let mut lock = state.db.lock().await;
-		lock.create_member(new_member).map_err(|e| {
+		lock.create_member(new_member).await.map_err(|e| {
 			error!("{}", e);
 			Status::InternalServerError
 		})?;
@@ -222,9 +247,10 @@ pub async fn member_list(
 		.lock()
 		.await
 		.get_members()
-		.sorted_by_key(|x| &x.name)
+		.await
+		.sorted_by_key(|x| x.name.clone())
 	{
-		member_list.push_str(&render_member_entry(member));
+		member_list.push_str(&render_member_entry(&member));
 	}
 	let page = page.replace("{{members}}", &member_list);
 
@@ -293,7 +319,10 @@ pub async fn create_member_page(
 
 	let Some(requesting_member) = ({
 		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id)
+		lock.get_member(&requesting_member_id).await.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
 	}) else {
 		error!("Unknown requesting member ID {}", requesting_member_id);
 		return Ok(redirect);
@@ -307,10 +336,16 @@ pub async fn create_member_page(
 	let member = if let Some(id) = id {
 		let lock = state.db.lock().await;
 		// We are editing an existing member
-		lock.get_member(id).ok_or_else(|| {
-			error!("Member does not exist: {}", id);
-			Status::InternalServerError
-		})?
+		lock.get_member(id)
+			.await
+			.map_err(|e| {
+				error!("Failed to get member from database: {e}");
+				Status::InternalServerError
+			})?
+			.ok_or_else(|| {
+				error!("Member does not exist: {}", id);
+				Status::InternalServerError
+			})?
 	} else {
 		// We are making a new member
 		Member {
@@ -397,7 +432,10 @@ pub async fn member_details(
 
 	let Some(requesting_member) = ({
 		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id)
+		lock.get_member(&requesting_member_id).await.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
 	}) else {
 		error!("Unknown requesting member ID {}", requesting_member_id);
 		return Ok(redirect);
@@ -409,10 +447,17 @@ pub async fn member_details(
 	}
 
 	let lock = state.db.lock().await;
-	let member = lock.get_member(id).ok_or_else(|| {
-		error!("Member does not exist: {}", id);
-		Status::InternalServerError
-	})?;
+	let member = lock
+		.get_member(id)
+		.await
+		.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
+		.ok_or_else(|| {
+			error!("Member does not exist: {}", id);
+			Status::InternalServerError
+		})?;
 
 	let page = include_str!("pages/members/details.min.html");
 	let page = page.replace("{{id}}", &member.id);
@@ -446,12 +491,20 @@ pub async fn delete_member(
 	session_id.verify_elevated(state).await?;
 
 	let mut lock = state.db.lock().await;
-	if lock.get_member(id).is_none() {
+	if lock
+		.get_member(id)
+		.await
+		.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
+		.is_none()
+	{
 		error!("Attempted to delete non-existent member {id}");
 		return Err(Status::BadRequest);
 	}
 
-	if let Err(e) = lock.delete_member(id) {
+	if let Err(e) = lock.delete_member(id).await {
 		error!("Failed to delete member {id} in database: {e}");
 		return Err(Status::InternalServerError);
 	}

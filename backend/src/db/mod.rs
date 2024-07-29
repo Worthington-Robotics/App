@@ -20,16 +20,16 @@ pub trait Database {
 		Self: Sized;
 
 	/// Get a member by ID
-	fn get_member(&self, id: &str) -> Option<Member>;
+	async fn get_member(&self, id: &str) -> anyhow::Result<Option<Member>>;
 
 	/// Create a new member
-	fn create_member(&mut self, member: Member) -> anyhow::Result<()>;
+	async fn create_member(&mut self, member: Member) -> anyhow::Result<()>;
 
 	/// Delete a member
-	fn delete_member(&mut self, member: &str) -> anyhow::Result<()>;
+	async fn delete_member(&mut self, member: &str) -> anyhow::Result<()>;
 
 	/// Get all members
-	fn get_members(&self) -> impl Iterator<Item = &Member>;
+	async fn get_members(&self) -> impl Iterator<Item = Member>;
 
 	/// Get an event by ID
 	fn get_event(&self, event: &str) -> Option<Event>;

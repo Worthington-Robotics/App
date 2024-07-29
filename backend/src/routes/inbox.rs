@@ -33,7 +33,10 @@ pub async fn inbox(
 
 	let Some(member) = ({
 		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id)
+		lock.get_member(&requesting_member_id).await.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
 	}) else {
 		error!("Unknown requesting member ID {}", requesting_member_id);
 		return Ok(redirect);

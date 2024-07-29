@@ -1,4 +1,4 @@
-use std::{fmt::Display, sync::Arc};
+use std::{collections::HashSet, fmt::Display, sync::Arc};
 
 use argon2::Argon2;
 use attendance::AttendanceFairing;
@@ -10,6 +10,7 @@ use base64::{
 use chrono::{DateTime, Offset, TimeZone};
 use db::{Database, DatabaseImpl};
 use dotenv::dotenv;
+use member::Member;
 use rand::{rngs::StdRng, RngCore, SeedableRng};
 use rocket::{catchers, routes, tokio::sync::Mutex};
 use routes::Ratelimit;
@@ -38,7 +39,20 @@ async fn rocket() -> _ {
 	let session_id = session_manager.create("admin");
 	println!("Session ID: {session_id}");
 
-	let db = DatabaseImpl::open().await.expect("Failed to open database");
+	let mut db = DatabaseImpl::open().await.expect("Failed to open database");
+	// Ensure that an admin member is present
+	let admin_member = Member {
+		id: "admin".into(),
+		name: "Admin".into(),
+		kind: member::MemberKind::Admin,
+		groups: HashSet::new(),
+		password: String::new(),
+		password_salt: None,
+		creation_date: DateTime::UNIX_EPOCH.to_rfc2822(),
+	};
+	db.create_member(admin_member)
+		.await
+		.expect("Failed to create admin member");
 
 	// Load password hash
 	let params = argon2::Params::new(15000, 2, 1, None).expect("Failed to build Argon2 parameters");
