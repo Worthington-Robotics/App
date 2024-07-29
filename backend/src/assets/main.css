@@ -16,6 +16,7 @@ input[type="checkbox"] {
 
 h1 {
 	font-size: calc(4vw * var(--scale));
+	margin-bottom: 1.35rem;
 }
 
 h2 {
@@ -36,6 +37,18 @@ h2,
 h3,
 h4 {
 	text-align: center;
+}
+
+.item-cont {
+	row-gap: 0.7rem;
+	width: 100%;
+}
+
+.item {
+	padding: 1.4rem;
+	background-color: var(--bg2);
+	width: 90%;
+	box-sizing: border-box;
 }
 
 .icon-button {

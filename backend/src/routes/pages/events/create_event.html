@@ -6,8 +6,11 @@
 	<label for="date">Event Date</label>
 	<input type="datetime-local" name="date" id="date-field" placeholder="Enter event date..." value="{{date}}" />
 	<label for="end-date">Event End Date (Optional)</label>
-	<input type="datetime-local" name="end-date" id="end-date-field" placeholder="Enter event end date..."
-		value="{{end-date}}" />
+	<div class="cont">
+		<input type="checkbox" id="end-date-enable" {{end-date-checked}} />
+		<input type="datetime-local" name="end-date" id="end-date-field" placeholder="Enter event end date..."
+			value="{{end-date}}" {{end-date-enable}} />
+	</div>
 	<label for="kind">Event Kind</label>
 	<select name="kind" id="kind-field" class="create-event-field">
 		{{kind-options}}
@@ -34,6 +37,7 @@
 		const name = document.getElementById("name-field").value;
 		const date = document.getElementById("date-field").value;
 		const end_date = document.getElementById("end-date-field").value;
+		const end_date_enable = document.getElementById("end-date-enable").checked;
 		const kind = document.getElementById("kind-field").value;
 		const urgency = document.getElementById("urgency-field").value;
 		const visibility = document.getElementById("visibility-field").value;
@@ -51,9 +55,13 @@
 		}
 		let invitesString = JSON.stringify(invites);
 
+		let endDate = end_date_enable ? `&end_date=${end_date}` : "";
+
+		let nameEncoded = encodeURIComponent(name);
+
 		fetch("/api/create_event", {
 			method: "POST",
-			body: `id=${id}&name=${name}&date=${date}&end_date=${end_date}&kind=${kind}&urgency=${urgency}&visibility=${visibility}&invites=${invitesString}`,
+			body: `id=${id}&name=${nameEncoded}&date=${date}${endDate}&kind=${kind}&urgency=${urgency}&visibility=${visibility}&invites=${invitesString}`,
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
 		}).then((response) => {
 			if (response.status != 200) {
@@ -64,7 +72,12 @@
 		});
 	}
 
+	function toggleEndDate(e) {
+		document.getElementById("end-date-field").disabled = !e.target.checked;
+	}
+
 	document.getElementById("event-form").addEventListener("submit", onSubmit);
+	document.getElementById("end-date-enable").addEventListener("change", toggleEndDate);
 </script>
 <style>
 	.create-event-field {

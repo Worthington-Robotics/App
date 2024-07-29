@@ -210,6 +210,13 @@ pub async fn create_event(
 		date_str
 	};
 	let page = page.replace("{{end-date}}", &end_date);
+	let (end_date_checked, end_date_enable) = if event.end_date.is_some() {
+		(" checked", "")
+	} else {
+		("", " disabled")
+	};
+	let page = page.replace("{{end-date-checked}}", end_date_checked);
+	let page = page.replace("{{end-date-enable}}", end_date_enable);
 
 	// Create dropdown options
 	let page = page.replace(
@@ -297,27 +304,29 @@ pub async fn create_event_api(
 		Ok(date) => date,
 		Err(e) => {
 			error!("Failed to parse date {}: {}", event.date, e);
-			return Err(Status::InternalServerError);
+			return Err(Status::BadRequest);
 		}
 	};
 
-	let end_date = if event.end_date.is_empty() {
-		None
-	} else {
-		let end_date = match date_from_js(event.end_date.clone()) {
-			Ok(date) => date,
-			Err(e) => {
-				error!("Failed to parse date {}: {}", event.date, e);
-				return Err(Status::InternalServerError);
-			}
-		};
+	let end_date = match event.end_date {
+		Some(end_date) => {
+			let end_date = match date_from_js(end_date) {
+				Ok(date) => date,
+				Err(e) => {
+					error!("Failed to parse date {}: {}", event.date, e);
+					return Err(Status::BadRequest);
+				}
+			};
 
-		// Setting the end date to the same as the start time means that it should be removed
-		if date == end_date {
-			None
-		} else {
-			Some(date.to_rfc2822())
+			// If the end date is less than the start date then we have to reject
+			if end_date < date {
+				error!("End date {end_date} was less than start date {date}");
+				return Err(Status::BadRequest);
+			}
+
+			Some(end_date.to_rfc2822())
 		}
+		None => None,
 	};
 
 	let Ok(invites) = serde_json::from_str::<Vec<String>>(&event.invites) else {
@@ -367,7 +376,7 @@ pub struct EventForm {
 	id: String,
 	name: String,
 	date: String,
-	end_date: String,
+	end_date: Option<String>,
 	kind: EventKind,
 	urgency: EventUrgency,
 	visibility: EventVisibility,

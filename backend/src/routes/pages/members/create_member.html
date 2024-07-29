@@ -1,22 +1,10 @@
 {{worbots-header}}{{error}}
 <h2>Create/Edit Member</h2>
 <form id="member-form" class="cont col">
-	<input
-		type="text"
-		name="id"
-		id="id-field"
-		class="create-member-field"
-		placeholder="Enter member username..."
-		value="{{id}}"
-	/>
-	<input
-		type="text"
-		name="name"
-		id="name-field"
-		class="create-member-field"
-		placeholder="Enter member name..."
-		value="{{name}}"
-	/>
+	<input type="text" name="id" id="id-field" class="create-member-field" placeholder="Enter member username..."
+		value="{{id}}" />
+	<input type="text" name="name" id="name-field" class="create-member-field" placeholder="Enter member name..."
+		value="{{name}}" />
 	<label for="kind">Member Kind</label>
 	<select name="kind" id="kind-field" class="create-member-field">
 		{{kind-options}}
@@ -33,6 +21,10 @@
 	function onSubmit(event) {
 		event.preventDefault();
 		const id = document.getElementById("id-field").value;
+		if (id.includes(" ")) {
+			setError("Member ID cannot include spaces");
+			return;
+		}
 		const name = document.getElementById("name-field").value;
 		const kind = document.getElementById("kind-field").value;
 		// The password may not exist due to this member being edited instead
@@ -79,7 +71,7 @@
 		width: 60%;
 	}
 
-	.member-checkbox > input {
+	.member-checkbox>input {
 		margin-left: auto;
 	}
 </style>

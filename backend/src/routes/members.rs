@@ -106,6 +106,11 @@ pub async fn create_member(
 
 	session_id.verify_elevated(state).await?;
 
+	if !member.id.is_ascii() || member.id.contains(' ') {
+		error!("Invalid member ID");
+		return Err(Status::BadRequest);
+	}
+
 	let (hashed_password, salt) = if let Some(password) = &member.password {
 		let result = if let Some(hash) = &state.password_hash {
 			// Create salt

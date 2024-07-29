@@ -5,7 +5,7 @@
 		<option value="upcoming">Upcoming Events</option>
 		<option value="all">All Events</option>
 	</select>
-	<div id="events-cont" class="cont col">{{events}}</div>
+	<div id="events-cont" class="cont col item-cont">{{events}}</div>
 	{{add-event}}
 </div>
 <script>
@@ -27,19 +27,7 @@
 <style>
 	#calendar {
 		width: 100%;
-		row-gap: 1rem;
-	}
-
-	#events-cont {
-		row-gap: 0.5rem;
-	}
-
-	.event {
-		padding: 1.4rem;
-		background-color: var(--bg2);
-		flex-direction: column;
-		width: 90%;
-		box-sizing: border-box;
+		row-gap: 1.4rem;
 	}
 
 	.ev-date {

@@ -12,14 +12,13 @@
 	#error {
 		width: 60%;
 		background-color: var(--wbred);
-		padding: 2rem;
+		padding: 1.3rem;
 	}
 </style>
 <script>
 	function setError(error) {
 		let text = "Error: " + error;
 		console.error(text);
-		let containerElement = document.getElementById("error-inner-container");
 		let errorElement = document.getElementById("error");
 		errorElement.style.display = "flex";
 		errorElement.innerHTML = text;
