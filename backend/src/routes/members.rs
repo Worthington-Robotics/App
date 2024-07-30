@@ -470,7 +470,12 @@ pub async fn member_details(
 	let page = page.replace("{{delete}}", include_str!("components/ui/delete.min.html"));
 
 	// Attendance stats
-	let (season_attendance, total_attendance) = get_attendance_stats(&member, lock.deref());
+	let (season_attendance, total_attendance) = get_attendance_stats(&member, lock.deref())
+		.await
+		.map_err(|e| {
+		error!("Failed to get attendance stats: {e}");
+		Status::InternalServerError
+	})?;
 	let page = page.replace("{{season-ratio}}", &season_attendance.format_ratio());
 	let page = page.replace("{{season-percentage}}", &season_attendance.format_percent());
 	let page = page.replace("{{season-average}}", &season_attendance.format_average());

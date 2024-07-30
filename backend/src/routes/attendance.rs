@@ -1,3 +1,4 @@
+use anyhow::Context;
 use rocket::http::Status;
 use tracing::{error, span, warn, Level};
 
@@ -8,14 +9,21 @@ use crate::{
 
 use super::SessionID;
 
-pub fn create_attendance_panel(member: &Member, db: &impl Database) -> String {
+pub async fn create_attendance_panel(
+	member: &Member,
+	db: &impl Database,
+) -> anyhow::Result<String> {
 	let out = include_str!("components/attendance_panel.min.html");
 
-	let events = db.get_events();
-	let events = get_relevant_events(member, events);
+	let events = db
+		.get_events()
+		.await
+		.context("Failed to get events from database")?
+		.collect::<Vec<_>>();
+	let events = get_relevant_events(member, events.iter());
 	let events = get_attendable_events(events);
 	if events.is_empty() {
-		return "<h4>No events to attend</h4>".into();
+		return Ok("<h4>No events to attend</h4>".into());
 	}
 
 	let current_attendance = db.get_current_attendance(&member.id);
@@ -41,7 +49,7 @@ pub fn create_attendance_panel(member: &Member, db: &impl Database) -> String {
 	}
 	let out = out.replace("{{items}}", &items);
 
-	out
+	Ok(out)
 }
 
 #[rocket::post("/api/attend/<event>")]
@@ -69,7 +77,15 @@ pub async fn attend(event: &str, session_id: SessionID<'_>, state: &State) -> Re
 		error!("Member {member} does not exist");
 	}
 
-	if lock.get_event(event).is_none() {
+	if lock
+		.get_event(event)
+		.await
+		.map_err(|e| {
+			error!("Failed to get event from database: {e}");
+			Status::InternalServerError
+		})?
+		.is_none()
+	{
 		error!("Event {event} does not exist");
 	}
 

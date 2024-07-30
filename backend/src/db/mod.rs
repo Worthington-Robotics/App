@@ -35,13 +35,16 @@ pub trait Database {
 	async fn member_exists(&self, member: &str) -> anyhow::Result<bool>;
 
 	/// Get an event by ID
-	fn get_event(&self, event: &str) -> Option<Event>;
+	async fn get_event(&self, event: &str) -> anyhow::Result<Option<Event>>;
 
 	/// Create a new event
-	fn create_event(&mut self, event: Event) -> anyhow::Result<()>;
+	async fn create_event(&mut self, event: Event) -> anyhow::Result<()>;
+
+	/// Delete an event
+	async fn delete_event(&mut self, event: &str) -> anyhow::Result<()>;
 
 	/// Get all events
-	fn get_events(&self) -> impl Iterator<Item = &Event>;
+	async fn get_events(&self) -> anyhow::Result<impl Iterator<Item = Event>>;
 
 	/// Get an announcement by ID
 	fn get_announcement(&self, announcement: &str) -> Option<Announcement>;

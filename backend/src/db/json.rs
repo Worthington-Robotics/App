@@ -58,17 +58,22 @@ impl Database for JSONDatabase {
 		Ok(self.contents.members.contains_key(member))
 	}
 
-	fn get_event(&self, id: &str) -> Option<Event> {
-		self.contents.events.get(id).cloned()
+	async fn get_event(&self, id: &str) -> anyhow::Result<Option<Event>> {
+		Ok(self.contents.events.get(id).cloned())
 	}
 
-	fn create_event(&mut self, event: Event) -> anyhow::Result<()> {
+	async fn create_event(&mut self, event: Event) -> anyhow::Result<()> {
 		self.contents.events.insert(event.id.clone(), event);
 		self.write()
 	}
 
-	fn get_events(&self) -> impl Iterator<Item = &Event> {
-		self.contents.events.values()
+	async fn delete_event(&mut self, event: &str) -> anyhow::Result<()> {
+		self.contents.events.remove(event);
+		self.write()
+	}
+
+	async fn get_events(&self) -> anyhow::Result<impl Iterator<Item = Event>> {
+		Ok(self.contents.events.values().cloned())
 	}
 
 	fn get_announcement(&self, announcement: &str) -> Option<Announcement> {

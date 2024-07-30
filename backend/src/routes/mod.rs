@@ -67,7 +67,12 @@ pub async fn index(
 		""
 	};
 	let page = page.replace("{{admin-panel}}", admin_panel);
-	let attendance_panel = create_attendance_panel(&member, state.db.lock().await.deref());
+	let attendance_panel = create_attendance_panel(&member, state.db.lock().await.deref())
+		.await
+		.map_err(|e| {
+			error!("Failed to create attendance panel: {e}");
+			Status::InternalServerError
+		})?;
 	let page = page.replace("{{attendance-panel}}", &attendance_panel);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))

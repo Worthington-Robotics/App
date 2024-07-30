@@ -97,17 +97,17 @@ impl AttendanceStats {
 }
 
 /// Gets attendance stats for a member for this season and all time
-pub fn get_attendance_stats(
+pub async fn get_attendance_stats(
 	member: &Member,
 	db: &impl Database,
-) -> (AttendanceStats, AttendanceStats) {
+) -> anyhow::Result<(AttendanceStats, AttendanceStats)> {
 	let mut season = AttendanceStats::default();
 	let mut all_time = AttendanceStats::default();
 
 	let now = Utc::now();
 	let current_season = get_season(&now);
 	let attendances = db.get_attendance(&member.id);
-	for event in db.get_events().filter(|x| x.invites_member(member)) {
+	for event in db.get_events().await?.filter(|x| x.invites_member(member)) {
 		let Ok(date) = DateTime::parse_from_rfc2822(&event.date) else {
 			error!("Failed to parse date for event {}", event.id);
 			continue;
@@ -168,7 +168,7 @@ pub fn get_attendance_stats(
 		}
 	}
 
-	(season, all_time)
+	Ok((season, all_time))
 }
 
 /// Fairing for managing attendance
@@ -213,7 +213,11 @@ impl Fairing for AttendanceFairing {
 				};
 				for member in members {
 					if let Some(current_attendance) = lock.get_current_attendance(&member) {
-						let Some(event) = lock.get_event(&current_attendance.event) else {
+						let Ok(event) = lock.get_event(&current_attendance.event).await else {
+							error!("Failed to get event from database");
+							continue;
+						};
+						let Some(event) = event else {
 							error!("Failed to get event from attendance record");
 							continue;
 						};

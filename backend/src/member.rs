@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::Display, str::FromStr};
+use std::{collections::HashSet, convert::Infallible, fmt::Display, str::FromStr};
 
 use chrono::Utc;
 use rocket::FromFormField;
@@ -197,5 +197,30 @@ impl MemberMention {
 			Self::Member(check) => check == &member.id,
 			Self::Group(group) => member.groups.contains(group),
 		}
+	}
+
+	/// Write this mention to a string for database usage
+	pub fn to_db(&self) -> String {
+		match self {
+			Self::Member(member) => member.clone(),
+			Self::Group(group) => format!("@{}", group.to_dropdown()),
+		}
+	}
+}
+
+impl FromStr for MemberMention {
+	type Err = Infallible;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		Ok(match s {
+			"@Member" => Self::Group(MemberGroup::Member),
+			"@New Member" => Self::Group(MemberGroup::NewMember),
+			"@Pit Crew" => Self::Group(MemberGroup::PitCrew),
+			"@Lead" => Self::Group(MemberGroup::Lead),
+			"@President" => Self::Group(MemberGroup::President),
+			"@Coach" => Self::Group(MemberGroup::Coach),
+			"@Mentor" => Self::Group(MemberGroup::Mentor),
+			_ => Self::Member(s.to_string()),
+		})
 	}
 }

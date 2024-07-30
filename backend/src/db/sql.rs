@@ -13,8 +13,9 @@ use tracing::error;
 use crate::{
 	announcements::Announcement,
 	attendance::AttendanceEntry,
-	events::Event,
-	member::{Member, MemberGroup, MemberKind},
+	events::{Event, EventKind, EventUrgency, EventVisibility},
+	member::{Member, MemberGroup, MemberKind, MemberMention},
+	util::ToDropdown,
 };
 
 use super::Database;
@@ -136,16 +137,86 @@ impl Database for SqlDatabase {
 		Ok(result.rows_affected() > 0)
 	}
 
-	fn get_event(&self, event: &str) -> Option<Event> {
-		None
+	async fn get_event(&self, event: &str) -> anyhow::Result<Option<Event>> {
+		let mut result = sqlx::query("SELECT * FROM events WHERE Id = $1")
+			.bind(event)
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let event = read_event(event, row).context("Failed to read event")?;
+
+				Ok(Some(event))
+			}
+			Err(e) => {
+				error!("Failed to get event {event} from database: {e}");
+				Err(anyhow!("Failed to get event from database"))
+			}
+		}
 	}
 
-	fn create_event(&mut self, event: Event) -> anyhow::Result<()> {
+	async fn create_event(&mut self, event: Event) -> anyhow::Result<()> {
+		// Remove the existing event
+		self.delete_event(&event.id)
+			.await
+			.context("Failed to delete existing event")?;
+		sqlx::query("INSERT INTO events (Id, Name, Date, EndDate, Kind, Urgency, Visibility, Invites, RSVP) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)")
+			.bind(event.id)
+			.bind(event.name)
+			.bind(event.date)
+			.bind(event.end_date)
+			.bind(event.kind.to_dropdown())
+			.bind(event.urgency.to_dropdown())
+			.bind(event.visibility.to_dropdown())
+			.bind(
+				event
+					.invites
+					.into_iter()
+					.map(|x| x.to_db())
+					.collect::<Vec<_>>(),
+			)
+			.bind(event.rsvp.into_iter().collect::<Vec<_>>())
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new event in database")?;
+
 		Ok(())
 	}
 
-	fn get_events(&self) -> impl Iterator<Item = &Event> {
-		std::iter::empty()
+	async fn delete_event(&mut self, event: &str) -> anyhow::Result<()> {
+		let query = sqlx::query("DELETE FROM events WHERE Id = $1").bind(event);
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove event from database")?;
+
+		Ok(())
+	}
+
+	async fn get_events(&self) -> anyhow::Result<impl Iterator<Item = Event>> {
+		let result = sqlx::query("SELECT * FROM events")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let id: String = row.try_get("id")?;
+					let event = read_event(&id, row).context("Failed to read Event")?;
+					out.push(event);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get all events from database: {e}");
+				Err(anyhow!("Failed to get events from database"))
+			}
+		}
 	}
 
 	fn get_announcement(&self, announcement: &str) -> Option<Announcement> {
@@ -183,6 +254,10 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		.await
 		.context("Failed to set up members table")?;
 
+	pool.execute("CREATE TABLE IF NOT EXISTS events (Id text PRIMARY KEY, Name text, Date text, EndDate text, Kind text, Urgency text, Visibility text, Invites text[], RSVP text[])")
+		.await
+		.context("Failed to set up events table")?;
+
 	Ok(())
 }
 
@@ -214,5 +289,44 @@ fn read_member(id: &str, row: PgRow) -> anyhow::Result<Member> {
 		password: password.to_string(),
 		password_salt,
 		creation_date: creation_date.to_string(),
+	})
+}
+
+/// Read an event from the database
+fn read_event(id: &str, row: PgRow) -> anyhow::Result<Event> {
+	let name: &str = row.try_get("name")?;
+	let date: &str = row.try_get("date")?;
+	let end_date: Option<String> = row.try_get("enddate")?;
+	let kind: &str = row.try_get("kind")?;
+	let Ok(kind) = EventKind::from_str(kind) else {
+		error!("Unknown event kind {kind}");
+		return Err(anyhow!("Unknown event kind"));
+	};
+	let urgency: &str = row.try_get("urgency")?;
+	let Ok(urgency) = EventUrgency::from_str(urgency) else {
+		error!("Unknown event urgency {urgency}");
+		return Err(anyhow!("Unknown event urgency"));
+	};
+	let visibility: &str = row.try_get("visibility")?;
+	let Ok(visibility) = EventVisibility::from_str(visibility) else {
+		error!("Unknown event urgency {visibility}");
+		return Err(anyhow!("Unknown event visibility"));
+	};
+	let invites: Vec<String> = row.try_get("invites")?;
+	let invites = invites
+		.into_iter()
+		.filter_map(|x| MemberMention::from_str(&x).ok());
+	let rsvp: Vec<String> = row.try_get("rsvp")?;
+
+	Ok(Event {
+		id: id.to_string(),
+		name: name.to_string(),
+		date: date.to_string(),
+		end_date,
+		kind,
+		urgency,
+		visibility,
+		invites: invites.collect(),
+		rsvp: rsvp.into_iter().collect(),
 	})
 }

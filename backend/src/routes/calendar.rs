@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::Deref};
+use std::{fmt::Display, ops::Deref, str::FromStr};
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, NaiveDate, NaiveTime, Offset, TimeZone, Utc};
@@ -59,7 +59,16 @@ pub async fn calendar(
 	let is_elevated = member.is_elevated();
 
 	let lock = state.db.lock().await;
-	let mut relevant_events = get_relevant_events(&member, lock.get_events());
+	let events = lock
+		.get_events()
+		.await
+		.map_err(|e| {
+			error!("Failed to get events from database: {e}");
+			Status::InternalServerError
+		})?
+		.into_iter()
+		.collect::<Vec<_>>();
+	let mut relevant_events = get_relevant_events(&member, events.iter());
 	relevant_events
 		.sort_by_cached_key(|x| DateTime::parse_from_rfc2822(&x.date).unwrap_or_default());
 
@@ -185,10 +194,16 @@ pub async fn create_event(
 	let lock = state.db.lock().await;
 	let event = if let Some(id) = id {
 		// We are editing an existing event
-		lock.get_event(id).ok_or_else(|| {
-			error!("Event does not exist: {}", id);
-			Status::InternalServerError
-		})?
+		lock.get_event(id)
+			.await
+			.map_err(|e| {
+				error!("Failed to get event from database: {e}");
+				Status::InternalServerError
+			})?
+			.ok_or_else(|| {
+				error!("Event does not exist: {}", id);
+				Status::InternalServerError
+			})?
 	} else {
 		// We are making a new event
 		let id = generate_id();
@@ -360,20 +375,14 @@ pub async fn create_event_api(
 	};
 	let invites = invites
 		.into_iter()
-		.map(|x| match x.as_str() {
-			"@Member" => MemberMention::Group(MemberGroup::Member),
-			"@New Member" => MemberMention::Group(MemberGroup::NewMember),
-			"@Pit Crew" => MemberMention::Group(MemberGroup::PitCrew),
-			"@Lead" => MemberMention::Group(MemberGroup::Lead),
-			"@President" => MemberMention::Group(MemberGroup::President),
-			"@Coach" => MemberMention::Group(MemberGroup::Coach),
-			"@Mentor" => MemberMention::Group(MemberGroup::Mentor),
-			_ => MemberMention::Member(x),
-		})
+		.map(|x| MemberMention::from_str(&x).unwrap())
 		.collect();
 
 	let mut lock = state.db.lock().await;
-	let existing_event = lock.get_event(&event.id);
+	let existing_event = lock.get_event(&event.id).await.map_err(|e| {
+		error!("Failed to get event from database: {e}");
+		Status::InternalServerError
+	})?;
 	let existing_rsvps = existing_event.as_ref().map(|x| x.rsvp.clone());
 
 	let event = Event {
@@ -388,7 +397,7 @@ pub async fn create_event_api(
 		rsvp: existing_rsvps.unwrap_or_default(),
 	};
 
-	if let Err(e) = lock.create_event(event) {
+	if let Err(e) = lock.create_event(event).await {
 		error!("Failed to create event: {}", e);
 		return Err(Status::InternalServerError);
 	}

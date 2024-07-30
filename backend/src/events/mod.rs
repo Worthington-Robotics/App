@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::{collections::HashSet, fmt::Display};
 
 use anyhow::Context;
@@ -109,6 +110,19 @@ impl Display for EventKind {
 	}
 }
 
+impl FromStr for EventKind {
+	type Err = ();
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"Meeting" => Ok(Self::Meeting),
+			"Competition" => Ok(Self::Competition),
+			"Outreach" => Ok(Self::Outreach),
+			"Fundraising" => Ok(Self::Fundraising),
+			_ => Err(()),
+		}
+	}
+}
+
 /// Urgency for an event
 #[derive(Serialize, Deserialize, Default, FromFormField, Clone, Copy, EnumIter, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -116,6 +130,17 @@ pub enum EventUrgency {
 	#[default]
 	Optional,
 	Mandatory,
+}
+
+impl FromStr for EventUrgency {
+	type Err = ();
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"Optional" => Ok(Self::Optional),
+			"Mandatory" => Ok(Self::Mandatory),
+			_ => Err(()),
+		}
+	}
 }
 
 impl ToDropdown for EventUrgency {
@@ -154,6 +179,17 @@ impl ToDropdown for EventVisibility {
 		match self {
 			Self::Everyone => "Everyone",
 			Self::InviteOnly => "InviteOnly",
+		}
+	}
+}
+
+impl FromStr for EventVisibility {
+	type Err = ();
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"Everyone" => Ok(Self::Everyone),
+			"InviteOnly" => Ok(Self::InviteOnly),
+			_ => Err(()),
 		}
 	}
 }
