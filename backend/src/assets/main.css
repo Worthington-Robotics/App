@@ -10,10 +10,6 @@ select {
 	padding: 0.5rem;
 }
 
-input[type="checkbox"] {
-	padding: 2rem;
-}
-
 h1 {
 	font-size: calc(4vw * var(--scale));
 	margin-bottom: 1.35rem;
