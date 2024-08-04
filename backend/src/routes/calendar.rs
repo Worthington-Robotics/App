@@ -304,7 +304,7 @@ pub async fn create_event(
 
 	let page = include_str!("pages/events/create_event.min.html");
 	let page = page.replace("{{id}}", &event.id);
-	let page = page.replace("{{name}}", &event.name);
+	let page = page.replace("{{name}}", &format!("\"{}\"", event.name));
 
 	let date = DateTime::parse_from_rfc2822(&event.date).unwrap_or_else(|e| {
 		error!("Failed to parse date: {}", e);
