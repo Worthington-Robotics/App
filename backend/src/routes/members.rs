@@ -172,8 +172,8 @@ pub async fn create_member(
 		.into_iter()
 		.map(|x| match x.as_str() {
 			"Member" => MemberGroup::Member,
-			"New Member" => MemberGroup::NewMember,
-			"Pit Crew" => MemberGroup::PitCrew,
+			"NewMember" => MemberGroup::NewMember,
+			"PitCrew" => MemberGroup::PitCrew,
 			"Lead" => MemberGroup::Lead,
 			"President" => MemberGroup::President,
 			"Coach" => MemberGroup::Coach,
@@ -388,14 +388,6 @@ pub async fn create_member_page(
 		));
 	}
 
-	// Create password field only if the member doesn't already exist
-	let password_field = if id.is_none() {
-		"<input type=password name=password id=password-field class=create-member-field placeholder=\"Enter member password...\" autocomplete=new-password />"
-	} else {
-		""
-	};
-	let page = page.replace("{{password}}", password_field);
-
 	for (i, (group, group_pretty, is_checked)) in available_groups.into_iter().enumerate() {
 		let label = format!("<label for=\"{group}\">{group_pretty}</label>");
 		let checked_string = if is_checked { " checked" } else { "" };
@@ -406,6 +398,14 @@ pub async fn create_member_page(
 		groups_string.push_str(&group);
 	}
 	let page = page.replace("{{groups}}", &groups_string);
+
+	// Create password field only if the member doesn't already exist
+	let password_field = if id.is_none() {
+		"<input type=password name=password id=password-field class=create-member-field placeholder=\"Enter member password...\" autocomplete=new-password />"
+	} else {
+		""
+	};
+	let page = page.replace("{{password}}", password_field);
 
 	let page = create_page("Create Member", &page);
 
