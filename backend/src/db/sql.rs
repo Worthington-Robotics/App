@@ -219,6 +219,16 @@ impl Database for SqlDatabase {
 		}
 	}
 
+	async fn event_exists(&self, event: &str) -> anyhow::Result<bool> {
+		let result = sqlx::query("SELECT 1 FROM events WHERE Id = $1")
+			.bind(event)
+			.execute(&self.pool)
+			.await
+			.context("Failed to query database for event")?;
+
+		Ok(result.rows_affected() > 0)
+	}
+
 	fn get_announcement(&self, announcement: &str) -> Option<Announcement> {
 		None
 	}

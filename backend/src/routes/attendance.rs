@@ -77,15 +77,10 @@ pub async fn attend(event: &str, session_id: SessionID<'_>, state: &State) -> Re
 		error!("Member {member} does not exist");
 	}
 
-	if lock
-		.get_event(event)
-		.await
-		.map_err(|e| {
-			error!("Failed to get event from database: {e}");
-			Status::InternalServerError
-		})?
-		.is_none()
-	{
+	if !lock.event_exists(event).await.map_err(|e| {
+		error!("Failed to get event from database: {e}");
+		Status::InternalServerError
+	})? {
 		error!("Event {event} does not exist");
 	}
 

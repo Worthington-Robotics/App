@@ -76,6 +76,10 @@ impl Database for JSONDatabase {
 		Ok(self.contents.events.values().cloned())
 	}
 
+	async fn event_exists(&self, event: &str) -> anyhow::Result<bool> {
+		Ok(self.contents.events.contains_key(event))
+	}
+
 	fn get_announcement(&self, announcement: &str) -> Option<Announcement> {
 		self.contents.announcements.get(announcement).cloned()
 	}

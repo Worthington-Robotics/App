@@ -46,6 +46,9 @@ pub trait Database {
 	/// Get all events
 	async fn get_events(&self) -> anyhow::Result<impl Iterator<Item = Event>>;
 
+	/// Check if an event exists
+	async fn event_exists(&self, event: &str) -> anyhow::Result<bool>;
+
 	/// Get an announcement by ID
 	fn get_announcement(&self, announcement: &str) -> Option<Announcement>;
 
