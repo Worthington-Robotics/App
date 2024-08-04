@@ -2,6 +2,7 @@ use std::{fmt::Display, ops::Deref, str::FromStr};
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, NaiveDate, NaiveTime, Offset, TimeZone, Utc};
+use chrono_tz::US::Eastern;
 use itertools::Itertools;
 use rocket::{
 	form::Form,
@@ -107,7 +108,10 @@ async fn render_event(
 	let event_component = event_component.replace("{{id}}", &event.id);
 
 	let date = DateTime::parse_from_rfc2822(&event.date)
-		.map(|x| render_date(x))
+		.map(|x| {
+			let date = x.with_timezone(&Eastern);
+			render_date(date)
+		})
 		.unwrap_or_else(|e| {
 			error!("Failed to parse date {}: {}", event.date, e);
 			"Invalid date".into()

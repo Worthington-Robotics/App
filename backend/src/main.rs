@@ -7,7 +7,7 @@ use base64::{
 	engine::{GeneralPurpose, GeneralPurposeConfig},
 	Engine,
 };
-use chrono::{DateTime, Offset, TimeZone};
+use chrono::{DateTime, TimeZone};
 use db::{Database, DatabaseImpl};
 use dotenv::dotenv;
 use member::Member;
@@ -133,7 +133,7 @@ fn generate_id() -> String {
 }
 
 /// Render a nice date
-fn render_date<T: TimeZone + Offset>(date: DateTime<T>) -> String
+fn render_date<T: TimeZone>(date: DateTime<T>) -> String
 where
 	T::Offset: Display,
 {
