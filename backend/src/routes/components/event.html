@@ -1,4 +1,4 @@
-<div class="cont round item col event{{upcoming-class}}" {{upcoming-props}}>
+<a href="/event/{{id}}" class="cont round item col nolink event{{upcoming-class}}" {{upcoming-props}}>
 	<div class="cont ev-header">
 		<div class="ev-date">{{date}}</div>
 		<div class="ev-name">{{name}}</div>
@@ -9,8 +9,5 @@
 		<div class="ev-invites">{{invites}} invited</div>
 		<div class="dot"></div>
 		<div class="ev-going">{{going}} going</div>
-		<div class="ev-edit">
-			<a href="/create_event?id={{id}}">{{edit}}</a>
-		</div>
 	</div>
-</div>
+</a>

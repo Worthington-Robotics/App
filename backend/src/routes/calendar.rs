@@ -10,10 +10,9 @@ use rocket::{
 	response::{content::RawHtml, Redirect},
 	FromForm,
 };
-use tracing::{error, span, Level};
+use tracing::{error, span, warn, Level};
 
 use crate::{
-	auth::Privilege,
 	db::Database,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	generate_id,
@@ -157,6 +156,81 @@ async fn render_event(
 	Ok(event_component)
 }
 
+#[rocket::get("/event/<id>")]
+pub async fn event_details(
+	id: &str,
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Event details page");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.id else {
+		return Ok(redirect);
+	};
+
+	let Some(requesting_member_id) = ({
+		let lock = state.session_manager.lock().await;
+		lock.get(session_id).map(|x| x.member.clone())
+	}) else {
+		error!("Unknown session ID {}", session_id);
+		return Ok(redirect);
+	};
+
+	let Some(requesting_member) = ({
+		let lock = state.db.lock().await;
+		lock.get_member(&requesting_member_id).await.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
+	}) else {
+		error!("Unknown requesting member ID {}", requesting_member_id);
+		return Ok(redirect);
+	};
+
+	let is_elevated = requesting_member.is_elevated();
+
+	let lock = state.db.lock().await;
+	let event = lock
+		.get_event(id)
+		.await
+		.map_err(|e| {
+			error!("Failed to get event from database: {e}");
+			Status::InternalServerError
+		})?
+		.ok_or_else(|| {
+			error!("Event does not exist: {}", id);
+			Status::NotFound
+		})?;
+
+	let page = include_str!("pages/events/details.min.html");
+	let page = page.replace("{{id}}", &event.id);
+	let page = page.replace("{{name}}", &event.name);
+	let edit_button = if is_elevated {
+		include_str!("components/ui/edit.min.html")
+	} else {
+		""
+	};
+	let page = page.replace("{{edit}}", edit_button);
+	let delete_button = if is_elevated {
+		include_str!("components/ui/delete.min.html")
+	} else {
+		""
+	};
+	let page = page.replace("{{delete}}", delete_button);
+	let rsvp_checked = if event.rsvp.contains(&requesting_member.id) {
+		"checked"
+	} else {
+		""
+	};
+	let page = page.replace("{{rsvp-checked}}", rsvp_checked);
+
+	let page = create_page("Event Details", &page);
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
 #[rocket::get("/create_event?<id>")]
 pub async fn create_event(
 	id: Option<&str>,
@@ -190,7 +264,7 @@ pub async fn create_event(
 		return Ok(redirect);
 	};
 
-	if member.kind.get_privilege() != Privilege::Elevated {
+	if !member.is_elevated() {
 		error!("Invalid permissions");
 		return Ok(redirect);
 	}
@@ -419,6 +493,89 @@ pub struct EventForm {
 	urgency: EventUrgency,
 	visibility: EventVisibility,
 	invites: String,
+}
+
+#[rocket::delete("/api/delete_event/<id>")]
+pub async fn delete_event(
+	state: &State,
+	session_id: SessionID<'_>,
+	id: &str,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Deleting event");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	let mut lock = state.db.lock().await;
+	if !lock.event_exists(id).await.map_err(|e| {
+		error!("Failed to get event from database: {e}");
+		Status::InternalServerError
+	})? {
+		error!("Attempted to delete non-existent event {id}");
+		return Err(Status::BadRequest);
+	}
+
+	if let Err(e) = lock.delete_event(id).await {
+		error!("Failed to delete event {id} in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
+}
+
+#[rocket::post("/api/rsvp_event/<id>?<value>")]
+pub async fn rsvp_event(
+	state: &State,
+	session_id: SessionID<'_>,
+	id: &str,
+	value: bool,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Updating RSVP for event");
+	let _enter = span.enter();
+
+	let lock = state.session_manager.lock().await;
+	let Some(session) = lock.get(session_id.id) else {
+		error!("Session does not exist");
+		return Err(Status::BadRequest);
+	};
+
+	let mut lock = state.db.lock().await;
+
+	if !lock.member_exists(&session.member).await.map_err(|e| {
+		error!("Failed to get member from database: {e}");
+		Status::InternalServerError
+	})? {
+		error!("Member does not exist");
+		return Err(Status::BadRequest);
+	}
+
+	let Some(mut event) = lock.get_event(id).await.map_err(|e| {
+		error!("Failed to get event from database: {e}");
+		Status::InternalServerError
+	})?
+	else {
+		error!("Attempted to update RSVP for non-existent event {id}");
+		return Err(Status::BadRequest);
+	};
+
+	if value {
+		let existed = !event.rsvp.insert(session.member.clone());
+		if existed {
+			warn!("Member added RSVP when they were already in the list");
+		}
+	} else {
+		let existed = event.rsvp.remove(&session.member);
+		if !existed {
+			warn!("Member removed RSVP when they weren't in the list to begin with");
+		}
+	}
+
+	if let Err(e) = lock.create_event(event).await {
+		error!("Failed to update RSVP for event {id} in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
 }
 
 /// Formats a date as JS/HTML's version

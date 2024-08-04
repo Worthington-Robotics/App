@@ -332,7 +332,7 @@ pub async fn create_member_page(
 		return Ok(redirect);
 	};
 
-	if requesting_member.kind.get_privilege() != Privilege::Elevated {
+	if !requesting_member.is_elevated() {
 		error!("Invalid permissions");
 		return Ok(redirect);
 	}
@@ -445,7 +445,7 @@ pub async fn member_details(
 		return Ok(redirect);
 	};
 
-	if requesting_member.kind.get_privilege() != Privilege::Elevated {
+	if !requesting_member.is_elevated() {
 		error!("Invalid permissions");
 		return Ok(redirect);
 	}
@@ -460,7 +460,7 @@ pub async fn member_details(
 		})?
 		.ok_or_else(|| {
 			error!("Member does not exist: {}", id);
-			Status::InternalServerError
+			Status::NotFound
 		})?;
 
 	let page = include_str!("pages/members/details.min.html");
