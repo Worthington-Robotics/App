@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use anyhow::Context;
 use chrono::{DateTime, Utc};
 use rocket::{
 	fairing::{Fairing, Info, Kind},
@@ -106,6 +107,8 @@ pub async fn get_attendance_stats(
 
 	let now = Utc::now();
 	let current_season = get_season(&now);
+	let member_creation_date = DateTime::parse_from_rfc2822(&member.creation_date)
+		.context("Failed to parse member creation date")?;
 	let attendances = db.get_attendance(&member.id);
 	for event in db.get_events().await?.filter(|x| x.invites_member(member)) {
 		let Ok(date) = DateTime::parse_from_rfc2822(&event.date) else {
@@ -119,6 +122,11 @@ pub async fn get_attendance_stats(
 			continue;
 		};
 		let end_date = end_date.with_timezone(&Utc);
+
+		// Events that haven't ended yet or ended before the member was created don't count
+		if end_date < now || end_date < member_creation_date {
+			continue;
+		}
 
 		let attendances = attendances
 			.iter()
