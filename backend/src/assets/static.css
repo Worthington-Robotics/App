@@ -1,5 +1,5 @@
 * {
-	font-family: "Rockwell Regular";
+	font-family: "Rubik";
 
 	/* Colors */
 	--fg: #f5f5f5;
@@ -12,6 +12,11 @@
 	--wbblue: #2134d9;
 
 	--scale: 2.8;
+}
+
+h1,
+h2 {
+	font-family: "Rockwell Regular";
 }
 
 @font-face {
