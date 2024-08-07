@@ -62,12 +62,13 @@ pub fn get_attendable_events<'a>(events: Vec<&'a Event>) -> Vec<&'a Event> {
 }
 
 /// Stats for attendance
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone)]
 pub struct AttendanceStats {
 	pub attended_events: u32,
 	pub total_events: u32,
 	pub attended_minutes: u32,
 	pub total_minutes: u32,
+	pub absences: Vec<Event>,
 }
 
 impl AttendanceStats {
@@ -124,7 +125,7 @@ pub async fn get_attendance_stats(
 		let end_date = end_date.with_timezone(&Utc);
 
 		// Events that haven't ended yet or ended before the member was created don't count
-		if end_date < now || end_date < member_creation_date {
+		if end_date > now || end_date < member_creation_date {
 			continue;
 		}
 
@@ -160,6 +161,8 @@ pub async fn get_attendance_stats(
 		all_time.total_events += 1;
 		if attended_event {
 			all_time.attended_events += 1;
+		} else {
+			all_time.absences.push(event.clone());
 		}
 		all_time.total_minutes += event_duration;
 		all_time.attended_minutes += total_minutes;
@@ -170,6 +173,8 @@ pub async fn get_attendance_stats(
 			season.total_events += 1;
 			if attended_event {
 				season.attended_events += 1;
+			} else {
+				season.absences.push(event);
 			}
 			season.total_minutes += event_duration;
 			season.attended_minutes += total_minutes;

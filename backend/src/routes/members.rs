@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::ops::Deref;
 
 use argon2::PasswordHasher;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use password_hash::SaltString;
 use rand::{rngs::StdRng, SeedableRng};
@@ -15,6 +15,8 @@ use strum::IntoEnumIterator;
 use tracing::{error, span, Level};
 
 use crate::attendance::get_attendance_stats;
+use crate::events::Event;
+use crate::render_date;
 use crate::routes::OptionalSessionID;
 use crate::util::ToDropdown;
 use crate::{
@@ -479,13 +481,39 @@ pub async fn member_details(
 	let page = page.replace("{{season-ratio}}", &season_attendance.format_ratio());
 	let page = page.replace("{{season-percentage}}", &season_attendance.format_percent());
 	let page = page.replace("{{season-average}}", &season_attendance.format_average());
+	let page = page.replace(
+		"{{season-missed}}",
+		&render_missed_events(&season_attendance.absences),
+	);
 	let page = page.replace("{{total-ratio}}", &total_attendance.format_ratio());
 	let page = page.replace("{{total-percentage}}", &total_attendance.format_percent());
 	let page = page.replace("{{total-average}}", &total_attendance.format_average());
+	let page = page.replace(
+		"{{total-missed}}",
+		&render_missed_events(&total_attendance.absences),
+	);
 
 	let page = create_page("Member Details", &page);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+fn render_missed_events(events: &[Event]) -> String {
+	let mut out = String::new();
+	for event in events {
+		let date = match DateTime::parse_from_rfc2822(&event.date) {
+			Ok(date) => render_date(date),
+			Err(e) => {
+				error!("Failed to parse date for event {}: {e}", event.id);
+				"Invalid date".into()
+			}
+		};
+		let component = format!("<div class=\"item round\">{} - {}</div>", event.name, date);
+
+		out.push_str(&component);
+	}
+
+	out
 }
 
 #[rocket::delete("/api/delete_member/<id>")]
