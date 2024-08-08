@@ -10,6 +10,7 @@ use rocket::{
 	response::{content::RawHtml, Redirect},
 	FromForm,
 };
+use strum::IntoEnumIterator;
 use tracing::{error, span, warn, Level};
 
 use crate::{
@@ -347,15 +348,7 @@ pub async fn create_event(
 	// Generate invite checkboxes
 	let mut invites_string = String::new();
 	let mut available_invites = Vec::with_capacity(6 + event.invites.len());
-	for group in [
-		MemberGroup::Member,
-		MemberGroup::NewMember,
-		MemberGroup::PitCrew,
-		MemberGroup::Lead,
-		MemberGroup::President,
-		MemberGroup::Coach,
-		MemberGroup::Mentor,
-	] {
+	for group in MemberGroup::iter() {
 		let checked = event.invites.contains(&MemberMention::Group(group));
 		available_invites.push((
 			format!("@{}", group.to_string()),

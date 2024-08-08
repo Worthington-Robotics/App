@@ -101,7 +101,9 @@ impl ToDropdown for MemberKind {
 pub enum MemberGroup {
 	Member,
 	NewMember,
+	ReturningMember,
 	PitCrew,
+	DriveTeam,
 	Lead,
 	President,
 	Coach,
@@ -116,7 +118,9 @@ impl Display for MemberGroup {
 			match self {
 				Self::Member => "Member",
 				Self::NewMember => "New Member",
+				Self::ReturningMember => "Returning Member",
 				Self::PitCrew => "Pit Crew",
+				Self::DriveTeam => "Drive Team",
 				Self::Lead => "Lead",
 				Self::President => "President",
 				Self::Coach => "Coach",
@@ -131,7 +135,9 @@ impl MemberGroup {
 		match self {
 			Self::Member => "Members",
 			Self::NewMember => "New Members",
+			Self::ReturningMember => "Returning Members",
 			Self::PitCrew => "Pit Crew",
+			Self::DriveTeam => "Drive Team",
 			Self::Lead => "Leads",
 			Self::President => "Presidents",
 			Self::Coach => "Coaches",
@@ -145,7 +151,9 @@ impl ToDropdown for MemberGroup {
 		match self {
 			Self::Member => "Member",
 			Self::NewMember => "NewMember",
+			Self::ReturningMember => "ReturningMember",
 			Self::PitCrew => "PitCrew",
+			Self::DriveTeam => "DriveTeam",
 			Self::Lead => "Lead",
 			Self::President => "President",
 			Self::Coach => "Coach",
@@ -160,7 +168,9 @@ impl FromStr for MemberGroup {
 		match s {
 			"Member" => Ok(Self::Member),
 			"New Member" => Ok(Self::NewMember),
+			"Returning Member" => Ok(Self::ReturningMember),
 			"Pit Crew" => Ok(Self::PitCrew),
+			"Drive Team" => Ok(Self::PitCrew),
 			"Lead" => Ok(Self::Lead),
 			"President" => Ok(Self::President),
 			"Coach" => Ok(Self::Coach),

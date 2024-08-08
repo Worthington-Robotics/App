@@ -175,12 +175,17 @@ pub async fn create_member(
 		.map(|x| match x.as_str() {
 			"Member" => MemberGroup::Member,
 			"NewMember" => MemberGroup::NewMember,
+			"ReturningMember" => MemberGroup::ReturningMember,
 			"PitCrew" => MemberGroup::PitCrew,
+			"DriveTeam" => MemberGroup::DriveTeam,
 			"Lead" => MemberGroup::Lead,
 			"President" => MemberGroup::President,
 			"Coach" => MemberGroup::Coach,
 			"Mentor" => MemberGroup::Mentor,
-			_ => MemberGroup::Member,
+			other => {
+				error!("Failed to parse member group {other}");
+				MemberGroup::Member
+			}
 		})
 		.collect();
 
