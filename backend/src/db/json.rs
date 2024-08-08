@@ -19,21 +19,34 @@ use super::Database;
 
 pub struct JSONDatabase {
 	contents: DatabaseContents,
+	/// Whether or not to use an actual JSON file. Disabled for the caching database
+	/// since everything just needs to be kept in memory
+	write: bool,
 }
 
-impl Database for JSONDatabase {
-	async fn open() -> anyhow::Result<Self> {
+impl JSONDatabase {
+	pub fn new(write: bool) -> anyhow::Result<Self> {
 		let path = Self::get_path();
-		let contents = if path.exists() {
-			serde_json::from_reader(BufReader::new(
-				File::open(path).context("Failed to open database file")?,
-			))
-			.context("Failed to deserialize contents")?
+		let contents = if write {
+			if path.exists() {
+				serde_json::from_reader(BufReader::new(
+					File::open(path).context("Failed to open database file")?,
+				))
+				.context("Failed to deserialize contents")?
+			} else {
+				DatabaseContents::default()
+			}
 		} else {
 			DatabaseContents::default()
 		};
 
-		Ok(Self { contents })
+		Ok(Self { contents, write })
+	}
+}
+
+impl Database for JSONDatabase {
+	async fn open() -> anyhow::Result<Self> {
+		Self::new(true)
 	}
 
 	async fn get_member(&self, id: &str) -> anyhow::Result<Option<Member>> {
@@ -148,6 +161,10 @@ impl JSONDatabase {
 	}
 
 	fn write(&self) -> anyhow::Result<()> {
+		if !self.write {
+			return Ok(());
+		}
+
 		let path = Self::get_path();
 		let mut file = BufWriter::new(File::create(path).context("Failed to open database file")?);
 		serde_json::to_writer_pretty(&mut file, &self.contents)

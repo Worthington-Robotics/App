@@ -2,6 +2,8 @@ use crate::{
 	announcements::Announcement, attendance::AttendanceEntry, events::Event, member::Member,
 };
 
+/// Combination of the two databases
+pub mod cached;
 /// Simple JSON database
 pub mod json;
 /// Real SQL database
@@ -10,7 +12,10 @@ pub mod sql;
 #[cfg(feature = "sqldb")]
 pub type DatabaseImpl = sql::SqlDatabase;
 #[cfg(not(feature = "sqldb"))]
+#[cfg(not(feature = "cachedb"))]
 pub type DatabaseImpl = json::JSONDatabase;
+#[cfg(feature = "cachedb")]
+pub type DatabaseImpl = cached::CacheDatabase;
 
 /// Trait for the database that is used
 pub trait Database {

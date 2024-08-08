@@ -1,2 +1,2 @@
 BUILD_PATH="backend"
-RUST_CARGO_BUILD_FLAGS="--release --features sqldb"
+RUST_CARGO_BUILD_FLAGS="--release --features cachedb"
