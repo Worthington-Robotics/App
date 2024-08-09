@@ -108,24 +108,26 @@ impl Database for JSONDatabase {
 		self.contents.announcements.values()
 	}
 
-	fn get_attendance(&self, member: &str) -> Vec<AttendanceEntry> {
-		self.contents
+	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>> {
+		Ok(self
+			.contents
 			.attendance
 			.get(member)
 			.cloned()
-			.unwrap_or_default()
+			.unwrap_or_default())
 	}
 
-	fn get_current_attendance(&self, member: &str) -> Option<AttendanceEntry> {
-		self.contents
-			.attendance
-			.get(member)?
-			.iter()
-			.find(|x| !x.is_complete())
-			.cloned()
+	async fn get_current_attendance(
+		&self,
+		member: &str,
+	) -> anyhow::Result<Option<AttendanceEntry>> {
+		let Some(attendance) = self.contents.attendance.get(member) else {
+			return Ok(None);
+		};
+		Ok(attendance.iter().find(|x| !x.is_complete()).cloned())
 	}
 
-	fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
+	async fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
 		self.contents
 			.attendance
 			.entry(member.to_string())
@@ -138,7 +140,7 @@ impl Database for JSONDatabase {
 		self.write()
 	}
 
-	fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
+	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
 		let Some(entries) = self.contents.attendance.get_mut(member) else {
 			return Ok(());
 		};

@@ -19,7 +19,7 @@ pub async fn authenticate(state: &State, data: Form<AuthForm>) -> Result<String,
 	let span = span!(Level::DEBUG, "Authenticating");
 	let _enter = span.enter();
 
-	// Don't allow logging in as the admin user. They can only be authenticated using the session ID given on startup.
+	// Don't allow logging in as the admin member. They can only be authenticated using the session ID given on startup.
 	if data.id == "admin" {
 		error!("Attempted to log in as admin");
 		return Err(Status::Unauthorized);

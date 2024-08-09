@@ -110,7 +110,10 @@ pub async fn get_attendance_stats(
 	let current_season = get_season(&now);
 	let member_creation_date = DateTime::parse_from_rfc2822(&member.creation_date)
 		.context("Failed to parse member creation date")?;
-	let attendances = db.get_attendance(&member.id);
+	let attendances = db
+		.get_attendance(&member.id)
+		.await
+		.context("Failed to get attendances from database")?;
 	for event in db.get_events().await?.filter(|x| x.invites_member(member)) {
 		let Ok(date) = DateTime::parse_from_rfc2822(&event.date) else {
 			error!("Failed to parse date for event {}", event.id);
@@ -225,7 +228,8 @@ impl Fairing for AttendanceFairing {
 					members
 				};
 				for member in members {
-					if let Some(current_attendance) = lock.get_current_attendance(&member) {
+					if let Ok(Some(current_attendance)) = lock.get_current_attendance(&member).await
+					{
 						let Ok(event) = lock.get_event(&current_attendance.event).await else {
 							error!("Failed to get event from database");
 							continue;
@@ -239,7 +243,7 @@ impl Fairing for AttendanceFairing {
 							continue;
 						};
 						if now > end_date.with_timezone(&Utc) {
-							if let Err(e) = lock.finish_attendance(&member) {
+							if let Err(e) = lock.finish_attendance(&member).await {
 								error!("Failed to finish attendance for member {member}: {e}");
 							}
 						}

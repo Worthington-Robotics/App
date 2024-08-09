@@ -64,14 +64,15 @@ pub trait Database {
 	fn get_announcements(&self) -> impl Iterator<Item = &Announcement>;
 
 	/// Get all attendance records for a member
-	fn get_attendance(&self, member: &str) -> Vec<AttendanceEntry>;
+	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>>;
 
 	/// Get the current attendance record for a member
-	fn get_current_attendance(&self, member: &str) -> Option<AttendanceEntry>;
+	async fn get_current_attendance(&self, member: &str)
+		-> anyhow::Result<Option<AttendanceEntry>>;
 
 	/// Record attendance for a member
-	fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()>;
+	async fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()>;
 
 	/// Finish attending an event
-	fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()>;
+	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()>;
 }

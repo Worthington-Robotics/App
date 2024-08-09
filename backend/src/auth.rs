@@ -68,7 +68,7 @@ where
 	base64.encode(out)
 }
 
-/// Privilege level of a user or session
+/// Privilege level of a member
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Privilege {

@@ -3,6 +3,7 @@
 use std::str::FromStr;
 
 use anyhow::{anyhow, Context};
+use chrono::Utc;
 use rocket::futures::TryStreamExt;
 use sqlx::{
 	postgres::{PgConnectOptions, PgPoolOptions, PgRow},
@@ -212,7 +213,7 @@ impl Database for SqlDatabase {
 				let mut out = Vec::with_capacity(rows.len());
 				for row in rows {
 					let id: String = row.try_get("id")?;
-					let event = read_event(&id, row).context("Failed to read Event")?;
+					let event = read_event(&id, row).context("Failed to read event")?;
 					out.push(event);
 				}
 
@@ -247,19 +248,78 @@ impl Database for SqlDatabase {
 		std::iter::empty()
 	}
 
-	fn get_attendance(&self, member: &str) -> Vec<AttendanceEntry> {
-		Vec::new()
+	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>> {
+		let result = sqlx::query("SELECT * FROM attendance WHERE Member = $1")
+			.bind(member)
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let entry =
+						read_attendance_entry(row).context("Failed to read attendance entry")?;
+					out.push(entry);
+				}
+
+				Ok(out)
+			}
+			Err(e) => {
+				error!("Failed to get all attendance from database: {e}");
+				Err(anyhow!("Failed to get attendance from database"))
+			}
+		}
 	}
 
-	fn get_current_attendance(&self, member: &str) -> Option<AttendanceEntry> {
-		None
+	async fn get_current_attendance(
+		&self,
+		member: &str,
+	) -> anyhow::Result<Option<AttendanceEntry>> {
+		let result = sqlx::query("SELECT * FROM attendance WHERE Member = $1 AND EndDate IS NULL")
+			.bind(member)
+			.fetch_optional(&self.pool)
+			.await
+			.context("Failed to get current attendance from database")?;
+
+		if let Some(row) = result {
+			Ok(Some(
+				read_attendance_entry(row).context("Failed to read entry")?,
+			))
+		} else {
+			Ok(None)
+		}
 	}
 
-	fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
+	async fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
+		// Make sure that any current attendance is finished
+		self.finish_attendance(member)
+			.await
+			.context("Failed to finish existing attendance")?;
+		if let Err(e) = sqlx::query(
+			"INSERT INTO attendance (Member, StartDate, EndDate, Event) VALUES ($1, $2, $3, $4)",
+		)
+		.bind(member)
+		.bind(Utc::now().to_rfc2822())
+		.bind(None::<&str>)
+		.bind(event)
+		.execute(&self.pool)
+		.await
+		{
+			error!("Failed to record attendance: {e}");
+			return Err(anyhow!("Failed to record attendance in database"));
+		}
+
 		Ok(())
 	}
 
-	fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
+	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
+		sqlx::query("UPDATE attendance SET EndDate = $1 WHERE Member = $2 AND EndDate IS NULL")
+			.bind(Utc::now().to_rfc2822())
+			.bind(member)
+			.execute(&self.pool)
+			.await
+			.context("Failed to finish attendance in database")?;
+
 		Ok(())
 	}
 }
@@ -273,6 +333,10 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	pool.execute("CREATE TABLE IF NOT EXISTS events (Id text PRIMARY KEY, Name text, Date text, EndDate text, Kind text, Urgency text, Visibility text, Invites text[], RSVP text[])")
 		.await
 		.context("Failed to set up events table")?;
+
+	pool.execute("CREATE TABLE IF NOT EXISTS attendance (Id serial PRIMARY KEY, Member text, StartDate text, EndDate text, Event text)")
+		.await
+		.context("Failed to set up attendance table")?;
 
 	Ok(())
 }
@@ -344,5 +408,18 @@ fn read_event(id: &str, row: PgRow) -> anyhow::Result<Event> {
 		visibility,
 		invites: invites.collect(),
 		rsvp: rsvp.into_iter().collect(),
+	})
+}
+
+/// Read an attendance entry from the database
+fn read_attendance_entry(row: PgRow) -> anyhow::Result<AttendanceEntry> {
+	let start_date: String = row.try_get("startdate")?;
+	let end_date: Option<String> = row.try_get("enddate")?;
+	let event: String = row.try_get("event")?;
+
+	Ok(AttendanceEntry {
+		start_time: start_date,
+		end_time: end_date,
+		event,
 	})
 }

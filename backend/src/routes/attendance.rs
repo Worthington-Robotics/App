@@ -26,7 +26,10 @@ pub async fn create_attendance_panel(
 		return Ok("<h4>No events to attend</h4>".into());
 	}
 
-	let current_attendance = db.get_current_attendance(&member.id);
+	let current_attendance = db
+		.get_current_attendance(&member.id)
+		.await
+		.context("Failed to get current attendance for member from database")?;
 
 	let mut items = String::new();
 	for event in events {
@@ -84,7 +87,15 @@ pub async fn attend(event: &str, session_id: SessionID<'_>, state: &State) -> Re
 		error!("Event {event} does not exist");
 	}
 
-	if lock.get_current_attendance(&member).is_some() {
+	if lock
+		.get_current_attendance(&member)
+		.await
+		.map_err(|e| {
+			error!("Failed to get attendance from database: {e}");
+			Status::InternalServerError
+		})?
+		.is_some()
+	{
 		warn!(
 			"Attempted to mark new attendance while already attending: {}",
 			member
@@ -92,7 +103,7 @@ pub async fn attend(event: &str, session_id: SessionID<'_>, state: &State) -> Re
 		return Err(Status::BadRequest);
 	}
 
-	if let Err(e) = lock.record_attendance(&member, event) {
+	if let Err(e) = lock.record_attendance(&member, event).await {
 		error!("Failed to record attendance to database: {e}");
 		return Err(Status::InternalServerError);
 	}
@@ -125,7 +136,15 @@ pub async fn unattend(session_id: SessionID<'_>, state: &State) -> Result<(), St
 		error!("Member {member} does not exist");
 	}
 
-	if lock.get_current_attendance(&member).is_none() {
+	if lock
+		.get_current_attendance(&member)
+		.await
+		.map_err(|e| {
+			error!("Failed to get attendance from database: {e}");
+			Status::InternalServerError
+		})?
+		.is_none()
+	{
 		warn!(
 			"Attempted to finish attendance while not attending: {}",
 			member
@@ -133,7 +152,7 @@ pub async fn unattend(session_id: SessionID<'_>, state: &State) -> Result<(), St
 		return Err(Status::BadRequest);
 	}
 
-	if let Err(e) = lock.finish_attendance(&member) {
+	if let Err(e) = lock.finish_attendance(&member).await {
 		error!("Failed to record unattendance to database: {e}");
 		return Err(Status::InternalServerError);
 	}

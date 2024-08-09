@@ -144,20 +144,26 @@ impl Database for CacheDatabase {
 		self.sql.get_announcements()
 	}
 
-	fn get_attendance(&self, member: &str) -> Vec<crate::attendance::AttendanceEntry> {
-		self.sql.get_attendance(member)
+	async fn get_attendance(
+		&self,
+		member: &str,
+	) -> anyhow::Result<Vec<crate::attendance::AttendanceEntry>> {
+		self.sql.get_attendance(member).await
 	}
 
-	fn get_current_attendance(&self, member: &str) -> Option<crate::attendance::AttendanceEntry> {
-		self.sql.get_current_attendance(member)
+	async fn get_current_attendance(
+		&self,
+		member: &str,
+	) -> anyhow::Result<Option<crate::attendance::AttendanceEntry>> {
+		self.sql.get_current_attendance(member).await
 	}
 
-	fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
-		self.sql.record_attendance(member, event)
+	async fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
+		self.sql.record_attendance(member, event).await
 	}
 
-	fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
-		self.sql.finish_attendance(member)
+	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
+		self.sql.finish_attendance(member).await
 	}
 }
 

@@ -40,7 +40,7 @@ pub struct Event {
 }
 
 impl Event {
-	/// Check if this event invites a user
+	/// Check if this event invites a member
 	pub fn invites_member(&self, member: &Member) -> bool {
 		self.invites.iter().any(|x| x.mentions_member(member))
 	}
