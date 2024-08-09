@@ -259,7 +259,7 @@ impl Database for SqlDatabase {
 	}
 
 	async fn create_announcement(&mut self, announcement: Announcement) -> anyhow::Result<()> {
-		sqlx::query("INSERT INTO announcments (Id, Title, Date, Body, Event, Mentioned, Read) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+		sqlx::query("INSERT INTO announcements (Id, Title, Date, Body, Event, Mentioned, Read) VALUES ($1, $2, $3, $4, $5, $6, $7)")
 			.bind(announcement.id)
 			.bind(announcement.title)
 			.bind(announcement.date)

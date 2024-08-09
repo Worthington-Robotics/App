@@ -172,20 +172,11 @@ pub async fn create_member(
 	let groups: Vec<String> = groups;
 	let groups = groups
 		.into_iter()
-		.map(|x| match x.as_str() {
-			"Member" => MemberGroup::Member,
-			"NewMember" => MemberGroup::NewMember,
-			"ReturningMember" => MemberGroup::ReturningMember,
-			"PitCrew" => MemberGroup::PitCrew,
-			"DriveTeam" => MemberGroup::DriveTeam,
-			"Lead" => MemberGroup::Lead,
-			"President" => MemberGroup::President,
-			"Coach" => MemberGroup::Coach,
-			"Mentor" => MemberGroup::Mentor,
-			other => {
-				error!("Failed to parse member group {other}");
+		.map(|x| {
+			MemberGroup::from_dropdown(&x).unwrap_or_else(|| {
+				error!("Failed to parse member group {x}");
 				MemberGroup::Member
-			}
+			})
 		})
 		.collect();
 

@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::Deref, str::FromStr};
+use std::{fmt::Display, str::FromStr};
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, NaiveDate, NaiveTime, Offset, TimeZone, Utc};
@@ -76,8 +76,18 @@ pub async fn calendar(
 	let event_component = include_str!("components/event.min.html");
 	let mut events_content = String::with_capacity(relevant_events.len() * event_component.len());
 	let now = Utc::now();
+
+	let members = lock
+		.get_members()
+		.await
+		.map_err(|e| {
+			error!("Failed to get members from database: {e}");
+			Status::InternalServerError
+		})?
+		.collect::<Vec<_>>();
+
 	for event in relevant_events {
-		events_content.push_str(&render_event(event, lock.deref(), &member, &now).await?);
+		events_content.push_str(&render_event(event, &members, &member, &now).await?);
 	}
 
 	let page = include_str!("pages/events/calendar.min.html");
@@ -100,7 +110,7 @@ pub async fn calendar(
 /// Renders an event component
 async fn render_event(
 	event: &Event,
-	db: &impl Database,
+	members: &[Member],
 	member: &Member,
 	now: &DateTime<Utc>,
 ) -> Result<String, Status> {
@@ -119,18 +129,10 @@ async fn render_event(
 	let event_component = event_component.replace("{{date}}", &date);
 	let event_component = event_component.replace("{{name}}", &event.name);
 
-	let group_members = db
-		.get_members()
-		.await
-		.map_err(|e| {
-			error!("Failed to get members from database: {e}");
-			Status::InternalServerError
-		})?
-		.collect::<Vec<_>>();
 	let total_invites = event.invites.iter().fold(0, |acc, x| {
 		acc + match x {
 			MemberMention::Member(_) => 1,
-			MemberMention::Group(group) => count_group_members(group_members.iter(), group),
+			MemberMention::Group(group) => count_group_members(members.iter(), group),
 		}
 	});
 	let total_rsvps = event.rsvp.len();
@@ -369,17 +371,8 @@ pub async fn create_event(
 		.sorted_by_key(|x| x.name.clone())
 	{
 		let id = member.id.clone();
-		let name = lock
-			.get_member(&id)
-			.await
-			.ok()
-			.and_then(|x| x.map(|x| x.name.clone()))
-			.unwrap_or_else(|| {
-				error!("Failed to get member {}", id);
-				id.clone()
-			});
 		let checked = event.invites.contains(&MemberMention::Member(id.clone()));
-		available_invites.push((id, name, checked));
+		available_invites.push((id, member.name, checked));
 	}
 
 	for (i, (invite, invite_pretty, is_checked)) in available_invites.into_iter().enumerate() {

@@ -1,0 +1,64 @@
+{{worbots-header}}{{error}}
+<h2>Create Announcement</h2>
+<form id="announce-form" class="cont col">
+	<input type="text" name="title" id="title-field" class="announce-field" placeholder="Enter announcement title..." />
+	<label for="body">Announcement Body</label>
+	<textarea name="body" id="body-field" class="announce-field"></textarea>
+	<div id="mentions">
+		<h3>Mentions</h3>
+		{{mentions}}
+	</div>
+
+	<input type="submit" id="submit" value="Save" />
+</form>
+<script>
+	function onSubmit(event) {
+		event.preventDefault();
+
+		const title = document.getElementById("title-field").value;
+		const body = document.getElementById("body-field").innerText;
+
+		// Iterate over checkboxes
+		let mentions = [];
+		for (let i = 0; ; i++) {
+			const checkbox = document.getElementById(`mention-checkbox-${i}`);
+			if (checkbox == null) {
+				break;
+			}
+			if (checkbox.checked) {
+				mentions.push(checkbox.name);
+			}
+		}
+		let mentionsString = JSON.stringify(mentions);
+
+		let requestBody = `title=${title}&body=${body}&mentions=${mentionsString}`;
+
+		fetch("/api/create_announcement", {
+			method: "POST",
+			body: requestBody,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to create announcement: " + response.statusText);
+				return;
+			}
+			window.location.href = "/inbox";
+		});
+	}
+
+	document.getElementById("announce-form").addEventListener("submit", onSubmit);
+</script>
+<style>
+	.announce-field {
+		width: 60%;
+	}
+
+	.announce-checkbox>input {
+		margin-left: auto;
+	}
+
+	.group-mention-label {
+		color: lightcoral;
+	}
+</style>
+{{footer}}

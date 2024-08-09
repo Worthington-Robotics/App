@@ -144,6 +144,21 @@ impl MemberGroup {
 			Self::Mentor => "Mentors",
 		}
 	}
+
+	pub fn from_dropdown(value: &str) -> Option<Self> {
+		match value {
+			"Member" => Some(Self::Member),
+			"NewMember" => Some(Self::NewMember),
+			"ReturningMember" => Some(Self::ReturningMember),
+			"PitCrew" => Some(Self::PitCrew),
+			"DriveTeam" => Some(Self::PitCrew),
+			"Lead" => Some(Self::Lead),
+			"President" => Some(Self::President),
+			"Coach" => Some(Self::Coach),
+			"Mentor" => Some(Self::Mentor),
+			_ => None,
+		}
+	}
 }
 
 impl ToDropdown for MemberGroup {

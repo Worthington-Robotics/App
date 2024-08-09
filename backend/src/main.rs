@@ -24,6 +24,7 @@ mod db;
 mod events;
 mod forms;
 mod member;
+mod notifications;
 mod routes;
 mod util;
 
@@ -108,6 +109,8 @@ async fn rocket() -> _ {
 				routes::calendar::delete_event,
 				routes::calendar::rsvp_event,
 				routes::inbox::inbox,
+				routes::inbox::create_announcement_api,
+				routes::inbox::create_announcement_page,
 				routes::attendance::attend,
 				routes::attendance::unattend,
 			],
