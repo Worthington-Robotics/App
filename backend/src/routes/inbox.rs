@@ -72,23 +72,46 @@ pub async fn inbox(
 		if !announcement.can_member_see(&member) {
 			continue;
 		}
-		announcements_string.push_str(&render_announcement(&announcement));
+		announcements_string.push_str(&render_announcement(announcement));
 	}
 	let page = page.replace("{{announcements}}", &announcements_string);
+
+	let add_button = if member.is_elevated() {
+		format!(
+			"<a href=\"/create_announcement\">{}</a>",
+			include_str!("components/ui/new.min.html")
+		)
+	} else {
+		String::new()
+	};
+
+	let page = page.replace("{{add}}", &add_button);
 
 	let page = create_page("Inbox", &page);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
-fn render_announcement(announcement: &Announcement) -> String {
+fn render_announcement(announcement: Announcement) -> String {
 	let component = include_str!("components/announcement.min.html");
+	let out = component.replace("{{id}}", &announcement.id);
 	let date = DateTime::parse_from_rfc2822(&announcement.date)
 		.map(render_date)
 		.unwrap_or("Invalid date".into());
-	let out = component.replace("{{date}}", &date);
+	let out = out.replace("{{date}}", &date);
 	let out = out.replace("{{title}}", &announcement.title);
-	let out = out.replace("{{body}}", &announcement.body.clone().unwrap_or_default());
+	let body = announcement
+		.body
+		.map(|x| {
+			// Cut off the end of the body if it is too long
+			if x.len() > 35 {
+				format!("{}...", &x[0..35])
+			} else {
+				x
+			}
+		})
+		.unwrap_or_default();
+	let out = out.replace("{{body}}", &body);
 
 	out
 }
@@ -226,6 +249,78 @@ pub async fn create_announcement_page(
 	let page = page.replace("{{mentions}}", &mentions_string);
 
 	let page = create_page("Create Announcement", &page);
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+#[rocket::get("/announcement/<id>")]
+pub async fn announcement_details(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+	id: &str,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Announcement details");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.id else {
+		return Ok(redirect);
+	};
+
+	let Some(requesting_member_id) = ({
+		let lock = state.session_manager.lock().await;
+		lock.get(session_id).map(|x| x.member.clone())
+	}) else {
+		error!("Unknown session ID {}", session_id);
+		return Ok(redirect);
+	};
+
+	let Some(member) = ({
+		let lock = state.db.lock().await;
+		lock.get_member(&requesting_member_id).await.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?
+	}) else {
+		error!("Unknown requesting member ID {}", requesting_member_id);
+		return Ok(redirect);
+	};
+
+	let announcement = state
+		.db
+		.lock()
+		.await
+		.get_announcement(id)
+		.await
+		.map_err(|e| {
+			error!("Failed to get announcement {id}: {e}");
+			Status::InternalServerError
+		})?;
+
+	let Some(announcement) = announcement else {
+		error!("Announcement {id} does not exist");
+		return Err(Status::NotFound);
+	};
+
+	if !announcement.can_member_see(&member) {
+		error!("Member cannot see announcement");
+		return Err(Status::NotFound);
+	}
+
+	let page = include_str!("pages/announcements/details.min.html");
+	let page = page.replace("{{title}}", &announcement.title);
+	let date = DateTime::parse_from_rfc2822(&announcement.date)
+		.map(|x| render_date(x))
+		.unwrap_or("Invalid Date".into());
+	let page = page.replace("{{date}}", &date);
+
+	let body = comrak::markdown_to_html(
+		&announcement.body.unwrap_or_default(),
+		&comrak::Options::default(),
+	);
+	let page = page.replace("{{body}}", &body);
+
+	let page = create_page("Announcement", &page);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }

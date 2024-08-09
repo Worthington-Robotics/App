@@ -60,6 +60,14 @@ input {
 	border-radius: 5px;
 }
 
+textarea,
+input[type="text"],
+input[type=""] {
+	color: var(--fg);
+	background-color: var(--bg2);
+	border-color: var(--bg3);
+}
+
 a.nolink:link {
 	color: var(--fg);
 	text-decoration: none;

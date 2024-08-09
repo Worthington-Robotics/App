@@ -6,6 +6,7 @@ use chrono::{DateTime, Datelike, Duration, FixedOffset, Utc};
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
+use tracing::error;
 
 use crate::member::{Member, MemberMention};
 use crate::util::ToDropdown;
@@ -60,16 +61,17 @@ impl Event {
 	/// Check if this event is upcoming
 	pub fn is_upcoming(&self, now: &DateTime<Utc>) -> bool {
 		let Ok(end_date) = self.get_end_date() else {
+			error!("Failed to parse end date for event");
 			return true;
 		};
 
 		let end_date = end_date.with_timezone(&Utc);
 		let diff = now.timestamp() - end_date.timestamp();
 		if diff > EXPIRED_EVENT_THRESHOLD * 3600 {
-			return false;
+			false
+		} else {
+			true
 		}
-
-		true
 	}
 }
 
@@ -229,7 +231,7 @@ pub fn get_relevant_events<'a>(
 }
 
 /// Threshold for how long ago events without end dates can be before they are not considered upcoming, in hours
-pub const EXPIRED_EVENT_THRESHOLD: i64 = 3;
+pub const EXPIRED_EVENT_THRESHOLD: i64 = 1;
 
 /// Get all of the events that are upcoming
 pub fn get_upcoming_events<'a>(events: Vec<&'a Event>) -> Vec<&'a Event> {

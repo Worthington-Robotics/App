@@ -111,6 +111,7 @@ async fn rocket() -> _ {
 				routes::inbox::inbox,
 				routes::inbox::create_announcement_api,
 				routes::inbox::create_announcement_page,
+				routes::inbox::announcement_details,
 				routes::attendance::attend,
 				routes::attendance::unattend,
 			],

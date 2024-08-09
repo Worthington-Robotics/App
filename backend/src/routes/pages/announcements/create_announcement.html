@@ -3,7 +3,7 @@
 <form id="announce-form" class="cont col">
 	<input type="text" name="title" id="title-field" class="announce-field" placeholder="Enter announcement title..." />
 	<label for="body">Announcement Body</label>
-	<textarea name="body" id="body-field" class="announce-field"></textarea>
+	<textarea name="body" id="body-field" class="round border"></textarea>
 	<div id="mentions">
 		<h3>Mentions</h3>
 		{{mentions}}
@@ -15,8 +15,8 @@
 	function onSubmit(event) {
 		event.preventDefault();
 
-		const title = document.getElementById("title-field").value;
-		const body = document.getElementById("body-field").innerText;
+		const title = encodeURIComponent(document.getElementById("title-field").value);
+		const body = encodeURIComponent(document.getElementById("body-field").value);
 
 		// Iterate over checkboxes
 		let mentions = [];
@@ -59,6 +59,12 @@
 
 	.group-mention-label {
 		color: lightcoral;
+	}
+
+	textarea {
+		resize: none;
+		width: 85%;
+		height: 12rem;
 	}
 </style>
 {{footer}}
