@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -37,9 +38,15 @@ impl Announcement {
 }
 
 /// Count the number of unread announcements a member has
-pub fn count_unread_announcements(member: &Member, db: &impl Database) -> usize {
-	db.get_announcements()
+pub async fn count_unread_announcements(
+	member: &Member,
+	db: &impl Database,
+) -> anyhow::Result<usize> {
+	Ok(db
+		.get_announcements()
+		.await
+		.context("Failed to get announcements from database")?
 		.filter(|x| x.can_member_see(member))
 		.filter(|x| !x.read.contains(&member.id))
-		.count()
+		.count())
 }

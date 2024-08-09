@@ -129,19 +129,24 @@ impl Database for CacheDatabase {
 		self.cache.event_exists(event).await
 	}
 
-	fn get_announcement(&self, announcement: &str) -> Option<crate::announcements::Announcement> {
-		self.sql.get_announcement(announcement)
+	async fn get_announcement(
+		&self,
+		announcement: &str,
+	) -> anyhow::Result<Option<crate::announcements::Announcement>> {
+		self.sql.get_announcement(announcement).await
 	}
 
-	fn create_announcement(
+	async fn create_announcement(
 		&mut self,
 		announcement: crate::announcements::Announcement,
 	) -> anyhow::Result<()> {
-		self.sql.create_announcement(announcement)
+		self.sql.create_announcement(announcement).await
 	}
 
-	fn get_announcements(&self) -> impl Iterator<Item = &crate::announcements::Announcement> {
-		self.sql.get_announcements()
+	async fn get_announcements(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = crate::announcements::Announcement>> {
+		self.sql.get_announcements().await
 	}
 
 	async fn get_attendance(

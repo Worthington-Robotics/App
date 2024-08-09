@@ -236,16 +236,76 @@ impl Database for SqlDatabase {
 		Ok(result.rows_affected() > 0)
 	}
 
-	fn get_announcement(&self, announcement: &str) -> Option<Announcement> {
-		None
+	async fn get_announcement(&self, announcement: &str) -> anyhow::Result<Option<Announcement>> {
+		let mut result = sqlx::query("SELECT * FROM announcements WHERE Id = $1")
+			.bind(announcement)
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let announcement =
+					read_announcement(announcement, row).context("Failed to read announcement")?;
+
+				Ok(Some(announcement))
+			}
+			Err(e) => {
+				error!("Failed to get announcement {announcement} from database: {e}");
+				Err(anyhow!("Failed to get announcement from database"))
+			}
+		}
 	}
 
-	fn create_announcement(&mut self, announcement: Announcement) -> anyhow::Result<()> {
+	async fn create_announcement(&mut self, announcement: Announcement) -> anyhow::Result<()> {
+		sqlx::query("INSERT INTO announcments (Id, Title, Date, Body, Event, Mentioned, Read) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+			.bind(announcement.id)
+			.bind(announcement.title)
+			.bind(announcement.date)
+			.bind(announcement.body)
+			.bind(announcement.event)
+			.bind(
+				announcement
+					.mentioned
+					.into_iter()
+					.map(|x| x.to_db())
+					.collect::<Vec<_>>(),
+			)
+			.bind(
+				announcement
+					.read
+					.into_iter()
+					.collect::<Vec<_>>(),
+			)
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new announcement in database")?;
+
 		Ok(())
 	}
 
-	fn get_announcements(&self) -> impl Iterator<Item = &Announcement> {
-		std::iter::empty()
+	async fn get_announcements(&self) -> anyhow::Result<impl Iterator<Item = Announcement>> {
+		let result = sqlx::query("SELECT * FROM announcements")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let id: String = row.try_get("id")?;
+					let announcement =
+						read_announcement(&id, row).context("Failed to read announcement")?;
+					out.push(announcement);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get all announcements from database: {e}");
+				Err(anyhow!("Failed to get announcements from database"))
+			}
+		}
 	}
 
 	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>> {
@@ -338,6 +398,10 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		.await
 		.context("Failed to set up attendance table")?;
 
+	pool.execute("CREATE TABLE IF NOT EXISTS announcements (Id text PRIMARY KEY, Title text, Date text, Body text, Event text, Mentioned text[], Read text[])")
+		.await
+		.context("Failed to set up announcements table")?;
+
 	Ok(())
 }
 
@@ -421,5 +485,28 @@ fn read_attendance_entry(row: PgRow) -> anyhow::Result<AttendanceEntry> {
 		start_time: start_date,
 		end_time: end_date,
 		event,
+	})
+}
+
+/// Read an announcement from the database
+fn read_announcement(id: &str, row: PgRow) -> anyhow::Result<Announcement> {
+	let title: String = row.try_get("title")?;
+	let date: String = row.try_get("date")?;
+	let body: Option<String> = row.try_get("body")?;
+	let event: Option<String> = row.try_get("event")?;
+	let mentioned: Vec<String> = row.try_get("mentioned")?;
+	let mentioned = mentioned
+		.into_iter()
+		.filter_map(|x| MemberMention::from_str(&x).ok());
+	let read: Vec<String> = row.try_get("read")?;
+
+	Ok(Announcement {
+		id: id.to_string(),
+		title,
+		date,
+		body,
+		event,
+		mentioned: mentioned.collect(),
+		read: read.into_iter().collect(),
 	})
 }

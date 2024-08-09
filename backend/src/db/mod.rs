@@ -55,13 +55,13 @@ pub trait Database {
 	async fn event_exists(&self, event: &str) -> anyhow::Result<bool>;
 
 	/// Get an announcement by ID
-	fn get_announcement(&self, announcement: &str) -> Option<Announcement>;
+	async fn get_announcement(&self, announcement: &str) -> anyhow::Result<Option<Announcement>>;
 
 	/// Create a new announcement
-	fn create_announcement(&mut self, announcement: Announcement) -> anyhow::Result<()>;
+	async fn create_announcement(&mut self, announcement: Announcement) -> anyhow::Result<()>;
 
 	/// Get all announcements
-	fn get_announcements(&self) -> impl Iterator<Item = &Announcement>;
+	async fn get_announcements(&self) -> anyhow::Result<impl Iterator<Item = Announcement>>;
 
 	/// Get all attendance records for a member
 	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>>;

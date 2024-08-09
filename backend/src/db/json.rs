@@ -93,19 +93,19 @@ impl Database for JSONDatabase {
 		Ok(self.contents.events.contains_key(event))
 	}
 
-	fn get_announcement(&self, announcement: &str) -> Option<Announcement> {
-		self.contents.announcements.get(announcement).cloned()
+	async fn get_announcement(&self, announcement: &str) -> anyhow::Result<Option<Announcement>> {
+		Ok(self.contents.announcements.get(announcement).cloned())
 	}
 
-	fn create_announcement(&mut self, announcement: Announcement) -> anyhow::Result<()> {
+	async fn create_announcement(&mut self, announcement: Announcement) -> anyhow::Result<()> {
 		self.contents
 			.announcements
 			.insert(announcement.id.clone(), announcement);
 		self.write()
 	}
 
-	fn get_announcements(&self) -> impl Iterator<Item = &Announcement> {
-		self.contents.announcements.values()
+	async fn get_announcements(&self) -> anyhow::Result<impl Iterator<Item = Announcement>> {
+		Ok(self.contents.announcements.values().cloned())
 	}
 
 	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>> {

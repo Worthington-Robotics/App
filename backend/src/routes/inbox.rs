@@ -45,15 +45,23 @@ pub async fn inbox(
 	let page = include_str!("pages/inbox.min.html");
 
 	let lock = state.db.lock().await;
+	let announcements = lock
+		.get_announcements()
+		.await
+		.map_err(|e| {
+			error!("Failed to get announcements from database: {e}");
+			Status::InternalServerError
+		})?
+		.collect::<Vec<_>>();
 	let mut announcements_string = String::with_capacity(
-		include_str!("components/announcement.min.html").len() * lock.get_announcements().count(),
+		include_str!("components/announcement.min.html").len() * announcements.len(),
 	);
 
-	for announcement in lock.get_announcements() {
+	for announcement in announcements {
 		if !announcement.can_member_see(&member) {
 			continue;
 		}
-		announcements_string.push_str(&render_announcement(announcement));
+		announcements_string.push_str(&render_announcement(&announcement));
 	}
 	let page = page.replace("{{announcements}}", &announcements_string);
 
