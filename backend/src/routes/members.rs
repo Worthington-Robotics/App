@@ -370,9 +370,8 @@ pub async fn create_member_page(
 		}
 	};
 
-	let page = include_str!("pages/members/create_member.html");
-	let page = page.replace("{{id}}", &member.id);
-	let page = page.replace("{{name}}", &member.name);
+	let page = include_str!("pages/members/create_member.min.html");
+	let page = page.replace("{{name}}", &format!("\"{}\"", member.name));
 
 	// Create dropdown options
 	let page = page.replace(
@@ -406,12 +405,19 @@ pub async fn create_member_page(
 	}
 	let page = page.replace("{{groups}}", &groups_string);
 
-	// Create password field only if the member doesn't already exist
-	let password_field = if id.is_none() {
-		"<input type=password name=password id=password-field class=create-member-field placeholder=\"Enter member password...\" autocomplete=new-password />"
+	// Create ID field and password field only if the member doesn't already exist.
+	// Replace the value for the ID in the JavaScript based on whether it is new or not
+	let (id_field, id, password_field) = if let Some(id) = id {
+		("", format!("\"{id}\""), "")
 	} else {
-		""
+		(
+			"<input type=text name=id id=id-field class=create-member-field placeholder=\"Enter member username...\" />",
+			"document.getElementById(\"id-field\").value".to_string(),
+			"<input type=password name=password id=password-field class=create-member-field placeholder=\"Enter member password...\" autocomplete=new-password />"
+		)
 	};
+	let page = page.replace("{{id-field}}", id_field);
+	let page = page.replace("__id__", &id);
 	let page = page.replace("{{password}}", password_field);
 
 	let page = create_page("Create Member", &page);
