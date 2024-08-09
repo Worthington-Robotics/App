@@ -44,7 +44,13 @@ impl Database for SqlDatabase {
 			.await
 			.context("Failed to set up database")?;
 
-		Ok(Self { pool })
+		let mut out = Self { pool };
+		// Delete any empty members that may have been created
+		if let Err(e) = out.delete_member("").await {
+			error!("Failed to delete empty member: {e}");
+		};
+
+		Ok(out)
 	}
 
 	async fn get_member(&self, id: &str) -> anyhow::Result<Option<Member>> {

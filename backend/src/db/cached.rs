@@ -1,11 +1,50 @@
+use std::{sync::Arc, time::Duration};
+
 use anyhow::Context;
-use rocket::tokio::try_join;
+use rocket::{
+	fairing::{Fairing, Info, Kind},
+	tokio::{sync::Mutex, try_join},
+	Orbit, Rocket,
+};
+use tracing::{error, info};
 
 use super::{json::JSONDatabase, sql::SqlDatabase, Database};
 
 pub struct CacheDatabase {
 	sql: SqlDatabase,
 	cache: JSONDatabase,
+}
+
+impl CacheDatabase {
+	/// Sync the cache with the remote database. Should be done periodically to
+	/// provide protection against issues
+	pub async fn sync_cache(&mut self) -> anyhow::Result<()> {
+		self.cache = populate_cache(&self.sql).await?;
+
+		Ok(())
+	}
+}
+
+/// Populate the JSON cache with the SQL database's data
+async fn populate_cache(sql: &SqlDatabase) -> anyhow::Result<JSONDatabase> {
+	let mut cache = JSONDatabase::new(false).context("Failed to open cache database")?;
+
+	for member in sql
+		.get_members()
+		.await
+		.context("Failed to get members from database")?
+	{
+		cache.create_member(member).await?;
+	}
+	for event in sql
+		.get_events()
+		.await
+		.context("Failed to get events from database")?
+	{
+		cache.create_event(event).await?;
+	}
+
+	Ok(cache)
 }
 
 impl Database for CacheDatabase {
@@ -17,23 +56,10 @@ impl Database for CacheDatabase {
 		let sql = SqlDatabase::open()
 			.await
 			.context("Failed to open SQL database")?;
-		let mut cache = JSONDatabase::new(false).context("Failed to open cache database")?;
 
-		// Populate the cache
-		for member in sql
-			.get_members()
+		let cache = populate_cache(&sql)
 			.await
-			.context("Failed to get members from database")?
-		{
-			cache.create_member(member).await?;
-		}
-		for event in sql
-			.get_events()
-			.await
-			.context("Failed to get events from database")?
-		{
-			cache.create_event(event).await?;
-		}
+			.context("Failed to populate cache")?;
 
 		Ok(Self { sql, cache })
 	}
@@ -132,5 +158,41 @@ impl Database for CacheDatabase {
 
 	fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
 		self.sql.finish_attendance(member)
+	}
+}
+
+/// Fairing for periodically syncing the cache
+pub struct SyncCache {
+	db: Arc<Mutex<CacheDatabase>>,
+}
+
+impl SyncCache {
+	#[cfg(feature = "cachedb")]
+	pub fn new(db: Arc<Mutex<CacheDatabase>>) -> Self {
+		Self { db }
+	}
+}
+
+#[async_trait::async_trait]
+impl Fairing for SyncCache {
+	fn info(&self) -> Info {
+		Info {
+			name: "Sync Cache",
+			kind: Kind::Liftoff,
+		}
+	}
+
+	async fn on_liftoff(&self, _: &Rocket<Orbit>) {
+		// Periodically sync the cache
+		let db = self.db.clone();
+		rocket::tokio::spawn(async move {
+			loop {
+				rocket::tokio::time::sleep(Duration::from_secs(120)).await;
+				info!("Syncing cache...");
+				if let Err(e) = db.lock().await.sync_cache().await {
+					error!("Failed to sync cache: {e}");
+				}
+			}
+		});
 	}
 }

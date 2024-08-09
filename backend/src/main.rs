@@ -8,6 +8,8 @@ use base64::{
 	Engine,
 };
 use chrono::{DateTime, TimeZone};
+#[cfg(feature = "cachedb")]
+use db::cached::SyncCache;
 use db::{Database, DatabaseImpl};
 use dotenv::dotenv;
 use member::Member;
@@ -70,8 +72,10 @@ async fn rocket() -> _ {
 	};
 
 	let db_clone = state.db.clone();
+	#[cfg(feature = "cachedb")]
+	let db_clone2 = state.db.clone();
 
-	rocket::build()
+	let out = rocket::build()
 		.manage(state)
 		.mount(
 			"/",
@@ -110,7 +114,12 @@ async fn rocket() -> _ {
 		)
 		.register("/", catchers![routes::not_found, routes::internal_error])
 		.attach(Ratelimit::new())
-		.attach(AttendanceFairing::new(db_clone))
+		.attach(AttendanceFairing::new(db_clone));
+
+	#[cfg(feature = "cachedb")]
+	let out = out.attach(SyncCache::new(db_clone2));
+
+	out
 }
 
 /// Application state for Rocket
