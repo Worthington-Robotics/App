@@ -1,19 +1,14 @@
-use std::{collections::HashSet, fmt::Display, sync::Arc};
+use std::{collections::HashSet, sync::Arc};
 
 use argon2::Argon2;
 use attendance::AttendanceFairing;
 use auth::SessionManager;
-use base64::{
-	engine::{GeneralPurpose, GeneralPurposeConfig},
-	Engine,
-};
-use chrono::{DateTime, TimeZone};
+use chrono::DateTime;
 #[cfg(feature = "cachedb")]
 use db::cached::SyncCache;
 use db::{Database, DatabaseImpl};
 use dotenv::dotenv;
 use member::Member;
-use rand::{rngs::StdRng, RngCore, SeedableRng};
 use rocket::{catchers, routes, tokio::sync::Mutex};
 use routes::Ratelimit;
 
@@ -135,27 +130,3 @@ pub struct AppState {
 }
 
 pub type State = rocket::State<AppState>;
-
-/// Generate the ID for something like an event
-fn generate_id() -> String {
-	let mut rng = StdRng::from_entropy();
-	let base64 = GeneralPurpose::new(&base64::alphabet::URL_SAFE, GeneralPurposeConfig::new());
-	const LENGTH: usize = 32;
-	let mut out = [0; LENGTH];
-	for i in 0..LENGTH {
-		out[i] = rng.next_u64() as u8;
-	}
-
-	base64.encode(out)
-}
-
-/// Render a nice date
-fn render_date<T: TimeZone>(date: DateTime<T>) -> String
-where
-	T::Offset: Display,
-{
-	date.format("%a %B %d, %I:%M %p")
-		.to_string()
-		.replace(":00", "")
-		.replace(" 0", " ")
-}

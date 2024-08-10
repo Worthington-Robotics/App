@@ -16,8 +16,8 @@ use tracing::{error, span, Level};
 
 use crate::attendance::get_attendance_stats;
 use crate::events::Event;
-use crate::render_date;
 use crate::routes::OptionalSessionID;
+use crate::util::render_date;
 use crate::util::ToDropdown;
 use crate::{
 	auth::Privilege,

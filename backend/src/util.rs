@@ -1,7 +1,12 @@
 use std::fmt::Display;
 
-use chrono::NaiveDate;
+use base64::{
+	engine::{GeneralPurpose, GeneralPurposeConfig},
+	Engine,
+};
+use chrono::{DateTime, NaiveDate, TimeZone};
 use itertools::Itertools;
+use rand::{rngs::StdRng, RngCore, SeedableRng};
 use strum::IntoEnumIterator;
 
 /// Trait for enums that can be converted into HTML select options
@@ -43,4 +48,28 @@ pub fn get_days_from_month(year: i32, month: u32) -> i64 {
 	.unwrap()
 	.signed_duration_since(NaiveDate::from_ymd_opt(year, month, 1).unwrap())
 	.num_days()
+}
+
+/// Generate the ID for something like an event
+pub fn generate_id() -> String {
+	let mut rng = StdRng::from_entropy();
+	let base64 = GeneralPurpose::new(&base64::alphabet::URL_SAFE, GeneralPurposeConfig::new());
+	const LENGTH: usize = 32;
+	let mut out = [0; LENGTH];
+	for i in 0..LENGTH {
+		out[i] = rng.next_u64() as u8;
+	}
+
+	base64.encode(out)
+}
+
+/// Render a nice date
+pub fn render_date<T: TimeZone>(date: DateTime<T>) -> String
+where
+	T::Offset: Display,
+{
+	date.format("%a %B %d, %I:%M %p")
+		.to_string()
+		.replace(":00", "")
+		.replace(" 0", " ")
 }

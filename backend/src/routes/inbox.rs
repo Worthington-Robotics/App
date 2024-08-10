@@ -13,7 +13,7 @@ use crate::announcements::Announcement;
 use crate::db::Database;
 use crate::member::{MemberGroup, MemberMention};
 use crate::routes::SessionID;
-use crate::{generate_id, render_date};
+use crate::util::{generate_id, render_date};
 use crate::{routes::OptionalSessionID, State};
 
 use super::{create_page, PageOrRedirect};

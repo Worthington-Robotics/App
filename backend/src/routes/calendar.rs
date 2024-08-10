@@ -16,9 +16,9 @@ use tracing::{error, span, warn, Level};
 use crate::{
 	db::Database,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
-	generate_id,
 	member::{count_group_members, Member, MemberGroup, MemberMention},
-	render_date,
+	util::generate_id,
+	util::render_date,
 	util::{get_days_from_month, ToDropdown},
 };
 use crate::{events::get_relevant_events, State};
