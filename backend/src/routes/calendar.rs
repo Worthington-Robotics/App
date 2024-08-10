@@ -34,30 +34,15 @@ pub async fn calendar(
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.id else {
+	let Some(session_id) = session_id.to_session_id() else {
 		return Ok(redirect);
 	};
 
-	let Some(requesting_member_id) = ({
-		let lock = state.session_manager.lock().await;
-		lock.get(session_id).map(|x| x.member.clone())
-	}) else {
-		error!("Unknown session ID {}", session_id);
+	let Ok(requesting_member) = session_id.get_requesting_member(state).await else {
 		return Ok(redirect);
 	};
 
-	let Some(member) = ({
-		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id).await.map_err(|e| {
-			error!("Failed to get member from database: {e}");
-			Status::InternalServerError
-		})?
-	}) else {
-		error!("Unknown requesting member ID {}", requesting_member_id);
-		return Ok(redirect);
-	};
-
-	let is_elevated = member.is_elevated();
+	let is_elevated = requesting_member.is_elevated();
 
 	let lock = state.db.lock().await;
 	let events = lock
@@ -69,7 +54,7 @@ pub async fn calendar(
 		})?
 		.into_iter()
 		.collect::<Vec<_>>();
-	let mut relevant_events = get_relevant_events(&member, events.iter());
+	let mut relevant_events = get_relevant_events(&requesting_member, events.iter());
 	relevant_events
 		.sort_by_cached_key(|x| DateTime::parse_from_rfc2822(&x.date).unwrap_or_default());
 
@@ -87,7 +72,7 @@ pub async fn calendar(
 		.collect::<Vec<_>>();
 
 	for event in relevant_events {
-		events_content.push_str(&render_event(event, &members, &member, &now).await?);
+		events_content.push_str(&render_event(event, &members, &requesting_member, &now).await?);
 	}
 
 	let page = include_str!("pages/events/calendar.min.html");
@@ -169,26 +154,11 @@ pub async fn event_details(
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.id else {
+	let Some(session_id) = session_id.to_session_id() else {
 		return Ok(redirect);
 	};
 
-	let Some(requesting_member_id) = ({
-		let lock = state.session_manager.lock().await;
-		lock.get(session_id).map(|x| x.member.clone())
-	}) else {
-		error!("Unknown session ID {}", session_id);
-		return Ok(redirect);
-	};
-
-	let Some(requesting_member) = ({
-		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id).await.map_err(|e| {
-			error!("Failed to get member from database: {e}");
-			Status::InternalServerError
-		})?
-	}) else {
-		error!("Unknown requesting member ID {}", requesting_member_id);
+	let Ok(requesting_member) = session_id.get_requesting_member(state).await else {
 		return Ok(redirect);
 	};
 
@@ -244,33 +214,13 @@ pub async fn create_event(
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.id else {
+	let Some(session_id) = session_id.to_session_id() else {
 		return Ok(redirect);
 	};
 
-	let Some(requesting_member_id) = ({
-		let lock = state.session_manager.lock().await;
-		lock.get(session_id).map(|x| x.member.clone())
-	}) else {
-		error!("Unknown session ID {}", session_id);
+	if session_id.verify_elevated(state).await.is_err() {
 		return Ok(redirect);
 	};
-
-	let Some(member) = ({
-		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id).await.map_err(|e| {
-			error!("Failed to get member from database: {e}");
-			Status::InternalServerError
-		})?
-	}) else {
-		error!("Unknown requesting member ID {}", requesting_member_id);
-		return Ok(redirect);
-	};
-
-	if !member.is_elevated() {
-		error!("Invalid permissions");
-		return Ok(redirect);
-	}
 
 	let lock = state.db.lock().await;
 	let event = if let Some(id) = id {

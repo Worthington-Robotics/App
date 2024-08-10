@@ -25,6 +25,7 @@ use rocket::{Data, Orbit, Response, Rocket};
 use tracing::{error, event, span, Level};
 
 use crate::db::Database;
+use crate::member::Member;
 use crate::State;
 
 #[rocket::get("/")]
@@ -110,6 +111,13 @@ pub struct OptionalSessionID<'r> {
 	id: Option<&'r str>,
 }
 
+impl<'r> OptionalSessionID<'r> {
+	/// Convert this optional session ID to a SessionID, optionally
+	pub fn to_session_id(self) -> Option<SessionID<'r>> {
+		self.id.map(|id| SessionID { id })
+	}
+}
+
 #[async_trait::async_trait]
 impl<'r> FromRequest<'r> for OptionalSessionID<'r> {
 	type Error = String;
@@ -130,9 +138,9 @@ fn get_session_id<'r>(request: &'r Request) -> Option<&'r str> {
 }
 
 impl<'r> SessionID<'r> {
-	/// Verify that the session ID is valid and that the requesting member has elevated permissions
-	pub async fn verify_elevated(&self, state: &State) -> Result<(), Status> {
-		let span = span!(Level::DEBUG, "Verifying session elevated permissions");
+	/// Get the requesting member
+	pub async fn get_requesting_member(&self, state: &State) -> Result<Member, Status> {
+		let span = span!(Level::DEBUG, "Getting requesting member");
 		let _enter = span.enter();
 
 		let requesting_member_id = {
@@ -156,6 +164,16 @@ impl<'r> SessionID<'r> {
 			error!("Unknown requesting member ID {}", requesting_member_id);
 			Status::Unauthorized
 		})?;
+
+		Ok(requesting_member)
+	}
+
+	/// Verify that the session ID is valid and that the requesting member has elevated permissions
+	pub async fn verify_elevated(&self, state: &State) -> Result<(), Status> {
+		let span = span!(Level::DEBUG, "Verifying session elevated permissions");
+		let _enter = span.enter();
+
+		let requesting_member = self.get_requesting_member(state).await?;
 
 		if !requesting_member.is_elevated() {
 			event!(

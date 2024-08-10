@@ -27,26 +27,11 @@ pub async fn inbox(
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.id else {
+	let Some(session_id) = session_id.to_session_id() else {
 		return Ok(redirect);
 	};
 
-	let Some(requesting_member_id) = ({
-		let lock = state.session_manager.lock().await;
-		lock.get(session_id).map(|x| x.member.clone())
-	}) else {
-		error!("Unknown session ID {}", session_id);
-		return Ok(redirect);
-	};
-
-	let Some(member) = ({
-		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id).await.map_err(|e| {
-			error!("Failed to get member from database: {e}");
-			Status::InternalServerError
-		})?
-	}) else {
-		error!("Unknown requesting member ID {}", requesting_member_id);
+	let Ok(requesting_member) = session_id.get_requesting_member(state).await else {
 		return Ok(redirect);
 	};
 
@@ -69,14 +54,14 @@ pub async fn inbox(
 	);
 
 	for announcement in announcements {
-		if !announcement.can_member_see(&member) {
+		if !announcement.can_member_see(&requesting_member) {
 			continue;
 		}
-		announcements_string.push_str(&render_announcement(announcement, &member.id));
+		announcements_string.push_str(&render_announcement(announcement, &requesting_member.id));
 	}
 	let page = page.replace("{{announcements}}", &announcements_string);
 
-	let add_button = if member.is_elevated() {
+	let add_button = if requesting_member.is_elevated() {
 		format!(
 			"<a href=\"/create_announcement\">{}</a>",
 			include_str!("components/ui/new.min.html")
@@ -186,33 +171,13 @@ pub async fn create_announcement_page(
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.id else {
+	let Some(session_id) = session_id.to_session_id() else {
 		return Ok(redirect);
 	};
 
-	let Some(requesting_member_id) = ({
-		let lock = state.session_manager.lock().await;
-		lock.get(session_id).map(|x| x.member.clone())
-	}) else {
-		error!("Unknown session ID {}", session_id);
+	if session_id.verify_elevated(state).await.is_err() {
 		return Ok(redirect);
 	};
-
-	let Some(member) = ({
-		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id).await.map_err(|e| {
-			error!("Failed to get member from database: {e}");
-			Status::InternalServerError
-		})?
-	}) else {
-		error!("Unknown requesting member ID {}", requesting_member_id);
-		return Ok(redirect);
-	};
-
-	if !member.is_elevated() {
-		error!("Invalid permissions");
-		return Ok(redirect);
-	}
 
 	let lock = state.db.lock().await;
 
@@ -269,26 +234,11 @@ pub async fn announcement_details(
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.id else {
+	let Some(session_id) = session_id.to_session_id() else {
 		return Ok(redirect);
 	};
 
-	let Some(requesting_member_id) = ({
-		let lock = state.session_manager.lock().await;
-		lock.get(session_id).map(|x| x.member.clone())
-	}) else {
-		error!("Unknown session ID {}", session_id);
-		return Ok(redirect);
-	};
-
-	let Some(member) = ({
-		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id).await.map_err(|e| {
-			error!("Failed to get member from database: {e}");
-			Status::InternalServerError
-		})?
-	}) else {
-		error!("Unknown requesting member ID {}", requesting_member_id);
+	let Ok(requesting_member) = session_id.get_requesting_member(state).await else {
 		return Ok(redirect);
 	};
 
@@ -308,7 +258,7 @@ pub async fn announcement_details(
 		return Err(Status::NotFound);
 	};
 
-	if !announcement.can_member_see(&member) {
+	if !announcement.can_member_see(&requesting_member) {
 		error!("Member cannot see announcement");
 		return Err(Status::NotFound);
 	}
@@ -333,7 +283,7 @@ pub async fn announcement_details(
 		.db
 		.lock()
 		.await
-		.read_announcement(&announcement.id, &member.id)
+		.read_announcement(&announcement.id, &requesting_member.id)
 		.await
 	{
 		error!("Failed to read announcement: {e}");

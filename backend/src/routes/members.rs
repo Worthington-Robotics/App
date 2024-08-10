@@ -35,27 +35,7 @@ pub async fn get_member(
 	session_id: SessionID<'_>,
 	state: &State,
 ) -> Result<RawJson<String>, Status> {
-	let requesting_member_id = {
-		let lock = state.session_manager.lock().await;
-		lock.get(session_id.id).map(|x| x.member.clone())
-	}
-	.ok_or_else(|| {
-		error!("Unknown session ID {}", session_id.id);
-		Status::Unauthorized
-	})?;
-
-	let requesting_member = {
-		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id).await
-	}
-	.map_err(|e| {
-		error!("Failed to get member from database: {e}");
-		Status::InternalServerError
-	})?
-	.ok_or_else(|| {
-		error!("Unknown requesting member ID {}", requesting_member_id);
-		Status::InternalServerError
-	})?;
+	let requesting_member = session_id.get_requesting_member(state).await?;
 
 	let desired_member = {
 		let lock = state.db.lock().await;
@@ -66,7 +46,7 @@ pub async fn get_member(
 		Status::InternalServerError
 	})?
 	.ok_or_else(|| {
-		error!("Unknown member ID {}", requesting_member_id);
+		error!("Unknown member ID {}", requesting_member.id);
 		Status::InternalServerError
 	})?;
 
@@ -231,6 +211,9 @@ pub async fn member_list(
 	state: &State,
 	session_id: SessionID<'_>,
 ) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Member list");
+	let _enter = span.enter();
+
 	if session_id.verify_elevated(state).await.is_err() {
 		error!("Member tried to access member list without valid permissions");
 		return Ok(PageOrRedirect::Redirect(Redirect::to("/login")));
@@ -307,33 +290,13 @@ pub async fn create_member_page(
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.id else {
+	let Some(session_id) = session_id.to_session_id() else {
 		return Ok(redirect);
 	};
 
-	let Some(requesting_member_id) = ({
-		let lock = state.session_manager.lock().await;
-		lock.get(session_id).map(|x| x.member.clone())
-	}) else {
-		error!("Unknown session ID {}", session_id);
+	if session_id.verify_elevated(state).await.is_err() {
 		return Ok(redirect);
 	};
-
-	let Some(requesting_member) = ({
-		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id).await.map_err(|e| {
-			error!("Failed to get member from database: {e}");
-			Status::InternalServerError
-		})?
-	}) else {
-		error!("Unknown requesting member ID {}", requesting_member_id);
-		return Ok(redirect);
-	};
-
-	if !requesting_member.is_elevated() {
-		error!("Invalid permissions");
-		return Ok(redirect);
-	}
 
 	let member = if let Some(id) = id {
 		let lock = state.db.lock().await;
@@ -426,33 +389,13 @@ pub async fn member_details(
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.id else {
+	let Some(session_id) = session_id.to_session_id() else {
 		return Ok(redirect);
 	};
 
-	let Some(requesting_member_id) = ({
-		let lock = state.session_manager.lock().await;
-		lock.get(session_id).map(|x| x.member.clone())
-	}) else {
-		error!("Unknown session ID {}", session_id);
+	if session_id.verify_elevated(state).await.is_err() {
 		return Ok(redirect);
 	};
-
-	let Some(requesting_member) = ({
-		let lock = state.db.lock().await;
-		lock.get_member(&requesting_member_id).await.map_err(|e| {
-			error!("Failed to get member from database: {e}");
-			Status::InternalServerError
-		})?
-	}) else {
-		error!("Unknown requesting member ID {}", requesting_member_id);
-		return Ok(redirect);
-	};
-
-	if !requesting_member.is_elevated() {
-		error!("Invalid permissions");
-		return Ok(redirect);
-	}
 
 	let lock = state.db.lock().await;
 	let member = lock
