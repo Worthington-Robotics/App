@@ -149,6 +149,24 @@ impl Database for CacheDatabase {
 		self.sql.get_announcements().await
 	}
 
+	async fn read_announcement(&mut self, announcement: &str, member: &str) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.read_announcement(announcement, member),
+			self.cache.read_announcement(announcement, member)
+		)?;
+
+		Ok(())
+	}
+
+	async fn delete_announcement(&mut self, announcement: &str) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.delete_announcement(announcement),
+			self.cache.delete_announcement(announcement)
+		)?;
+
+		Ok(())
+	}
+
 	async fn get_attendance(
 		&self,
 		member: &str,

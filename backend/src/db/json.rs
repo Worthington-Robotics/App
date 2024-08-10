@@ -10,6 +10,7 @@ use std::{
 use anyhow::Context;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
 use crate::{
 	announcements::Announcement, attendance::AttendanceEntry, events::Event, member::Member,
@@ -106,6 +107,21 @@ impl Database for JSONDatabase {
 
 	async fn get_announcements(&self) -> anyhow::Result<impl Iterator<Item = Announcement>> {
 		Ok(self.contents.announcements.values().cloned())
+	}
+
+	async fn read_announcement(&mut self, announcement: &str, member: &str) -> anyhow::Result<()> {
+		if let Some(announcement) = self.contents.announcements.get_mut(announcement) {
+			announcement.read.insert(member.to_string());
+			self.write()
+		} else {
+			error!("Announcement does not exist");
+			Ok(())
+		}
+	}
+
+	async fn delete_announcement(&mut self, announcement: &str) -> anyhow::Result<()> {
+		self.contents.announcements.remove(announcement);
+		self.write()
 	}
 
 	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>> {

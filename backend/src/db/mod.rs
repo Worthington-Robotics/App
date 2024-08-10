@@ -63,6 +63,12 @@ pub trait Database {
 	/// Get all announcements
 	async fn get_announcements(&self) -> anyhow::Result<impl Iterator<Item = Announcement>>;
 
+	/// Mark an announcement as read
+	async fn read_announcement(&mut self, announcement: &str, member: &str) -> anyhow::Result<()>;
+
+	/// Delete an announcement
+	async fn delete_announcement(&mut self, announcement: &str) -> anyhow::Result<()>;
+
 	/// Get all attendance records for a member
 	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>>;
 

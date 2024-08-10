@@ -308,6 +308,33 @@ impl Database for SqlDatabase {
 		}
 	}
 
+	async fn read_announcement(&mut self, announcement: &str, member: &str) -> anyhow::Result<()> {
+		let result = sqlx::query("UPDATE announcements SET Read = array_append(Read, $1) WHERE Id = $2 AND NOT $1 = ANY(Read)")
+			.bind(member)
+			.bind(announcement)
+			.execute(&self.pool)
+			.await;
+		if let Err(e) = result {
+			error!("Failed to read announcement in database: {e}");
+			Err(anyhow!("Failed to read announcement in database"))
+		} else {
+			Ok(())
+		}
+	}
+
+	async fn delete_announcement(&mut self, announcement: &str) -> anyhow::Result<()> {
+		let result = sqlx::query("DROP * FROM announcements WHERE Id = $1")
+			.bind(announcement)
+			.execute(&self.pool)
+			.await;
+		if let Err(e) = result {
+			error!("Failed to delete announcement from database: {e}");
+			Err(anyhow!("Failed to delete announcement from database"))
+		} else {
+			Ok(())
+		}
+	}
+
 	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>> {
 		let result = sqlx::query("SELECT * FROM attendance WHERE Member = $1")
 			.bind(member)

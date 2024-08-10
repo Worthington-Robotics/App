@@ -72,7 +72,7 @@ pub async fn inbox(
 		if !announcement.can_member_see(&member) {
 			continue;
 		}
-		announcements_string.push_str(&render_announcement(announcement));
+		announcements_string.push_str(&render_announcement(announcement, &member.id));
 	}
 	let page = page.replace("{{announcements}}", &announcements_string);
 
@@ -92,7 +92,7 @@ pub async fn inbox(
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
-fn render_announcement(announcement: Announcement) -> String {
+fn render_announcement(announcement: Announcement, member_id: &str) -> String {
 	let component = include_str!("components/announcement.min.html");
 	let out = component.replace("{{id}}", &announcement.id);
 	let date = DateTime::parse_from_rfc2822(&announcement.date)
@@ -112,6 +112,12 @@ fn render_announcement(announcement: Announcement) -> String {
 		})
 		.unwrap_or_default();
 	let out = out.replace("{{body}}", &body);
+	let unread_class = if announcement.read.contains(member_id) {
+		""
+	} else {
+		"unread"
+	};
+	let out = out.replace("{{unread-class}}", unread_class);
 
 	out
 }
@@ -322,5 +328,36 @@ pub async fn announcement_details(
 
 	let page = create_page("Announcement", &page);
 
+	// Mark the announcement as read
+	if let Err(e) = state
+		.db
+		.lock()
+		.await
+		.read_announcement(&announcement.id, &member.id)
+		.await
+	{
+		error!("Failed to read announcement: {e}");
+		return Err(Status::InternalServerError);
+	}
+
 	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+#[rocket::delete("/api/delete_announcement/<id>")]
+pub async fn delete_announcement(
+	session_id: SessionID<'_>,
+	state: &State,
+	id: &str,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Delete announcement API");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	if let Err(e) = state.db.lock().await.delete_announcement(id).await {
+		error!("Failed to delete announcement: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
 }
