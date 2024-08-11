@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Context};
 use chrono::Utc;
-use rocket::futures::TryStreamExt;
+use rocket::{futures::TryStreamExt, tokio::try_join};
 use sqlx::{
 	postgres::{PgConnectOptions, PgPoolOptions, PgRow},
 	Executor, Pool, Postgres, Row,
@@ -413,35 +413,33 @@ impl Database for SqlDatabase {
 
 /// Setup the database
 async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
-	pool.execute("CREATE TABLE IF NOT EXISTS members (Id text PRIMARY KEY, Name text, Kind text, Groups text[], Password text, PasswordSalt text, CreationDate text)")
-		.await
-		.context("Failed to set up members table")?;
+	let members_task = pool.execute("CREATE TABLE IF NOT EXISTS members (Id text PRIMARY KEY, Name text, Kind text, Groups text[], Password text, PasswordSalt text, CreationDate text)");
 
-	pool.execute("CREATE TABLE IF NOT EXISTS events (Id text PRIMARY KEY, Name text, Date text, EndDate text, Kind text, Urgency text, Visibility text, Invites text[], RSVP text[])")
-		.await
-		.context("Failed to set up events table")?;
+	let events_task = pool.execute("CREATE TABLE IF NOT EXISTS events (Id text PRIMARY KEY, Name text, Date text, EndDate text, Kind text, Urgency text, Visibility text, Invites text[], RSVP text[])");
 
-	pool.execute("CREATE TABLE IF NOT EXISTS attendance (Id serial PRIMARY KEY, Member text, StartDate text, EndDate text, Event text)")
-		.await
-		.context("Failed to set up attendance table")?;
+	let attendance_task = pool.execute("CREATE TABLE IF NOT EXISTS attendance (Id serial PRIMARY KEY, Member text, StartDate text, EndDate text, Event text)");
 
-	pool.execute("CREATE TABLE IF NOT EXISTS announcements (Id text PRIMARY KEY, Title text, Date text, Body text, Event text, Mentioned text[], Read text[])")
-		.await
-		.context("Failed to set up announcements table")?;
+	let announcements_task = pool.execute("CREATE TABLE IF NOT EXISTS announcements (Id text PRIMARY KEY, Title text, Date text, Body text, Event text, Mentioned text[], Read text[])");
 
-	pool.execute("CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text)")
-		.await
-		.context("Failed to set up teams table")?;
+	let teams_task =
+		pool.execute("CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text)");
 
-	pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float4, Height float4, Weight float4)")
-		.await
-		.context("Failed to set up robot info table")?;
+	let robot_info_task = pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float4, Height float4, Weight float4)");
 
-	pool.execute(
+	let scouting_assignments_task = pool.execute(
 		"CREATE TABLE IF NOT EXISTS scouting_assignments (Member text PRIMARY KEY, Teams int2[])",
+	);
+
+	try_join!(
+		members_task,
+		events_task,
+		attendance_task,
+		announcements_task,
+		teams_task,
+		robot_info_task,
+		scouting_assignments_task
 	)
-	.await
-	.context("Failed to set up scouting assignments table")?;
+	.context("Failed to execute database setup tasks")?;
 
 	Ok(())
 }

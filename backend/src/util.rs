@@ -4,7 +4,7 @@ use base64::{
 	engine::{GeneralPurpose, GeneralPurposeConfig},
 	Engine,
 };
-use chrono::{DateTime, NaiveDate, TimeZone};
+use chrono::{DateTime, Datelike, NaiveDate, TimeZone};
 use itertools::Itertools;
 use rand::{rngs::StdRng, RngCore, SeedableRng};
 use strum::IntoEnumIterator;
@@ -72,4 +72,41 @@ where
 		.to_string()
 		.replace(":00", "")
 		.replace(" 0", " ")
+}
+
+/// Render a nice time
+pub fn render_time<T: TimeZone>(date: DateTime<T>) -> String
+where
+	T::Offset: Display,
+{
+	date.format("%I:%M %p")
+		.to_string()
+		.replace(":00", "")
+		.replace(" 0", " ")
+}
+
+/// Render a nice start and end date
+pub fn render_date_range<T: TimeZone>(
+	start_date: DateTime<T>,
+	end_date: Option<DateTime<T>>,
+) -> String
+where
+	T::Offset: Display,
+{
+	let within_same_day = end_date
+		.as_ref()
+		.is_some_and(|x| x.num_days_from_ce() == start_date.num_days_from_ce());
+	let mut out = render_date(start_date);
+
+	if let Some(end_date) = end_date {
+		// Render the second date as just a time if it is within the same day
+		let end_date = if within_same_day {
+			render_time(end_date)
+		} else {
+			render_date(end_date)
+		};
+		out = format!("{out} - {end_date}");
+	}
+
+	out
 }

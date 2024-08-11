@@ -47,11 +47,8 @@ pub async fn inbox(
 		})?
 		// Sort so that the newest announcements show up at the top
 		.sorted_by_cached_key(|x| DateTime::parse_from_rfc2822(&x.date).unwrap_or_default())
-		.rev()
-		.collect::<Vec<_>>();
-	let mut announcements_string = String::with_capacity(
-		include_str!("components/announcement.min.html").len() * announcements.len(),
-	);
+		.rev();
+	let mut announcements_string = String::new();
 
 	for announcement in announcements {
 		if !announcement.can_member_see(&requesting_member) {
@@ -126,8 +123,11 @@ pub async fn create_announcement_api(
 	};
 	let date = Utc::now().to_rfc2822();
 
-	let mentioned = announcement
-		.mentioned
+	let Ok(mentioned) = serde_json::from_str::<Vec<String>>(&announcement.mentioned) else {
+		error!("Failed to parse mentions");
+		return Err(Status::BadRequest);
+	};
+	let mentioned = mentioned
 		.iter()
 		.map(|x| MemberMention::from_str(x).unwrap())
 		.collect();
@@ -159,7 +159,7 @@ pub async fn create_announcement_api(
 pub struct AnnouncementForm {
 	title: String,
 	body: String,
-	mentioned: Vec<String>,
+	mentioned: String,
 }
 
 #[rocket::get("/create_announcement")]

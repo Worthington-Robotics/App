@@ -17,9 +17,7 @@ use crate::{
 	db::Database,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{count_group_members, Member, MemberGroup, MemberMention},
-	util::generate_id,
-	util::render_date,
-	util::{get_days_from_month, ToDropdown},
+	util::{generate_id, get_days_from_month, render_date, render_date_range, ToDropdown},
 };
 use crate::{events::get_relevant_events, State};
 
@@ -180,6 +178,18 @@ pub async fn event_details(
 	let page = include_str!("pages/events/details.min.html");
 	let page = page.replace("{{id}}", &event.id);
 	let page = page.replace("{{name}}", &event.name);
+
+	let date = if let Ok(date) = DateTime::parse_from_rfc2822(&event.date) {
+		let end_date = event
+			.end_date
+			.and_then(|x| DateTime::parse_from_rfc2822(&x).ok());
+		render_date_range(date, end_date)
+	} else {
+		error!("Failed to parse date");
+		"Invalid date".into()
+	};
+	let page = page.replace("{{date}}", &date);
+
 	let edit_button = if is_elevated {
 		include_str!("components/ui/edit.min.html")
 	} else {
@@ -385,7 +395,7 @@ pub async fn create_event_api(
 
 	let Ok(invites) = serde_json::from_str::<Vec<String>>(&event.invites) else {
 		error!("Failed to parse invites");
-		return Err(Status::InternalServerError);
+		return Err(Status::BadRequest);
 	};
 	let invites = invites
 		.into_iter()

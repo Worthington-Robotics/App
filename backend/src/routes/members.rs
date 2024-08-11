@@ -254,7 +254,7 @@ fn render_member_entry(member: &Member) -> String {
 	let element = element.replace("{{name}}", &member.name);
 	let kind = if member.kind == MemberKind::Admin {
 		format!(
-			"<div class=\"member-kind\">{}</div><div class=\"dot\"></div>",
+			"<div class=\"mem-kind\">{}</div><div class=\"dot\"></div>",
 			member.kind
 		)
 	} else {

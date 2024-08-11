@@ -6,6 +6,9 @@
 		<a href="/create_event?id={{id}}">{{edit}}</a>
 		<div id="delete-button">{{delete}}</div>
 	</div>
+	<div class="cont col">
+		<strong>{{date}}</strong>
+	</div>
 	<div class="cont">
 		<label for="rsvp">RSVP</label>
 		<input type="checkbox" name="rsvp" id="rsvp" {{rsvp-checked}} />
@@ -31,6 +34,6 @@
 				setError(resp.statusText);
 			}
 		});
-	})
+	});
 </script>
 {{footer}}
