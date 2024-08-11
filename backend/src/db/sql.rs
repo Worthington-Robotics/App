@@ -424,7 +424,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	let teams_task =
 		pool.execute("CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text)");
 
-	let robot_info_task = pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float4, Height float4, Weight float4)");
+	let robot_info_task = pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float4, Height float4, Weight float4, CanSpeaker bool, CanAmp bool, CanClimb bool, CanTrap bool, CanPass bool, CanDriveUnderStage bool)");
 
 	let scouting_assignments_task = pool.execute(
 		"CREATE TABLE IF NOT EXISTS scouting_assignments (Member text PRIMARY KEY, Teams int2[])",

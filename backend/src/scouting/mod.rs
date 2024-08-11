@@ -24,6 +24,47 @@ pub struct RobotInfo {
 	pub height: f32,
 	/// The weight of the robot, in pounds
 	pub weight: f32,
+	/// Whether or not the robot can shoot in the speaker
+	pub can_speaker: bool,
+	/// Whether or not the robot can shoot in the amp
+	pub can_amp: bool,
+	/// Whether or not the robot can climb
+	pub can_climb: bool,
+	/// Whether or not the robot can shoot in the trap
+	pub can_trap: bool,
+	/// Whether or not the robot can pass notes
+	pub can_pass: bool,
+	/// Whether or not the robot can drive under the stage
+	pub can_drive_under_stage: bool,
+}
+
+/// Stored and calculated stats for a single team
+#[derive(Serialize, Deserialize)]
+pub struct TeamStats {
+	pub number: TeamNumber,
+	pub epa: f32,
+	pub apa: f32,
+	pub win_rate: f32,
+	pub speaker_accuracy: f32,
+	pub amp_accuracy: f32,
+	pub climb_accuracy: f32,
+	pub trap_accuracy: f32,
+	/// Average number of notes scored per auto
+	pub auto_score: f32,
+	/// Average number of amplifications per match
+	pub amplification_rate: f32,
+	/// Average number of notes per amplification
+	pub amplification_value: f32,
+	/// Average number of passes per match
+	pub pass_rate: f32,
+	/// Average number of offensive moves per match
+	pub offense_rate: f32,
+	/// Average number of defensive moves per match
+	pub defense_rate: f32,
+	/// Total number of penalties
+	pub penalties: u16,
+	/// Rate that the team shows up to the match with a working robot (0-1)
+	pub availablity: f32,
 }
 
 /// Scouting assignments for a member

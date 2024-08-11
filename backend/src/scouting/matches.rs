@@ -17,6 +17,12 @@ pub struct MatchStats {
 	pub team_number: TeamNumber,
 	/// The match where these stats occurred
 	pub match_id: String,
+	/// The number of times that the team attempted to score during auto
+	pub auto_attempts: u8,
+	/// The number of times that the team scored during auto
+	pub auto_scores: u8,
+	/// Whether or not the robot collided with another during auto
+	pub auto_collision: bool,
 	/// The total number of points that the team scored
 	pub points_scored: u16,
 	/// The number of times that the team attempted to score in the amp
@@ -35,6 +41,10 @@ pub struct MatchStats {
 	pub trap_attempted: bool,
 	/// Whether or not the team succeeded the trap
 	pub trap_successful: bool,
+	/// The number of times that the alliance amplified
+	pub amplifications: u8,
+	/// The number of times that the team scored into an amplified speaker
+	pub amplified_notes: u8,
 	/// The number of times that the team passed notes
 	pub passes: u8,
 	/// The number of times that the team defended against other robots
@@ -45,4 +55,6 @@ pub struct MatchStats {
 	pub broken: bool,
 	/// Whether or not the team showed up to the match
 	pub showed_up: bool,
+	/// Additional notes about the match
+	pub notes: String,
 }
