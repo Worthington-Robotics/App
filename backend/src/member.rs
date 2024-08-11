@@ -96,6 +96,7 @@ impl ToDropdown for MemberKind {
 	PartialOrd,
 	Ord,
 	EnumIter,
+	Debug,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum MemberGroup {
@@ -206,7 +207,7 @@ pub fn count_group_members<'a>(
 }
 
 /// A mention of a member or group of members
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum MemberMention {
 	/// A single member ID

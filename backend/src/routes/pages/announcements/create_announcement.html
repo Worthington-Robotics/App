@@ -31,7 +31,7 @@
 		}
 		let mentionsString = JSON.stringify(mentions);
 
-		let requestBody = `title=${title}&body=${body}&mentions=${mentionsString}`;
+		let requestBody = `title=${title}&body=${body}&mentioned=${mentionsString}`;
 
 		fetch("/api/create_announcement", {
 			method: "POST",

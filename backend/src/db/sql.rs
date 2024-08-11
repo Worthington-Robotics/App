@@ -433,7 +433,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		.await
 		.context("Failed to set up teams table")?;
 
-	pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float2, Height float2, Weight float2)")
+	pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float4, Height float4, Weight float4)")
 		.await
 		.context("Failed to set up robot info table")?;
 
