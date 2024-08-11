@@ -429,6 +429,20 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		.await
 		.context("Failed to set up announcements table")?;
 
+	pool.execute("CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text)")
+		.await
+		.context("Failed to set up teams table")?;
+
+	pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float2, Height float2, Weight float2)")
+		.await
+		.context("Failed to set up robot info table")?;
+
+	pool.execute(
+		"CREATE TABLE IF NOT EXISTS scouting_assignments (Member text PRIMARY KEY, Teams int2[])",
+	)
+	.await
+	.context("Failed to set up scouting assignments table")?;
+
 	Ok(())
 }
 

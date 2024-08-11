@@ -13,7 +13,11 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::{
-	announcements::Announcement, attendance::AttendanceEntry, events::Event, member::Member,
+	announcements::Announcement,
+	attendance::AttendanceEntry,
+	events::Event,
+	member::Member,
+	scouting::{RobotInfo, ScoutingAssignments, Team, TeamNumber},
 };
 
 use super::Database;
@@ -200,4 +204,10 @@ struct DatabaseContents {
 	announcements: HashMap<String, Announcement>,
 	#[serde(default)]
 	attendance: HashMap<String, Vec<AttendanceEntry>>,
+	#[serde(default)]
+	teams: HashMap<TeamNumber, Team>,
+	#[serde(default)]
+	robot_info: HashMap<TeamNumber, RobotInfo>,
+	#[serde(default)]
+	scouting_assignments: HashMap<String, ScoutingAssignments>,
 }
