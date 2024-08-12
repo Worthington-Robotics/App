@@ -1,5 +1,9 @@
 use crate::{
-	announcements::Announcement, attendance::AttendanceEntry, events::Event, member::Member,
+	announcements::Announcement,
+	attendance::AttendanceEntry,
+	events::Event,
+	member::Member,
+	tasks::{Checklist, Task},
 };
 
 /// Combination of the two databases
@@ -81,4 +85,28 @@ pub trait Database {
 
 	/// Finish attending an event
 	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()>;
+
+	/// Get a checklist
+	async fn get_checklist(&self, checklist: &str) -> anyhow::Result<Checklist>;
+
+	/// Create a checklist
+	async fn create_checklist(&mut self, checklist: Checklist) -> anyhow::Result<()>;
+
+	/// Delete a checklist
+	async fn delete_checklist(&mut self, checklist: &str) -> anyhow::Result<()>;
+
+	/// Get all checklists
+	async fn get_checklists(&self) -> anyhow::Result<impl Iterator<Item = Checklist>>;
+
+	/// Get a list of tasks
+	async fn get_tasks(&self, tasks: &[String]) -> anyhow::Result<impl Iterator<Item = Task>>;
+
+	/// Create a task
+	async fn create_task(&mut self, task: Task) -> anyhow::Result<()>;
+
+	/// Do / undo a task
+	async fn update_task(&mut self, task: &str) -> anyhow::Result<()>;
+
+	/// Delete a task
+	async fn delete_task(&mut self, task: &str) -> anyhow::Result<()>;
 }

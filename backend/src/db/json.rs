@@ -170,6 +170,43 @@ impl Database for JSONDatabase {
 
 		self.write()
 	}
+
+	async fn get_checklist(&self, checklist: &str) -> anyhow::Result<crate::tasks::Checklist> {
+		todo!()
+	}
+
+	async fn create_checklist(&mut self, checklist: crate::tasks::Checklist) -> anyhow::Result<()> {
+		todo!()
+	}
+
+	async fn delete_checklist(&mut self, checklist: &str) -> anyhow::Result<()> {
+		todo!()
+	}
+
+	async fn get_checklists(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = crate::tasks::Checklist>> {
+		todo!()
+	}
+
+	async fn get_tasks(
+		&self,
+		tasks: &[String],
+	) -> anyhow::Result<impl Iterator<Item = crate::tasks::Task>> {
+		todo!()
+	}
+
+	async fn create_task(&mut self, task: crate::tasks::Task) -> anyhow::Result<()> {
+		todo!()
+	}
+
+	async fn update_task(&mut self, task: &str) -> anyhow::Result<()> {
+		todo!()
+	}
+
+	async fn delete_task(&mut self, task: &str) -> anyhow::Result<()> {
+		todo!()
+	}
 }
 
 impl JSONDatabase {

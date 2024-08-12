@@ -23,6 +23,7 @@ mod member;
 mod notifications;
 mod routes;
 mod scouting;
+mod tasks;
 mod util;
 
 #[rocket::launch]
