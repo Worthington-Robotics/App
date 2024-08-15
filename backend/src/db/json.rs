@@ -18,6 +18,7 @@ use crate::{
 	events::Event,
 	member::Member,
 	scouting::{RobotInfo, ScoutingAssignments, Team, TeamNumber},
+	tasks::{Checklist, Task},
 };
 
 use super::Database;
@@ -171,41 +172,50 @@ impl Database for JSONDatabase {
 		self.write()
 	}
 
-	async fn get_checklist(&self, checklist: &str) -> anyhow::Result<crate::tasks::Checklist> {
-		todo!()
+	async fn get_checklist(&self, checklist: &str) -> anyhow::Result<Option<Checklist>> {
+		Ok(self.contents.checklists.get(checklist).cloned())
 	}
 
-	async fn create_checklist(&mut self, checklist: crate::tasks::Checklist) -> anyhow::Result<()> {
-		todo!()
+	async fn create_checklist(&mut self, checklist: Checklist) -> anyhow::Result<()> {
+		self.contents
+			.checklists
+			.insert(checklist.id.clone(), checklist);
+		self.write()
 	}
 
 	async fn delete_checklist(&mut self, checklist: &str) -> anyhow::Result<()> {
-		todo!()
+		self.contents.checklists.remove(checklist);
+		Ok(())
 	}
 
-	async fn get_checklists(
-		&self,
-	) -> anyhow::Result<impl Iterator<Item = crate::tasks::Checklist>> {
-		todo!()
+	async fn get_checklists(&self) -> anyhow::Result<impl Iterator<Item = Checklist>> {
+		Ok(self.contents.checklists.values().cloned())
 	}
 
-	async fn get_tasks(
-		&self,
-		tasks: &[String],
-	) -> anyhow::Result<impl Iterator<Item = crate::tasks::Task>> {
-		todo!()
+	async fn get_tasks(&self, checklist: &str) -> anyhow::Result<impl Iterator<Item = Task>> {
+		Ok(self
+			.contents
+			.tasks
+			.values()
+			.filter(move |x| x.id == checklist)
+			.cloned())
 	}
 
-	async fn create_task(&mut self, task: crate::tasks::Task) -> anyhow::Result<()> {
-		todo!()
+	async fn create_task(&mut self, task: Task) -> anyhow::Result<()> {
+		self.contents.tasks.insert(task.id.clone(), task);
+		self.write()
 	}
 
 	async fn update_task(&mut self, task: &str) -> anyhow::Result<()> {
-		todo!()
+		if let Some(task) = self.contents.tasks.get_mut(task) {
+			task.done = !task.done;
+		}
+		self.write()
 	}
 
 	async fn delete_task(&mut self, task: &str) -> anyhow::Result<()> {
-		todo!()
+		self.contents.tasks.remove(task);
+		Ok(())
 	}
 }
 
@@ -247,4 +257,8 @@ struct DatabaseContents {
 	robot_info: HashMap<TeamNumber, RobotInfo>,
 	#[serde(default)]
 	scouting_assignments: HashMap<String, ScoutingAssignments>,
+	#[serde(default)]
+	checklists: HashMap<String, Checklist>,
+	#[serde(default)]
+	tasks: HashMap<String, Task>,
 }

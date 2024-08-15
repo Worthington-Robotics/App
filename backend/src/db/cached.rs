@@ -8,6 +8,8 @@ use rocket::{
 };
 use tracing::{error, info};
 
+use crate::tasks::{Checklist, Task};
+
 use super::{json::JSONDatabase, sql::SqlDatabase, Database};
 
 pub struct CacheDatabase {
@@ -82,10 +84,8 @@ impl Database for CacheDatabase {
 	}
 
 	async fn delete_member(&mut self, member: &str) -> anyhow::Result<()> {
-		try_join!(
-			self.sql.delete_member(member),
-			self.cache.delete_member(member)
-		)?;
+		self.sql.delete_member(member).await?;
+		self.cache.delete_member(member).await?;
 
 		Ok(())
 	}
@@ -116,7 +116,8 @@ impl Database for CacheDatabase {
 	}
 
 	async fn delete_event(&mut self, event: &str) -> anyhow::Result<()> {
-		try_join!(self.sql.delete_event(event), self.cache.delete_event(event))?;
+		self.sql.delete_event(event).await?;
+		self.cache.delete_event(event).await?;
 
 		Ok(())
 	}
@@ -133,20 +134,29 @@ impl Database for CacheDatabase {
 		&self,
 		announcement: &str,
 	) -> anyhow::Result<Option<crate::announcements::Announcement>> {
-		self.sql.get_announcement(announcement).await
+		if let Some(announcement) = self.cache.get_announcement(announcement).await? {
+			Ok(Some(announcement))
+		} else {
+			self.sql.get_announcement(announcement).await
+		}
 	}
 
 	async fn create_announcement(
 		&mut self,
 		announcement: crate::announcements::Announcement,
 	) -> anyhow::Result<()> {
-		self.sql.create_announcement(announcement).await
+		try_join!(
+			self.sql.create_announcement(announcement.clone()),
+			self.cache.create_announcement(announcement)
+		)?;
+
+		Ok(())
 	}
 
 	async fn get_announcements(
 		&self,
 	) -> anyhow::Result<impl Iterator<Item = crate::announcements::Announcement>> {
-		self.sql.get_announcements().await
+		self.cache.get_announcements().await
 	}
 
 	async fn read_announcement(&mut self, announcement: &str, member: &str) -> anyhow::Result<()> {
@@ -159,10 +169,8 @@ impl Database for CacheDatabase {
 	}
 
 	async fn delete_announcement(&mut self, announcement: &str) -> anyhow::Result<()> {
-		try_join!(
-			self.sql.delete_announcement(announcement),
-			self.cache.delete_announcement(announcement)
-		)?;
+		self.sql.delete_announcement(announcement).await?;
+		self.cache.delete_announcement(announcement).await?;
 
 		Ok(())
 	}
@@ -187,6 +195,56 @@ impl Database for CacheDatabase {
 
 	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
 		self.sql.finish_attendance(member).await
+	}
+
+	async fn get_checklist(&self, checklist: &str) -> anyhow::Result<Option<Checklist>> {
+		self.cache.get_checklist(checklist).await
+	}
+
+	async fn create_checklist(&mut self, checklist: Checklist) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.create_checklist(checklist.clone()),
+			self.cache.create_checklist(checklist)
+		)?;
+
+		Ok(())
+	}
+
+	async fn delete_checklist(&mut self, checklist: &str) -> anyhow::Result<()> {
+		self.sql.delete_checklist(checklist).await?;
+		self.cache.delete_checklist(checklist).await?;
+
+		Ok(())
+	}
+
+	async fn get_checklists(&self) -> anyhow::Result<impl Iterator<Item = Checklist>> {
+		self.cache.get_checklists().await
+	}
+
+	async fn get_tasks(&self, checklist: &str) -> anyhow::Result<impl Iterator<Item = Task>> {
+		self.cache.get_tasks(checklist).await
+	}
+
+	async fn create_task(&mut self, task: Task) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.create_task(task.clone()),
+			self.cache.create_task(task)
+		)?;
+
+		Ok(())
+	}
+
+	async fn update_task(&mut self, task: &str) -> anyhow::Result<()> {
+		try_join!(self.sql.update_task(task), self.cache.update_task(task))?;
+
+		Ok(())
+	}
+
+	async fn delete_task(&mut self, task: &str) -> anyhow::Result<()> {
+		self.sql.delete_task(task).await?;
+		self.cache.delete_task(task).await?;
+
+		Ok(())
 	}
 }
 

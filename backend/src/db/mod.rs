@@ -87,7 +87,7 @@ pub trait Database {
 	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()>;
 
 	/// Get a checklist
-	async fn get_checklist(&self, checklist: &str) -> anyhow::Result<Checklist>;
+	async fn get_checklist(&self, checklist: &str) -> anyhow::Result<Option<Checklist>>;
 
 	/// Create a checklist
 	async fn create_checklist(&mut self, checklist: Checklist) -> anyhow::Result<()>;
@@ -99,7 +99,7 @@ pub trait Database {
 	async fn get_checklists(&self) -> anyhow::Result<impl Iterator<Item = Checklist>>;
 
 	/// Get a list of tasks
-	async fn get_tasks(&self, tasks: &[String]) -> anyhow::Result<impl Iterator<Item = Task>>;
+	async fn get_tasks(&self, checklist: &str) -> anyhow::Result<impl Iterator<Item = Task>>;
 
 	/// Create a task
 	async fn create_task(&mut self, task: Task) -> anyhow::Result<()>;

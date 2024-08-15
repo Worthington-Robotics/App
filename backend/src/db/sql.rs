@@ -16,6 +16,7 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{Member, MemberGroup, MemberKind, MemberMention},
+	tasks::{Checklist, Task},
 	util::ToDropdown,
 };
 
@@ -409,6 +410,138 @@ impl Database for SqlDatabase {
 
 		Ok(())
 	}
+
+	async fn get_checklist(&self, checklist: &str) -> anyhow::Result<Option<Checklist>> {
+		let mut result = sqlx::query("SELECT * FROM checklists WHERE Id = $1")
+			.bind(checklist)
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let checklist =
+					read_checklist(checklist, row).context("Failed to read checklist")?;
+
+				Ok(Some(checklist))
+			}
+			Err(e) => {
+				error!("Failed to get checklist {checklist} from database: {e}");
+				Err(anyhow!("Failed to get checklist from database"))
+			}
+		}
+	}
+
+	async fn create_checklist(&mut self, checklist: Checklist) -> anyhow::Result<()> {
+		sqlx::query("INSERT INTO checklists (Id, Name, Tasks) VALUES ($1, $2, $3)")
+			.bind(checklist.id)
+			.bind(checklist.name)
+			.bind(checklist.tasks)
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new checklist in database")?;
+
+		Ok(())
+	}
+
+	async fn delete_checklist(&mut self, checklist: &str) -> anyhow::Result<()> {
+		let result = sqlx::query("DROP * FROM checklists WHERE Id = $1")
+			.bind(checklist)
+			.execute(&self.pool)
+			.await;
+		if let Err(e) = result {
+			error!("Failed to delete checklist from database: {e}");
+			Err(anyhow!("Failed to delete checklist from database"))
+		} else {
+			Ok(())
+		}
+	}
+
+	async fn get_checklists(&self) -> anyhow::Result<impl Iterator<Item = Checklist>> {
+		let result = sqlx::query("SELECT * FROM checklists")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let id: String = row.try_get("id")?;
+					let checklist = read_checklist(&id, row).context("Failed to read checklist")?;
+					out.push(checklist);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get checklists from database: {e}");
+				Err(anyhow!("Failed to get checklists from database"))
+			}
+		}
+	}
+
+	async fn get_tasks(&self, checklist: &str) -> anyhow::Result<impl Iterator<Item = Task>> {
+		let result = sqlx::query("SELECT * FROM tasks WHERE Checklist = $1")
+			.bind(checklist)
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let id: String = row.try_get("id")?;
+					let task = read_task(&id, row).context("Failed to read task")?;
+					out.push(task);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get tasks from database: {e}");
+				Err(anyhow!("Failed to get tasks from database"))
+			}
+		}
+	}
+
+	async fn create_task(&mut self, task: Task) -> anyhow::Result<()> {
+		sqlx::query("INSERT INTO tasks (Id, Text, Done) VALUES ($1, $2, $3)")
+			.bind(task.id)
+			.bind(task.text)
+			.bind(task.done)
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new task in database")?;
+
+		Ok(())
+	}
+
+	async fn update_task(&mut self, task: &str) -> anyhow::Result<()> {
+		let result = sqlx::query(
+			"UPDATE tasks SET Done = (CASE WHEN Done = TRUE THEN FALSE ELSE TRUE END) WHERE Id = $1",
+		)
+		.bind(task)
+		.execute(&self.pool)
+		.await;
+		if let Err(e) = result {
+			error!("Failed to update task from database: {e}");
+			Err(anyhow!("Failed to update task from database"))
+		} else {
+			Ok(())
+		}
+	}
+
+	async fn delete_task(&mut self, task: &str) -> anyhow::Result<()> {
+		let result = sqlx::query("DROP * FROM tasks WHERE Id = $1")
+			.bind(task)
+			.execute(&self.pool)
+			.await;
+		if let Err(e) = result {
+			error!("Failed to delete task from database: {e}");
+			Err(anyhow!("Failed to delete task from database"))
+		} else {
+			Ok(())
+		}
+	}
 }
 
 /// Setup the database
@@ -420,6 +553,13 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	let attendance_task = pool.execute("CREATE TABLE IF NOT EXISTS attendance (Id serial PRIMARY KEY, Member text, StartDate text, EndDate text, Event text)");
 
 	let announcements_task = pool.execute("CREATE TABLE IF NOT EXISTS announcements (Id text PRIMARY KEY, Title text, Date text, Body text, Event text, Mentioned text[], Read text[])");
+
+	let checklists_task = pool.execute(
+		"CREATE TABLE IF NOT EXISTS checklists (Id text PRIMARY KEY, Name text, Tasks text[])",
+	);
+
+	let tasks_task = pool
+		.execute("CREATE TABLE IF NOT EXISTS tasks (Id text PRIMARY KEY, Checklist text, Text text, Done bool)");
 
 	let teams_task =
 		pool.execute("CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text)");
@@ -435,6 +575,8 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		events_task,
 		attendance_task,
 		announcements_task,
+		checklists_task,
+		tasks_task,
 		teams_task,
 		robot_info_task,
 		scouting_assignments_task
@@ -547,5 +689,31 @@ fn read_announcement(id: &str, row: PgRow) -> anyhow::Result<Announcement> {
 		event,
 		mentioned: mentioned.collect(),
 		read: read.into_iter().collect(),
+	})
+}
+
+/// Read a checklist from the database
+fn read_checklist(id: &str, row: PgRow) -> anyhow::Result<Checklist> {
+	let name: String = row.try_get("name")?;
+	let tasks: Vec<String> = row.try_get("tasks")?;
+
+	Ok(Checklist {
+		id: id.to_string(),
+		name,
+		tasks,
+	})
+}
+
+/// Read a task from the database
+fn read_task(id: &str, row: PgRow) -> anyhow::Result<Task> {
+	let checklist: String = row.try_get("checklist")?;
+	let text: String = row.try_get("text")?;
+	let done: bool = row.try_get("done")?;
+
+	Ok(Task {
+		id: id.to_string(),
+		checklist,
+		text,
+		done,
 	})
 }

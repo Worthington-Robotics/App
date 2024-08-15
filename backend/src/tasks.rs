@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Checklist {
 	pub id: String,
 	pub name: String,
@@ -8,8 +8,10 @@ pub struct Checklist {
 	pub tasks: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Task {
 	pub id: String,
+	pub checklist: String,
+	pub text: String,
 	pub done: bool,
 }
