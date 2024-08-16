@@ -97,6 +97,8 @@ async fn rocket() -> _ {
 				routes::assets::icon_mail,
 				routes::assets::icon_edit,
 				routes::assets::icon_delete,
+				routes::assets::icon_check,
+				routes::assets::icon_box,
 				routes::login::login,
 				routes::login::authenticate,
 				routes::login::logout,
@@ -118,6 +120,7 @@ async fn rocket() -> _ {
 				routes::tasks::update_task,
 				routes::tasks::delete_checklist,
 				routes::tasks::delete_task,
+				routes::tasks::checklists,
 			],
 		)
 		.register("/", catchers![routes::not_found, routes::internal_error])

@@ -58,6 +58,16 @@ pub fn icon_delete() -> CacheFor<Svg> {
 	CacheFor(Svg(include_str!("../assets/icons/delete.svg")), ONE_WEEK)
 }
 
+#[rocket::get("/assets/icons/check.svg")]
+pub fn icon_check() -> CacheFor<Svg> {
+	CacheFor(Svg(include_str!("../assets/icons/check.svg")), ONE_WEEK)
+}
+
+#[rocket::get("/assets/icons/box.svg")]
+pub fn icon_box() -> CacheFor<Svg> {
+	CacheFor(Svg(include_str!("../assets/icons/box.svg")), ONE_WEEK)
+}
+
 #[derive(Responder)]
 #[response(content_type = "image/x-icon")]
 pub struct Ico(&'static [u8]);

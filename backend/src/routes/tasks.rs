@@ -1,10 +1,76 @@
+use itertools::Itertools;
 use rocket::form::{Form, FromForm};
 use rocket::http::Status;
+use rocket::response::content::RawHtml;
+use rocket::response::Redirect;
 use tracing::{error, span, Level};
 
 use crate::db::Database;
+use crate::routes::OptionalSessionID;
 use crate::tasks::{Checklist, Task};
 use crate::{routes::SessionID, State};
+
+use super::{create_page, PageOrRedirect};
+
+#[rocket::get("/checklists")]
+pub async fn checklists(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Checklists");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	let Ok(requesting_member) = session_id.get_requesting_member(state).await else {
+		return Ok(redirect);
+	};
+
+	let page = include_str!("pages/tasks/checklists.min.html");
+
+	let lock = state.db.lock().await;
+	let checklists = lock
+		.get_checklists()
+		.await
+		.map_err(|e| {
+			error!("Failed to get checklists from database: {e}");
+			Status::InternalServerError
+		})?
+		.sorted_by_key(|x| x.tasks.len())
+		.rev();
+	let mut checklists_string = String::new();
+
+	for checklist in checklists {
+		checklists_string.push_str(&render_checklist(checklist));
+	}
+	let page = page.replace("{{checklists}}", &checklists_string);
+
+	let add_button = if requesting_member.is_elevated() {
+		format!(
+			"<a href=\"/create_checklist\">{}</a>",
+			include_str!("components/ui/new.min.html")
+		)
+	} else {
+		String::new()
+	};
+
+	let page = page.replace("{{add-checklist}}", &add_button);
+
+	let page = create_page("Inbox", &page);
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+fn render_checklist(checklist: Checklist) -> String {
+	let component = include_str!("components/checklist.min.html");
+	let out = component.replace("{{name}}", &checklist.name);
+	let out = out.replace("{{progress}}", &checklist.tasks.len().to_string());
+
+	out
+}
 
 #[rocket::post("/api/create_checklist", data = "<checklist>")]
 pub async fn create_checklist(
