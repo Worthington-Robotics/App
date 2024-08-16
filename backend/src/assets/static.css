@@ -1,3 +1,5 @@
+/* NOTICE: If you change this file, make sure to change the URL to the file so that caches are updated */
+
 * {
 	font-family: "Rubik";
 
@@ -14,9 +16,24 @@
 	--scale: 2.7;
 }
 
+:root {
+	background-color: var(--bg);
+	color: var(--fg);
+	font-size: calc(1.42vw * var(--scale));
+}
+
 h1,
 h2 {
 	font-family: "Rockwell Regular";
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+p {
+	text-align: center;
 }
 
 @font-face {
@@ -86,4 +103,64 @@ a.nolink:hover {
 a.nolink:active {
 	color: var(--fg);
 	text-decoration: none;
+}
+
+h1 {
+	font-size: calc(4vw * var(--scale));
+	margin-bottom: 1.35rem;
+}
+
+h2 {
+	font-size: calc(3vw * var(--scale));
+}
+
+h3 {
+	font-size: calc(2vw * var(--scale));
+}
+
+h4 {
+	font-size: calc(1.7vw * var(--scale));
+	color: var(--fg2);
+}
+
+/* Footer */
+
+#footer {
+	width: 100vw;
+	height: 3.9rem;
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	margin: 0px;
+	background-color: var(--bg2);
+	z-index: 100;
+}
+
+.ft-item {
+	width: 19.96%;
+	height: 100%;
+	display: inline-block;
+	margin: 0px;
+	box-sizing: border-box;
+}
+
+.not-last {
+	border-style: solid;
+	border-width: 0px;
+	border-right-width: 1.8px;
+	border-color: var(--bg3);
+	border-radius: 0px;
+}
+
+.ft-cont {
+	width: 100%;
+	height: 100%;
+	margin: 0px;
+}
+
+.dot {
+	height: 0.45rem;
+	width: 0.45rem;
+	background-color: var(--bg3);
+	border-radius: 50%;
 }

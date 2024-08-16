@@ -59,7 +59,7 @@ pub async fn checklists(
 
 	let page = page.replace("{{add-checklist}}", &add_button);
 
-	let page = create_page("Inbox", &page);
+	let page = create_page("Todo", &page);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
