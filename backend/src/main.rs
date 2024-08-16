@@ -113,6 +113,11 @@ async fn rocket() -> _ {
 				routes::inbox::delete_announcement,
 				routes::attendance::attend,
 				routes::attendance::unattend,
+				routes::tasks::create_checklist,
+				routes::tasks::create_task,
+				routes::tasks::update_task,
+				routes::tasks::delete_checklist,
+				routes::tasks::delete_task,
 			],
 		)
 		.register("/", catchers![routes::not_found, routes::internal_error])

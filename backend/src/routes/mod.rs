@@ -4,6 +4,7 @@ pub mod calendar;
 pub mod inbox;
 pub mod login;
 pub mod members;
+pub mod tasks;
 
 use std::collections::HashMap;
 use std::net::IpAddr;
