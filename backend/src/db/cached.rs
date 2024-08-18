@@ -6,7 +6,7 @@ use rocket::{
 	tokio::{sync::Mutex, try_join},
 	Orbit, Rocket,
 };
-use tracing::{error, info};
+use tracing::error;
 
 use crate::tasks::{Checklist, Task};
 
@@ -282,7 +282,6 @@ impl Fairing for SyncCache {
 		rocket::tokio::spawn(async move {
 			loop {
 				rocket::tokio::time::sleep(Duration::from_secs(120)).await;
-				info!("Syncing cache...");
 				if let Err(e) = db.lock().await.sync_cache().await {
 					error!("Failed to sync cache: {e}");
 				}
