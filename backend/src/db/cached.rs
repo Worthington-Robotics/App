@@ -246,6 +246,13 @@ impl Database for CacheDatabase {
 
 		Ok(())
 	}
+
+	async fn get_calendar(
+		&self,
+		calendar_id: &str,
+	) -> anyhow::Result<Option<crate::member::Member>> {
+		self.cache.get_calendar(calendar_id).await
+	}
 }
 
 /// Fairing for periodically syncing the cache

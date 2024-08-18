@@ -77,6 +77,9 @@ pub async fn index(
 		})?;
 	let page = page.replace("{{attendance-panel}}", &attendance_panel);
 
+	// Replace the calendar ID for the copy button
+	let page = page.replace("{{cal-id}}", &member.calendar_id);
+
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 

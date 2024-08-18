@@ -1,4 +1,4 @@
-use std::{fmt::Display, str::FromStr};
+use std::{collections::HashSet, fmt::Display, path::PathBuf, str::FromStr};
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, NaiveDate, NaiveTime, Offset, TimeZone, Utc};
@@ -7,13 +7,17 @@ use itertools::Itertools;
 use rocket::{
 	form::Form,
 	http::Status,
-	response::{content::RawHtml, Redirect},
+	response::{
+		content::{RawHtml, RawXml},
+		Redirect,
+	},
 	FromForm,
 };
 use strum::IntoEnumIterator;
 use tracing::{error, span, warn, Level};
 
 use crate::{
+	api::caldav::Calendar,
 	db::Database,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{count_group_members, Member, MemberGroup, MemberMention},
@@ -522,6 +526,95 @@ pub async fn rsvp_event(
 	}
 
 	Ok(())
+}
+
+// API for CalDAV requests
+
+#[rocket::get("/<id>/<path..>", data = "<body>")]
+pub async fn cal_call_get(
+	state: &State,
+	path: PathBuf,
+	id: &str,
+	body: &str,
+) -> Result<RawXml<String>, Status> {
+	cal_call(state, path, id, body).await
+}
+
+#[rocket::post("/<id>/<path..>", data = "<body>")]
+pub async fn cal_call_post(
+	state: &State,
+	path: PathBuf,
+	id: &str,
+	body: &str,
+) -> Result<RawXml<String>, Status> {
+	cal_call(state, path, id, body).await
+}
+
+#[rocket::route(PROPFIND, uri = "/<id>/<path..>", data = "<body>")]
+pub async fn cal_call_propfind(
+	state: &State,
+	path: PathBuf,
+	id: &str,
+	body: &str,
+) -> Result<RawXml<String>, Status> {
+	cal_call(state, path, id, body).await
+}
+
+#[rocket::route(REPORT, uri = "/<id>/<path..>", data = "<body>")]
+pub async fn cal_call_report(
+	state: &State,
+	path: PathBuf,
+	id: &str,
+	body: &str,
+) -> Result<RawXml<String>, Status> {
+	cal_call(state, path, id, body).await
+}
+
+#[rocket::route(PROPFIND, uri = "/<id>/.well-known/caldav", data = "<body>")]
+pub async fn cal_call_well_known(
+	state: &State,
+	id: &str,
+	body: &str,
+) -> Result<RawXml<String>, Status> {
+	cal_call(state, PathBuf::new(), id, body).await
+}
+
+#[inline(never)]
+async fn cal_call(
+	state: &State,
+	path: PathBuf,
+	id: &str,
+	body: &str,
+) -> Result<RawXml<String>, Status> {
+	if id.is_empty() {
+		error!("Calendar ID was empty");
+		return Err(Status::BadRequest);
+	}
+
+	// Get the member from the calendar ID
+	let lock = state.db.lock().await;
+	let Some(member) = lock.get_calendar(id).await.map_err(|e| {
+		error!("Failed to get member from calendar in database: {e}");
+		Status::InternalServerError
+	})?
+	else {
+		return Err(Status::NotFound);
+	};
+
+	let events: Vec<_> = lock
+		.get_events()
+		.await
+		.map_err(|e| {
+			error!("Failed to get events from database: {e}");
+			Status::InternalServerError
+		})?
+		.collect();
+
+	let events = get_relevant_events(&member, events.iter());
+
+	let calendar = Calendar::new(events.into_iter());
+
+	calendar.serve(path, body, id)
 }
 
 /// Formats a date as JS/HTML's version

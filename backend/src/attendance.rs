@@ -218,7 +218,7 @@ impl Fairing for AttendanceFairing {
 				let members = {
 					let members = lock.get_members().await;
 					let members = members.map_err(|e| {
-						error!("Failed to get members from database: {e}");
+						error!("Failed to get members from database: {e:#}");
 					});
 					let Ok(members) = members else {
 						continue;

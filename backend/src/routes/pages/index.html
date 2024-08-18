@@ -7,6 +7,12 @@
 <br />
 <br />
 {{attendance-panel}}
+<br />
+<br />
+<div class="cont col">
+	<h3>More</h3>
+	<button id="cal-button">Get Calendar Link</button>
+</div>
 <script>
 	function onLogout(event) {
 		event.preventDefault();
@@ -22,6 +28,11 @@
 	}
 
 	document.getElementById("logout-button").addEventListener("click", onLogout);
+	document.getElementById("cal-button").addEventListener("click", (event) => {
+		navigator.clipboard.writeText(
+			"https://worbots-e189414dd906.herokuapp.com/cal/{{cal-id}}/"
+		);
+	});
 </script>
 <style>
 	.login-info {

@@ -217,6 +217,15 @@ impl Database for JSONDatabase {
 		self.contents.tasks.remove(task);
 		Ok(())
 	}
+
+	async fn get_calendar(&self, calendar_id: &str) -> anyhow::Result<Option<Member>> {
+		Ok(self
+			.contents
+			.members
+			.values()
+			.find(|x| x.calendar_id == calendar_id)
+			.cloned())
+	}
 }
 
 impl JSONDatabase {

@@ -50,6 +50,7 @@ async fn rocket() -> _ {
 		password: String::new(),
 		password_salt: None,
 		creation_date: DateTime::UNIX_EPOCH.to_rfc2822(),
+		calendar_id: String::new(),
 	};
 	db.create_member(admin_member)
 		.await
@@ -123,6 +124,16 @@ async fn rocket() -> _ {
 				routes::tasks::checklists,
 			],
 		)
+		.mount(
+			"/cal",
+			routes![
+				routes::calendar::cal_call_get,
+				routes::calendar::cal_call_post,
+				routes::calendar::cal_call_propfind,
+				routes::calendar::cal_call_report,
+			],
+		)
+		.mount("/", routes![routes::calendar::cal_call_well_known,])
 		.register("/", catchers![routes::not_found, routes::internal_error])
 		.attach(Ratelimit::new())
 		.attach(AttendanceFairing::new(db_clone));

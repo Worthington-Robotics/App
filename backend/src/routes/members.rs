@@ -17,8 +17,8 @@ use tracing::{error, span, Level};
 use crate::attendance::get_attendance_stats;
 use crate::events::Event;
 use crate::routes::OptionalSessionID;
-use crate::util::render_date;
 use crate::util::ToDropdown;
+use crate::util::{generate_id, render_date};
 use crate::{
 	auth::Privilege,
 	member::{Member, MemberGroup},
@@ -101,6 +101,17 @@ pub async fn create_member(
 		return Err(Status::BadRequest);
 	}
 
+	let existing_member = state
+		.db
+		.lock()
+		.await
+		.get_member(&member.id)
+		.await
+		.map_err(|e| {
+			error!("Failed to get member from database: {e}");
+			Status::InternalServerError
+		})?;
+
 	let (hashed_password, salt) = if let Some(password) = &member.password {
 		let result = if let Some(hash) = &state.password_hash {
 			// Create salt
@@ -124,17 +135,7 @@ pub async fn create_member(
 	let (hashed_password, salt) = if let Some(hashed_password) = hashed_password {
 		(hashed_password, salt.map(|x| x.to_string()))
 	} else {
-		let existing_member = state
-			.db
-			.lock()
-			.await
-			.get_member(&member.id)
-			.await
-			.map_err(|e| {
-				error!("Failed to get member from database: {e}");
-				Status::InternalServerError
-			})?;
-		let Some(existing_member) = existing_member else {
+		let Some(existing_member) = &existing_member else {
 			error!("Password not given when there is no existing member");
 			return Err(Status::Unauthorized);
 		};
@@ -161,20 +162,15 @@ pub async fn create_member(
 		.collect();
 
 	// Don't replace the creation date for existing members either
-	let creation_date = if let Some(existing_member) = state
-		.db
-		.lock()
-		.await
-		.get_member(&member.id)
-		.await
-		.map_err(|e| {
-			error!("Failed to get member from database: {e}");
-			Status::InternalServerError
-		})? {
-		existing_member.creation_date
+	let creation_date = if let Some(existing_member) = &existing_member {
+		existing_member.creation_date.clone()
 	} else {
 		Utc::now().to_rfc2822()
 	};
+
+	let calendar_id = existing_member
+		.map(|x| x.calendar_id.clone())
+		.unwrap_or(generate_id());
 
 	let new_member = Member {
 		id: member.id.clone(),
@@ -184,6 +180,7 @@ pub async fn create_member(
 		password: hashed_password,
 		password_salt: salt.map(|x| x.to_string()),
 		creation_date,
+		calendar_id,
 	};
 
 	{
@@ -321,6 +318,7 @@ pub async fn create_member_page(
 			password: String::new(),
 			password_salt: None,
 			creation_date: Utc::now().to_rfc2822(),
+			calendar_id: String::new(),
 		}
 	};
 

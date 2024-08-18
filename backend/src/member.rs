@@ -26,6 +26,9 @@ pub struct Member {
 	/// The date when this member was created
 	#[serde(default = "default_creation_date")]
 	pub creation_date: String,
+	/// This user's calendar ID
+	#[serde(default = "crate::util::generate_id")]
+	pub calendar_id: String,
 }
 
 impl Member {

@@ -109,4 +109,7 @@ pub trait Database {
 
 	/// Delete a task
 	async fn delete_task(&mut self, task: &str) -> anyhow::Result<()>;
+
+	/// Get the member from a calendar ID
+	async fn get_calendar(&self, calendar_id: &str) -> anyhow::Result<Option<Member>>;
 }

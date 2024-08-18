@@ -81,7 +81,7 @@ impl Database for SqlDatabase {
 		self.delete_member(&member.id)
 			.await
 			.context("Failed to delete existing member")?;
-		sqlx::query("INSERT INTO members (Id, Name, Kind, Groups, Password, PasswordSalt, CreationDate) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+		sqlx::query("INSERT INTO members (Id, Name, Kind, Groups, Password, PasswordSalt, CreationDate, CalendarId) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
 			.bind(member.id)
 			.bind(member.name)
 			.bind(member.kind.to_string())
@@ -95,6 +95,7 @@ impl Database for SqlDatabase {
 			.bind(member.password)
 			.bind(member.password_salt)
 			.bind(member.creation_date)
+			.bind(member.calendar_id)
 			.execute(&self.pool)
 			.await
 			.context("Failed to create new member in database")?;
@@ -542,11 +543,26 @@ impl Database for SqlDatabase {
 			Ok(())
 		}
 	}
+
+	async fn get_calendar(&self, calendar_id: &str) -> anyhow::Result<Option<Member>> {
+		let result = sqlx::query("SELECT * FROM members WHERE CalendarId = $1")
+			.bind(calendar_id)
+			.fetch_optional(&self.pool)
+			.await
+			.context("Failed to get current attendance from database")?;
+
+		if let Some(row) = result {
+			let id: String = row.try_get("id")?;
+			Ok(Some(read_member(&id, row)?))
+		} else {
+			Ok(None)
+		}
+	}
 }
 
 /// Setup the database
 async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
-	let members_task = pool.execute("CREATE TABLE IF NOT EXISTS members (Id text PRIMARY KEY, Name text, Kind text, Groups text[], Password text, PasswordSalt text, CreationDate text)");
+	let members_task = pool.execute("CREATE TABLE IF NOT EXISTS members (Id text PRIMARY KEY, Name text, Kind text, Groups text[], Password text, PasswordSalt text, CreationDate text, CalendarId text)");
 
 	let events_task = pool.execute("CREATE TABLE IF NOT EXISTS events (Id text PRIMARY KEY, Name text, Date text, EndDate text, Kind text, Urgency text, Visibility text, Invites text[], RSVP text[])");
 
@@ -605,6 +621,7 @@ fn read_member(id: &str, row: PgRow) -> anyhow::Result<Member> {
 	let password: &str = row.try_get("password")?;
 	let password_salt: Option<String> = row.try_get("passwordsalt")?;
 	let creation_date: &str = row.try_get("creationdate")?;
+	let calendar_id: &str = row.try_get("calendarid")?;
 
 	Ok(Member {
 		id: id.to_string(),
@@ -614,6 +631,7 @@ fn read_member(id: &str, row: PgRow) -> anyhow::Result<Member> {
 		password: password.to_string(),
 		password_salt,
 		creation_date: creation_date.to_string(),
+		calendar_id: calendar_id.to_string(),
 	})
 }
 
