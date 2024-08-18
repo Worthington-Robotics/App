@@ -586,6 +586,7 @@ async fn cal_call(
 	id: &str,
 	body: &str,
 ) -> Result<RawXml<String>, Status> {
+	dbg!(&body);
 	if id.is_empty() {
 		error!("Calendar ID was empty");
 		return Err(Status::BadRequest);
