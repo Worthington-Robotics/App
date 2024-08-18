@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display, path::PathBuf};
 
 use chrono::{DateTime, TimeZone, Utc};
-use rocket::{http::Status, response::content::RawXml};
+use rocket::{http::Status, Responder};
 
 use crate::events::Event;
 
@@ -22,13 +22,13 @@ impl<'e> Calendar<'e> {
 		request: PathBuf,
 		body: &str,
 		cal_id: &str,
-	) -> Result<RawXml<String>, Status> {
+	) -> Result<CalendarResponse, Status> {
 		let _ = body;
 
 		let components: Vec<_> = request.components().collect();
 
 		if components.is_empty() {
-			return Ok(RawXml(format!(
+			return Ok(CalendarResponse::Xml(format!(
 				r#"
 <multistatus xmlns="DAV:">
   <response xmlns="DAV:">
@@ -47,7 +47,7 @@ impl<'e> Calendar<'e> {
 		}
 
 		if components.len() == 1 && components[0].as_os_str() == "principal" {
-			return Ok(RawXml(format!(
+			return Ok(CalendarResponse::Xml(format!(
 				r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <multistatus xmlns="DAV:">
   <response xmlns="DAV:">
@@ -72,7 +72,7 @@ impl<'e> Calendar<'e> {
 		}
 
 		if components.len() == 1 && components[0].as_os_str() == "calendars" {
-			return Ok(RawXml(format!(
+			return Ok(CalendarResponse::Xml(format!(
 				r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <multistatus xmlns="DAV:">
   <response xmlns="DAV:">
@@ -124,7 +124,6 @@ impl<'e> Calendar<'e> {
 		}
 
 		if components.len() == 1 && components[0].as_os_str() == "calendar" {
-			//
 			let out = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <multistatus xmlns="DAV:">
 	{{responses}}
@@ -139,7 +138,7 @@ impl<'e> Calendar<'e> {
 		<propstat>
 			<prop>
 				<getetag xmlns="DAV:">"lrgcxs0m"</getetag>
-				<calendar-data xmlns="urn:ietf:params:xml:ns:caldav">{ical_data}</calendar-data>
+				<calendar-data xmlns="urn:ietf:params:xml:ns:caldav"><![CDATA[{ical_data}]]></calendar-data>
 			</prop>
 			<status>HTTP/1.1 200 OK</status>
 		</propstat>
@@ -151,16 +150,45 @@ impl<'e> Calendar<'e> {
 			}
 			let out = out.replace("{{responses}}", &events_string);
 
-			return Ok(RawXml(out.into()));
+			return Ok(CalendarResponse::Xml(out));
 		}
 
-		Ok(RawXml(String::new()))
+		// Basic ICS calendar
+		if components.len() == 1 && components[0].as_os_str() == "cal.ics" {
+			let mut events_string = String::new();
+			for event in self.events.values() {
+				let ical_data = format_ical(event);
+
+				events_string.push_str(&ical_data);
+			}
+
+			let out = format!(
+				r#"BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//worbots4145.org/app//WorBots Calendar//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+{events_string}END:VCALENDAR"#
+			);
+
+			return Ok(CalendarResponse::Ical(out));
+		}
+
+		Err(Status::NotFound)
 	}
+}
+
+#[derive(Responder)]
+pub enum CalendarResponse {
+	#[response(content_type = "text/xml")]
+	Xml(String),
+	#[response(content_type = "text/calendar")]
+	Ical(String),
 }
 
 fn format_ical(event: &Event) -> String {
 	let start = if let Ok(start_date) = DateTime::parse_from_rfc2822(&event.date) {
-		format!("DTSTART:{}", ical_date(start_date))
+		format!("\nDTSTART:{}", ical_date(start_date))
 	} else {
 		String::new()
 	};
@@ -169,31 +197,19 @@ fn format_ical(event: &Event) -> String {
 		.as_ref()
 		.and_then(|x| DateTime::parse_from_rfc2822(&x).ok())
 	{
-		format!("DTEND:{}", ical_date(end_date))
+		format!("\nDTEND:{}", ical_date(end_date))
 	} else {
 		String::new()
 	};
 
 	format!(
-		r#"
-	<![CDATA[BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//worbots4145.org/app//WorBots Calendar//EN
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-BEGIN:VEVENT
-SUMMARY:{0}
+		r#"BEGIN:VEVENT
+SUMMARY:{0}{2}{3}
 UID:{1}
-SEQUENCE:0
-STATUS:CONFIRMED
-TRANSP:TRANSPARENT
-{2}
-{3}
-URL:https://worbots4145.org/app/event/{1}
+DTSTAMP:19970610T172345Z
+URL:https://worbots-e189414dd906.herokuapp.com/event/{1}
 END:VEVENT
-END:VCALENDAR
-]]>
-	"#,
+"#,
 		event.name, event.id, start, end
 	)
 }

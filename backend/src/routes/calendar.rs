@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::Display, path::PathBuf, str::FromStr};
+use std::{fmt::Display, path::PathBuf, str::FromStr};
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, NaiveDate, NaiveTime, Offset, TimeZone, Utc};
@@ -7,17 +7,14 @@ use itertools::Itertools;
 use rocket::{
 	form::Form,
 	http::Status,
-	response::{
-		content::{RawHtml, RawXml},
-		Redirect,
-	},
+	response::{content::RawHtml, Redirect},
 	FromForm,
 };
 use strum::IntoEnumIterator;
 use tracing::{error, span, warn, Level};
 
 use crate::{
-	api::caldav::Calendar,
+	api::caldav::{Calendar, CalendarResponse},
 	db::Database,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{count_group_members, Member, MemberGroup, MemberMention},
@@ -536,7 +533,7 @@ pub async fn cal_call_get(
 	path: PathBuf,
 	id: &str,
 	body: &str,
-) -> Result<RawXml<String>, Status> {
+) -> Result<CalendarResponse, Status> {
 	cal_call(state, path, id, body).await
 }
 
@@ -546,7 +543,7 @@ pub async fn cal_call_post(
 	path: PathBuf,
 	id: &str,
 	body: &str,
-) -> Result<RawXml<String>, Status> {
+) -> Result<CalendarResponse, Status> {
 	cal_call(state, path, id, body).await
 }
 
@@ -556,7 +553,7 @@ pub async fn cal_call_propfind(
 	path: PathBuf,
 	id: &str,
 	body: &str,
-) -> Result<RawXml<String>, Status> {
+) -> Result<CalendarResponse, Status> {
 	cal_call(state, path, id, body).await
 }
 
@@ -566,7 +563,7 @@ pub async fn cal_call_report(
 	path: PathBuf,
 	id: &str,
 	body: &str,
-) -> Result<RawXml<String>, Status> {
+) -> Result<CalendarResponse, Status> {
 	cal_call(state, path, id, body).await
 }
 
@@ -575,7 +572,7 @@ pub async fn cal_call_well_known(
 	state: &State,
 	id: &str,
 	body: &str,
-) -> Result<RawXml<String>, Status> {
+) -> Result<CalendarResponse, Status> {
 	cal_call(state, PathBuf::new(), id, body).await
 }
 
@@ -585,8 +582,7 @@ async fn cal_call(
 	path: PathBuf,
 	id: &str,
 	body: &str,
-) -> Result<RawXml<String>, Status> {
-	dbg!(&body);
+) -> Result<CalendarResponse, Status> {
 	if id.is_empty() {
 		error!("Calendar ID was empty");
 		return Err(Status::BadRequest);
@@ -615,7 +611,9 @@ async fn cal_call(
 
 	let calendar = Calendar::new(events.into_iter());
 
-	calendar.serve(path, body, id)
+	let out = calendar.serve(path, body, id);
+
+	out
 }
 
 /// Formats a date as JS/HTML's version
