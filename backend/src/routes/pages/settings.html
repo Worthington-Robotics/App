@@ -1,0 +1,43 @@
+{{worbots-header}}{{error}}
+<div class="login-info cont">
+	<h3>Logged in as {{name}}</h3>
+	<button id="logout-button">Logout</button>
+</div>
+<br />
+<br />
+<div class="cont col">
+	<h3>More</h3>
+	<button id="cal-button">Get Calendar Link</button>
+</div>
+<script>
+	function onLogout(event) {
+		event.preventDefault();
+		fetch("/api/logout", {
+			method: "POST",
+		}).then((resp) => {
+			if (resp.status == 200) {
+				window.location.href = "/login";
+			} else {
+				setError(resp.statusText);
+			}
+		});
+	}
+
+	document.getElementById("logout-button").addEventListener("click", onLogout);
+	document.getElementById("cal-button").addEventListener("click", (event) => {
+		navigator.clipboard.writeText(
+			"https://worbots-e189414dd906.herokuapp.com/cal/{{cal-id}}/cal.ics"
+		);
+	});
+</script>
+<style>
+	.login-info {
+		padding: 1.5rem;
+		margin-bottom: -0.8rem;
+	}
+
+	#logout-button {
+		display: inline;
+	}
+</style>
+{{footer}}

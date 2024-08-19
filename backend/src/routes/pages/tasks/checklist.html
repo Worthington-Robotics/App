@@ -7,15 +7,10 @@
 		<div id="delete-button">{{delete}}</div>
 	</div>
 	<br />
-	<div class="cont col item-cont">
+	<div class="cont col item-cont" id="tasks-cont">
 		{{tasks}}
 		<form class="cont item round" id="add-task">
-			<input
-				type="text"
-				placeholder="Enter task name..."
-				id="new-text"
-				name="text"
-			/>
+			<input type="text" placeholder="Enter task name..." id="new-text" name="text" />
 			<input type="submit" id="create-submit" value="Add" />
 		</form>
 	</div>
@@ -43,6 +38,12 @@
 		}).then((resp) => {
 			if (resp.status != 200) {
 				setError(resp.statusText);
+			}
+
+			if (e.target.parentElement.className.includes("done")) {
+				e.target.parentElement.classList.remove("done");
+			} else {
+				e.target.parentElement.classList.add("done");
 			}
 		});
 	}
@@ -119,6 +120,15 @@
 
 	.task-text {
 		margin-right: auto;
+	}
+
+	#tasks-cont>.item {
+		padding: 1rem;
+	}
+
+	.done {
+		text-decoration-line: line-through;
+		color: var(--fg2);
 	}
 </style>
 {{footer}}

@@ -124,6 +124,7 @@ async fn rocket() -> _ {
 				routes::tasks::checklists,
 				routes::tasks::create_checklist_page,
 				routes::tasks::checklist_page,
+				routes::settings::settings,
 			],
 		)
 		.mount(

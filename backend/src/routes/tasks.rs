@@ -207,6 +207,7 @@ fn render_task(task: &Task) -> String {
 	let out = out.replace("{{id}}", &task.id);
 	let out = out.replace("{{text}}", &task.text);
 	let out = out.replace("{{checked}}", if task.done { " checked" } else { "" });
+	let out = out.replace("{{done-class}}", if task.done { "done" } else { "" });
 	let out = out.replace("{{delete}}", include_str!("components/ui/delete.min.html"));
 
 	out

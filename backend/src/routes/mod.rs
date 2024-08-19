@@ -4,6 +4,7 @@ pub mod calendar;
 pub mod inbox;
 pub mod login;
 pub mod members;
+pub mod settings;
 pub mod tasks;
 
 use std::collections::HashMap;
@@ -76,9 +77,6 @@ pub async fn index(
 			Status::InternalServerError
 		})?;
 	let page = page.replace("{{attendance-panel}}", &attendance_panel);
-
-	// Replace the calendar ID for the copy button
-	let page = page.replace("{{cal-id}}", &member.calendar_id);
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
