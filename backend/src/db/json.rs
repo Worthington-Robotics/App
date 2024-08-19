@@ -192,13 +192,20 @@ impl Database for JSONDatabase {
 		Ok(self.contents.checklists.values().cloned())
 	}
 
-	async fn get_tasks(&self, checklist: &str) -> anyhow::Result<impl Iterator<Item = Task>> {
+	async fn get_checklist_tasks(
+		&self,
+		checklist: &str,
+	) -> anyhow::Result<impl Iterator<Item = Task>> {
 		Ok(self
 			.contents
 			.tasks
 			.values()
-			.filter(move |x| x.id == checklist)
+			.filter(move |x| x.checklist == checklist)
 			.cloned())
+	}
+
+	async fn get_task(&self, task: &str) -> anyhow::Result<Option<Task>> {
+		Ok(self.contents.tasks.get(task).cloned())
 	}
 
 	async fn create_task(&mut self, task: Task) -> anyhow::Result<()> {
@@ -216,6 +223,10 @@ impl Database for JSONDatabase {
 	async fn delete_task(&mut self, task: &str) -> anyhow::Result<()> {
 		self.contents.tasks.remove(task);
 		Ok(())
+	}
+
+	async fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = Task>> {
+		Ok(self.contents.tasks.values().cloned())
 	}
 
 	async fn get_calendar(&self, calendar_id: &str) -> anyhow::Result<Option<Member>> {

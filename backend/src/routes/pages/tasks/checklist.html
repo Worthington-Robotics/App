@@ -1,0 +1,124 @@
+{{worbots-header}}{{error}}
+<div class="cont col" id="checklist-details">
+	<h1>{{name}}</h1>
+	<div class="cont">
+		<a href="/checklists"><button>Back</button></a>
+		<a href="/create_checklist?id={{id}}">{{edit}}</a>
+		<div id="delete-button">{{delete}}</div>
+	</div>
+	<br />
+	<div class="cont col item-cont">
+		{{tasks}}
+		<form class="cont item round" id="add-task">
+			<input
+				type="text"
+				placeholder="Enter task name..."
+				id="new-text"
+				name="text"
+			/>
+			<input type="submit" id="create-submit" value="Add" />
+		</form>
+	</div>
+</div>
+<script>
+	let deleteButton = document.getElementById("delete-button");
+	if (deleteButton != null) {
+		deleteButton.addEventListener("click", () => {
+			fetch("/api/delete_checklist/{{id}}", {
+				method: "DELETE",
+			}).then((resp) => {
+				if (resp.status == 200) {
+					window.location.href = "/checklists";
+				} else {
+					setError(resp.statusText);
+				}
+			});
+		});
+	}
+
+	function checkTask(e) {
+		let id = e.target.parentElement.dataset.id;
+		fetch(`/api/update_task/${id}`, {
+			method: "POST",
+		}).then((resp) => {
+			if (resp.status != 200) {
+				setError(resp.statusText);
+			}
+		});
+	}
+
+	for (let e of document.getElementsByClassName("task-cb")) {
+		e.addEventListener("change", checkTask);
+	}
+
+	function deleteTask(e) {
+		let id = e.target.parentElement.parentElement.dataset.id;
+		fetch(`/api/delete_task/${id}`, {
+			method: "DELETE",
+		}).then((resp) => {
+			if (resp.status != 200) {
+				setError(resp.statusText);
+			} else {
+				e.target.parentElement.parentElement.remove();
+			}
+		});
+	}
+
+	for (let e of document.getElementsByClassName("task-delete")) {
+		e.addEventListener("click", deleteTask);
+	}
+
+	function onAdd(event) {
+		event.preventDefault();
+
+		const text = document.getElementById("new-text").value;
+
+		// Create the new element immediately for responsive UI
+		let newElement = document.createElement("div");
+		newElement.className = "task cont item round";
+		// Disable the checkbox for now since there isn't an ID for the task yet
+		newElement.innerHTML = `<input type="checkbox" class="task-cb" disabled /><div class="task-text">${text}</div>`;
+		let deleteButton = document.createElement("div");
+		deleteButton.className = "task-delete";
+		deleteButton.innerHTML = "{{delete}}";
+		deleteButton.addEventListener("click", deleteTask);
+		newElement.appendChild(deleteButton);
+
+		event.target.before(newElement);
+
+		fetch("/api/create_task", {
+			method: "POST",
+			body: `text=${text}&checklist={{id}}`,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to create task: " + response.statusText);
+				// Remove the newly added element
+				newElement.remove();
+				return;
+			}
+			// Wait for the new task ID
+			response.text().then((id) => {
+				// Hydrate the new element
+				let checkbox = newElement.children.item(0);
+				checkbox.disabled = false;
+				checkbox.addEventListener("change", checkTask);
+				newElement.dataset.id = id;
+				// Clear the text box
+				document.getElementById("new-text").value = "";
+			});
+		});
+	}
+
+	document.getElementById("add-task").addEventListener("submit", onAdd);
+</script>
+<style>
+	.task-cb {
+		margin-right: auto;
+	}
+
+	.task-text {
+		margin-right: auto;
+	}
+</style>
+{{footer}}

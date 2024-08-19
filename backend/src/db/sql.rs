@@ -325,7 +325,7 @@ impl Database for SqlDatabase {
 	}
 
 	async fn delete_announcement(&mut self, announcement: &str) -> anyhow::Result<()> {
-		let result = sqlx::query("DROP * FROM announcements WHERE Id = $1")
+		let result = sqlx::query("DELETE FROM announcements WHERE Id = $1")
 			.bind(announcement)
 			.execute(&self.pool)
 			.await;
@@ -435,6 +435,10 @@ impl Database for SqlDatabase {
 	}
 
 	async fn create_checklist(&mut self, checklist: Checklist) -> anyhow::Result<()> {
+		// Remove the existing checklist
+		self.delete_checklist(&checklist.id)
+			.await
+			.context("Failed to delete existing checklist")?;
 		sqlx::query("INSERT INTO checklists (Id, Name, Tasks) VALUES ($1, $2, $3)")
 			.bind(checklist.id)
 			.bind(checklist.name)
@@ -447,7 +451,7 @@ impl Database for SqlDatabase {
 	}
 
 	async fn delete_checklist(&mut self, checklist: &str) -> anyhow::Result<()> {
-		let result = sqlx::query("DROP * FROM checklists WHERE Id = $1")
+		let result = sqlx::query("DELETE FROM checklists WHERE Id = $1")
 			.bind(checklist)
 			.execute(&self.pool)
 			.await;
@@ -481,7 +485,10 @@ impl Database for SqlDatabase {
 		}
 	}
 
-	async fn get_tasks(&self, checklist: &str) -> anyhow::Result<impl Iterator<Item = Task>> {
+	async fn get_checklist_tasks(
+		&self,
+		checklist: &str,
+	) -> anyhow::Result<impl Iterator<Item = Task>> {
 		let result = sqlx::query("SELECT * FROM tasks WHERE Checklist = $1")
 			.bind(checklist)
 			.fetch_all(&self.pool)
@@ -504,9 +511,35 @@ impl Database for SqlDatabase {
 		}
 	}
 
+	async fn get_task(&self, task: &str) -> anyhow::Result<Option<Task>> {
+		let mut result = sqlx::query("SELECT * FROM tasks WHERE Id = $1")
+			.bind(task)
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let task = read_task(task, row).context("Failed to read task")?;
+
+				Ok(Some(task))
+			}
+			Err(e) => {
+				error!("Failed to get task {task} from database: {e}");
+				Err(anyhow!("Failed to get task from database"))
+			}
+		}
+	}
+
 	async fn create_task(&mut self, task: Task) -> anyhow::Result<()> {
-		sqlx::query("INSERT INTO tasks (Id, Text, Done) VALUES ($1, $2, $3)")
+		// Remove the existing task
+		self.delete_task(&task.id)
+			.await
+			.context("Failed to delete existing task")?;
+		sqlx::query("INSERT INTO tasks (Id, Checklist, Text, Done) VALUES ($1, $2, $3, $4)")
 			.bind(task.id)
+			.bind(task.checklist)
 			.bind(task.text)
 			.bind(task.done)
 			.execute(&self.pool)
@@ -532,7 +565,7 @@ impl Database for SqlDatabase {
 	}
 
 	async fn delete_task(&mut self, task: &str) -> anyhow::Result<()> {
-		let result = sqlx::query("DROP * FROM tasks WHERE Id = $1")
+		let result = sqlx::query("DELETE FROM tasks WHERE Id = $1")
 			.bind(task)
 			.execute(&self.pool)
 			.await;
@@ -541,6 +574,28 @@ impl Database for SqlDatabase {
 			Err(anyhow!("Failed to delete task from database"))
 		} else {
 			Ok(())
+		}
+	}
+
+	async fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = Task>> {
+		let result = sqlx::query("SELECT * FROM tasks")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let id: String = row.try_get("id")?;
+					let task = read_task(&id, row).context("Failed to read task")?;
+					out.push(task);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get tasks from database: {e}");
+				Err(anyhow!("Failed to get tasks from database"))
+			}
 		}
 	}
 

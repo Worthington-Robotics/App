@@ -55,15 +55,15 @@ button,
 input[type="submit"] {
 	color: var(--fg);
 	background-color: var(--wbblue);
+	cursor: pointer;
 }
 
 .cont {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	gap: 1.0rem;
+	gap: 1rem;
 }
-
 
 .col {
 	flex-direction: column;

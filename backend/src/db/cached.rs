@@ -45,6 +45,27 @@ async fn populate_cache(sql: &SqlDatabase) -> anyhow::Result<JSONDatabase> {
 	{
 		cache.create_event(event).await?;
 	}
+	for announcement in sql
+		.get_announcements()
+		.await
+		.context("Failed to get announcements from database")?
+	{
+		cache.create_announcement(announcement).await?;
+	}
+	for checklist in sql
+		.get_checklists()
+		.await
+		.context("Failed to get checklists from database")?
+	{
+		cache.create_checklist(checklist).await?;
+	}
+	for task in sql
+		.get_tasks()
+		.await
+		.context("Failed to get tasks from database")?
+	{
+		cache.create_task(task).await?;
+	}
 
 	Ok(cache)
 }
@@ -221,8 +242,15 @@ impl Database for CacheDatabase {
 		self.cache.get_checklists().await
 	}
 
-	async fn get_tasks(&self, checklist: &str) -> anyhow::Result<impl Iterator<Item = Task>> {
-		self.cache.get_tasks(checklist).await
+	async fn get_checklist_tasks(
+		&self,
+		checklist: &str,
+	) -> anyhow::Result<impl Iterator<Item = Task>> {
+		self.cache.get_checklist_tasks(checklist).await
+	}
+
+	async fn get_task(&self, task: &str) -> anyhow::Result<Option<Task>> {
+		self.cache.get_task(task).await
 	}
 
 	async fn create_task(&mut self, task: Task) -> anyhow::Result<()> {
@@ -245,6 +273,10 @@ impl Database for CacheDatabase {
 		self.cache.delete_task(task).await?;
 
 		Ok(())
+	}
+
+	async fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = Task>> {
+		self.cache.get_tasks().await
 	}
 
 	async fn get_calendar(

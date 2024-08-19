@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use itertools::Itertools;
 use rocket::form::{Form, FromForm};
 use rocket::http::Status;
@@ -8,6 +10,7 @@ use tracing::{error, span, Level};
 use crate::db::Database;
 use crate::routes::OptionalSessionID;
 use crate::tasks::{Checklist, Task};
+use crate::util::generate_id;
 use crate::{routes::SessionID, State};
 
 use super::{create_page, PageOrRedirect};
@@ -65,9 +68,146 @@ pub async fn checklists(
 }
 
 fn render_checklist(checklist: Checklist) -> String {
-	let component = include_str!("components/checklist.min.html");
-	let out = component.replace("{{name}}", &checklist.name);
-	let out = out.replace("{{progress}}", &checklist.tasks.len().to_string());
+	let out = include_str!("components/tasks/checklist.min.html");
+	let out = out.replace("{{id}}", &checklist.id);
+	let out = out.replace("{{name}}", &checklist.name);
+	let out = out.replace("{{progress}}", &format!("{} tasks", checklist.tasks.len()));
+
+	out
+}
+
+#[rocket::get("/create_checklist?<id>")]
+pub async fn create_checklist_page(
+	id: Option<&str>,
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Create checklist page");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	if session_id.verify_elevated(state).await.is_err() {
+		return Ok(redirect);
+	};
+
+	let checklist = if let Some(id) = id {
+		let lock = state.db.lock().await;
+		// We are editing an existing checklist
+		lock.get_checklist(id)
+			.await
+			.map_err(|e| {
+				error!("Failed to get checklist from database: {e}");
+				Status::InternalServerError
+			})?
+			.ok_or_else(|| {
+				error!("Checklist does not exist: {}", id);
+				Status::BadRequest
+			})?
+	} else {
+		// We are making a new checklist
+		Checklist {
+			id: generate_id(),
+			name: String::new(),
+			tasks: Vec::new(),
+		}
+	};
+
+	let page = include_str!("pages/tasks/create_checklist.min.html");
+	let page = page.replace("{{id}}", &checklist.id);
+	let page = page.replace("{{name}}", &checklist.name);
+	let page = create_page("Create Checklist", &page);
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+#[rocket::get("/checklist/<id>")]
+pub async fn checklist_page(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+	id: &str,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Checklist page");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	let Ok(requesting_member) = session_id.get_requesting_member(state).await else {
+		return Ok(redirect);
+	};
+
+	let lock = state.db.lock().await;
+
+	let checklist = lock
+		.get_checklist(id)
+		.await
+		.map_err(|e| {
+			error!("Failed to get checklist from database: {e}");
+			Status::InternalServerError
+		})?
+		.ok_or_else(|| {
+			error!("Checklist does not exist: {}", id);
+			Status::BadRequest
+		})?;
+
+	let tasks: HashMap<_, _> = lock
+		.get_checklist_tasks(id)
+		.await
+		.map_err(|e| {
+			error!("Failed to get checklist tasks from database: {e}");
+			Status::InternalServerError
+		})?
+		.map(|x| (x.id.clone(), x))
+		.collect();
+
+	let page = include_str!("pages/tasks/checklist.min.html");
+
+	let mut tasks_string = String::new();
+	for task in &checklist.tasks {
+		let Some(task) = tasks.get(task) else {
+			continue;
+		};
+		let task = render_task(task);
+		tasks_string.push_str(&task);
+	}
+	let page = page.replace("{{tasks}}", &tasks_string);
+
+	let page = page.replace("{{id}}", &checklist.id);
+	let page = page.replace("{{name}}", &checklist.name);
+	let page = page.replace(
+		"{{edit}}",
+		if requesting_member.is_elevated() {
+			include_str!("components/ui/edit.min.html")
+		} else {
+			""
+		},
+	);
+	let page = page.replace(
+		"{{delete}}",
+		if requesting_member.is_elevated() {
+			include_str!("components/ui/delete.min.html")
+		} else {
+			""
+		},
+	);
+
+	let page = create_page("Checklist", &page);
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+fn render_task(task: &Task) -> String {
+	let out = include_str!("components/tasks/task.min.html");
+	let out = out.replace("{{id}}", &task.id);
+	let out = out.replace("{{text}}", &task.text);
+	let out = out.replace("{{checked}}", if task.done { " checked" } else { "" });
+	let out = out.replace("{{delete}}", include_str!("components/ui/delete.min.html"));
 
 	out
 }
@@ -81,14 +221,20 @@ pub async fn create_checklist(
 	let span = span!(Level::DEBUG, "Creating checklist");
 	let _enter = span.enter();
 
-	session_id.get_requesting_member(state).await?;
+	session_id.verify_elevated(state).await?;
 
 	let mut lock = state.db.lock().await;
+
+	let existing_checklist = lock.get_checklist(&checklist.id).await.map_err(|e| {
+		error!("Failed to get checklist from database: {e}");
+		Status::InternalServerError
+	})?;
 
 	let checklist = Checklist {
 		id: checklist.id.clone(),
 		name: checklist.name.clone(),
-		tasks: Vec::new(),
+		// Don't overwrite existing tasks
+		tasks: existing_checklist.map(|x| x.tasks).unwrap_or_default(),
 	};
 
 	if let Err(e) = lock.create_checklist(checklist).await {
@@ -110,7 +256,7 @@ pub async fn create_task(
 	state: &State,
 	session_id: SessionID<'_>,
 	task: Form<TaskForm>,
-) -> Result<(), Status> {
+) -> Result<String, Status> {
 	let span = span!(Level::DEBUG, "Creating task");
 	let _enter = span.enter();
 
@@ -118,8 +264,31 @@ pub async fn create_task(
 
 	let mut lock = state.db.lock().await;
 
+	// Add the task to the checklist
+	let Some(mut checklist) = lock.get_checklist(&task.checklist).await.map_err(|e| {
+		error!("Failed to get checklist from database: {e}");
+		Status::InternalServerError
+	})?
+	else {
+		error!("Checklist does not exist");
+		return Err(Status::BadRequest);
+	};
+
+	let id = generate_id();
+
+	if checklist.tasks.contains(&id) {
+		error!("Attempted to add already existing task to checklist");
+		return Err(Status::BadRequest);
+	}
+
+	checklist.tasks.push(id.clone());
+	if let Err(e) = lock.create_checklist(checklist).await {
+		error!("Failed to update checklist in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
 	let task = Task {
-		id: task.id.clone(),
+		id: id.clone(),
 		checklist: task.checklist.clone(),
 		text: task.text.clone(),
 		done: false,
@@ -130,12 +299,11 @@ pub async fn create_task(
 		return Err(Status::InternalServerError);
 	}
 
-	Ok(())
+	Ok(id)
 }
 
 #[derive(FromForm)]
 pub struct TaskForm {
-	id: String,
 	checklist: String,
 	text: String,
 }
@@ -170,8 +338,35 @@ pub async fn delete_task(state: &State, session_id: SessionID<'_>, id: &str) -> 
 
 	let mut lock = state.db.lock().await;
 
+	let Some(task) = lock.get_task(id).await.map_err(|e| {
+		error!("Failed to get existing task from database: {e}");
+		Status::InternalServerError
+	})?
+	else {
+		error!("Task does not exist");
+		return Err(Status::NotFound);
+	};
+
 	if let Err(e) = lock.delete_task(id).await {
 		error!("Failed to delete task {id} in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	// Remove the task from the checklist
+	let Some(mut checklist) = lock.get_checklist(&task.checklist).await.map_err(|e| {
+		error!("Failed to get checklist from database: {e}");
+		Status::InternalServerError
+	})?
+	else {
+		error!("Checklist does not exist");
+		return Err(Status::BadRequest);
+	};
+
+	if let Some(pos) = checklist.tasks.iter().position(|x| *x == id) {
+		checklist.tasks.remove(pos);
+	}
+	if let Err(e) = lock.create_checklist(checklist).await {
+		error!("Failed to update checklist in database: {e}");
 		return Err(Status::InternalServerError);
 	}
 

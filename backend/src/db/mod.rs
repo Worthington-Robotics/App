@@ -98,8 +98,14 @@ pub trait Database {
 	/// Get all checklists
 	async fn get_checklists(&self) -> anyhow::Result<impl Iterator<Item = Checklist>>;
 
-	/// Get a list of tasks
-	async fn get_tasks(&self, checklist: &str) -> anyhow::Result<impl Iterator<Item = Task>>;
+	/// Get a list of tasks from a checklist
+	async fn get_checklist_tasks(
+		&self,
+		checklist: &str,
+	) -> anyhow::Result<impl Iterator<Item = Task>>;
+
+	/// Get a task
+	async fn get_task(&self, task: &str) -> anyhow::Result<Option<Task>>;
 
 	/// Create a task
 	async fn create_task(&mut self, task: Task) -> anyhow::Result<()>;
@@ -109,6 +115,9 @@ pub trait Database {
 
 	/// Delete a task
 	async fn delete_task(&mut self, task: &str) -> anyhow::Result<()>;
+
+	/// Get a list of all tasks
+	async fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = Task>>;
 
 	/// Get the member from a calendar ID
 	async fn get_calendar(&self, calendar_id: &str) -> anyhow::Result<Option<Member>>;
