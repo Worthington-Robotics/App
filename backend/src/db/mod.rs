@@ -3,6 +3,7 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::Event,
 	member::Member,
+	scouting::{Team, TeamNumber},
 	tasks::{Checklist, Task},
 };
 
@@ -121,4 +122,16 @@ pub trait Database {
 
 	/// Get the member from a calendar ID
 	async fn get_calendar(&self, calendar_id: &str) -> anyhow::Result<Option<Member>>;
+
+	/// Get a team
+	async fn get_team(&self, team: TeamNumber) -> anyhow::Result<Option<Team>>;
+
+	/// Create a team
+	async fn create_team(&mut self, team: Team) -> anyhow::Result<()>;
+
+	/// Delete a team
+	async fn delete_team(&mut self, team: TeamNumber) -> anyhow::Result<()>;
+
+	/// Get a list of all teams
+	async fn get_teams(&self) -> anyhow::Result<impl Iterator<Item = Team>>;
 }

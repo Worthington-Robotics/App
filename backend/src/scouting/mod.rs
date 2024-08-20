@@ -8,14 +8,15 @@ use serde::{Deserialize, Serialize};
 pub type TeamNumber = u16;
 
 /// A single team
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Team {
 	pub number: TeamNumber,
 	pub name: String,
+	pub rookie_year: i32,
 }
 
 /// Information about a team's robot, mostly obtained from pit scouting
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct RobotInfo {
 	pub number: TeamNumber,
 	/// The max speed of the robot, in feet per second

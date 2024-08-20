@@ -4,6 +4,7 @@ pub mod calendar;
 pub mod inbox;
 pub mod login;
 pub mod members;
+pub mod scouting;
 pub mod settings;
 pub mod tasks;
 

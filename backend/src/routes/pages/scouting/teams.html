@@ -1,0 +1,37 @@
+{{worbots-header}}
+<script src="/assets/sortable.min.js"></script>
+<h1>Teams</h1>
+<div id="teams" class="cont col">
+	<table id="teams-cont" class="round" data-sortable>
+		<thead>
+			<tr>
+				<th class="n">#</th>
+				<th>Name</th>
+			</tr>
+		</thead>
+		<tbody>
+			{{teams}}
+		</tbody>
+	</table>
+</div>
+<style>
+	#teams-cont {
+		width: 90%;
+		overflow-x: scroll;
+	}
+
+	.n {
+		font-family: 'Courier New', Courier, monospace;
+		color: var(--fg2);
+		font-weight: bold;
+		text-align: center;
+	}
+
+	.N {
+		font-weight: bold;
+	}
+</style>
+<script>
+	Sortable.initTable(document.getElementById("teams-cont"));
+</script>
+{{footer}}

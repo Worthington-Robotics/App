@@ -8,7 +8,10 @@ use rocket::{
 };
 use tracing::error;
 
-use crate::tasks::{Checklist, Task};
+use crate::{
+	scouting::TeamNumber,
+	tasks::{Checklist, Task},
+};
 
 use super::{json::JSONDatabase, sql::SqlDatabase, Database};
 
@@ -65,6 +68,13 @@ async fn populate_cache(sql: &SqlDatabase) -> anyhow::Result<JSONDatabase> {
 		.context("Failed to get tasks from database")?
 	{
 		cache.create_task(task).await?;
+	}
+	for team in sql
+		.get_teams()
+		.await
+		.context("Failed to get teams from database")?
+	{
+		cache.create_team(team).await?;
 	}
 
 	Ok(cache)
@@ -284,6 +294,34 @@ impl Database for CacheDatabase {
 		calendar_id: &str,
 	) -> anyhow::Result<Option<crate::member::Member>> {
 		self.cache.get_calendar(calendar_id).await
+	}
+
+	async fn get_team(&self, id: TeamNumber) -> anyhow::Result<Option<crate::scouting::Team>> {
+		if let Some(team) = self.cache.get_team(id).await? {
+			Ok(Some(team))
+		} else {
+			self.sql.get_team(id).await
+		}
+	}
+
+	async fn create_team(&mut self, team: crate::scouting::Team) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.create_team(team.clone()),
+			self.cache.create_team(team)
+		)?;
+
+		Ok(())
+	}
+
+	async fn delete_team(&mut self, team: TeamNumber) -> anyhow::Result<()> {
+		self.sql.delete_team(team).await?;
+		self.cache.delete_team(team).await?;
+
+		Ok(())
+	}
+
+	async fn get_teams(&self) -> anyhow::Result<impl Iterator<Item = crate::scouting::Team>> {
+		self.cache.get_teams().await
 	}
 }
 

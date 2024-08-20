@@ -137,19 +137,11 @@ h4 {
 }
 
 .ft-item {
-	width: 19.96%;
+	width: 20%;
 	height: 100%;
 	display: inline-block;
 	margin: 0px;
 	box-sizing: border-box;
-}
-
-.not-last {
-	border-style: solid;
-	border-width: 0px;
-	border-right-width: 1.8px;
-	border-color: var(--bg3);
-	border-radius: 0px;
 }
 
 .ft-cont {

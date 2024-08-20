@@ -237,6 +237,24 @@ impl Database for JSONDatabase {
 			.find(|x| x.calendar_id == calendar_id)
 			.cloned())
 	}
+
+	async fn get_team(&self, id: TeamNumber) -> anyhow::Result<Option<Team>> {
+		Ok(self.contents.teams.get(&id).cloned())
+	}
+
+	async fn create_team(&mut self, team: Team) -> anyhow::Result<()> {
+		self.contents.teams.insert(team.number.clone(), team);
+		self.write()
+	}
+
+	async fn delete_team(&mut self, team: TeamNumber) -> anyhow::Result<()> {
+		self.contents.teams.remove(&team);
+		self.write()
+	}
+
+	async fn get_teams(&self) -> anyhow::Result<impl Iterator<Item = Team>> {
+		Ok(self.contents.teams.values().cloned())
+	}
 }
 
 impl JSONDatabase {

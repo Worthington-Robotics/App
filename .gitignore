@@ -3,3 +3,4 @@
 /backend/db.json
 /backend/.env
 *.min.*
+!sortable.min.js

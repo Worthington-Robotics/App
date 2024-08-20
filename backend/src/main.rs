@@ -1,5 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
+use api::first::FirstClient;
 use argon2::Argon2;
 use attendance::AttendanceFairing;
 use auth::SessionManager;
@@ -10,7 +11,7 @@ use db::{Database, DatabaseImpl};
 use dotenv::dotenv;
 use member::Member;
 use rocket::{catchers, routes, tokio::sync::Mutex};
-use routes::Ratelimit;
+use routes::{scouting::populate_teams, Ratelimit};
 
 mod announcements;
 mod api;
@@ -65,10 +66,23 @@ async fn rocket() -> _ {
 		params,
 	));
 
+	let req_client = reqwest::Client::new();
+
+	// Populate teams
+	let first_client = FirstClient::new(&req_client);
+	// This takes a while, so only do it if we need to
+	if std::env::var("POPULATE_TEAMS").is_ok_and(|x| x == "1") {
+		populate_teams(&mut db, &first_client)
+			.await
+			.expect("Failed to populate teams");
+	}
+
 	let state = AppState {
 		db: Arc::new(Mutex::new(db)),
 		session_manager: Mutex::new(session_manager),
 		password_hash,
+		req_client,
+		first_client,
 	};
 
 	let db_clone = state.db.clone();
@@ -90,6 +104,7 @@ async fn rocket() -> _ {
 				routes::assets::favicon,
 				routes::assets::main_css,
 				routes::assets::static_css,
+				routes::assets::sortable_js,
 				routes::assets::logo,
 				routes::assets::rockwell,
 				routes::assets::icon_home,
@@ -100,6 +115,7 @@ async fn rocket() -> _ {
 				routes::assets::icon_delete,
 				routes::assets::icon_check,
 				routes::assets::icon_box,
+				routes::assets::icon_eye,
 				routes::login::login,
 				routes::login::authenticate,
 				routes::login::logout,
@@ -125,6 +141,7 @@ async fn rocket() -> _ {
 				routes::tasks::create_checklist_page,
 				routes::tasks::checklist_page,
 				routes::settings::settings,
+				routes::scouting::teams,
 			],
 		)
 		.mount(
@@ -152,6 +169,8 @@ pub struct AppState {
 	pub db: Arc<Mutex<DatabaseImpl>>,
 	pub session_manager: Mutex<SessionManager>,
 	pub password_hash: Option<Argon2<'static>>,
+	pub req_client: reqwest::Client,
+	pub first_client: FirstClient,
 }
 
 pub type State = rocket::State<AppState>;

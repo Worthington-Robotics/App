@@ -1,6 +1,9 @@
 use rocket::{
 	http::Header,
-	response::{content::RawCss, Responder},
+	response::{
+		content::{RawCss, RawJavaScript},
+		Responder,
+	},
 };
 
 #[rocket::get("/favicon.ico")]
@@ -16,6 +19,11 @@ pub fn main_css() -> RawCss<&'static str> {
 #[rocket::get("/assets/static6.css")]
 pub fn static_css() -> CacheFor<RawCss<&'static str>> {
 	CacheFor(RawCss(include_str!("../assets/static.min.css")), ONE_DAY)
+}
+
+#[rocket::get("/assets/sortable.min.js")]
+pub fn sortable_js() -> CacheFor<RawJavaScript<&'static str>> {
+	CacheFor(RawJavaScript(include_str!("../assets/sortable.min.js")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/logo-gears.svg")]
@@ -66,6 +74,11 @@ pub fn icon_check() -> CacheFor<Svg> {
 #[rocket::get("/assets/icons/box.svg")]
 pub fn icon_box() -> CacheFor<Svg> {
 	CacheFor(Svg(include_str!("../assets/icons/box.svg")), ONE_WEEK)
+}
+
+#[rocket::get("/assets/icons/eye.svg")]
+pub fn icon_eye() -> CacheFor<Svg> {
+	CacheFor(Svg(include_str!("../assets/icons/eye.svg")), ONE_WEEK)
 }
 
 #[derive(Responder)]

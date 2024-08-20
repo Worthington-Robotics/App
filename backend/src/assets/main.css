@@ -23,3 +23,27 @@ select {
 	border-radius: 50%;
 	background-color: var(--bg2);
 }
+
+table,
+tr,
+td,
+th {
+	border: 1px solid var(--fg2);
+}
+
+tr,
+td {
+	border-bottom-color: var(--fg3);
+}
+
+td {
+	padding: 0.4rem;
+}
+
+th[data-sorted=true] {
+	background-color: var(--bg3);
+}
+
+table {
+	border-collapse: collapse;
+}

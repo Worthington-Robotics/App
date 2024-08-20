@@ -1,0 +1,111 @@
+use std::collections::HashSet;
+
+use anyhow::Context;
+use chrono::Utc;
+use itertools::Itertools;
+use rocket::{
+	http::Status,
+	response::{content::RawHtml, Redirect},
+};
+use tracing::{error, span, Level};
+
+use crate::{
+	api::first::FirstClient,
+	db::{Database, DatabaseImpl},
+	events::get_season,
+	routes::OptionalSessionID,
+	scouting::Team,
+	State,
+};
+
+use super::{create_page, PageOrRedirect};
+
+#[rocket::get("/scouting/teams?<all>")]
+pub async fn teams(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+	all: bool,
+) -> Result<PageOrRedirect, Status> {
+	dbg!(&all);
+	let span = span!(Level::DEBUG, "Teams");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	if session_id.get_requesting_member(state).await.is_err() {
+		return Ok(redirect);
+	};
+
+	let page = include_str!("../pages/scouting/teams.min.html");
+
+	let lock = state.db.lock().await;
+	let teams = lock
+		.get_teams()
+		.await
+		.map_err(|e| {
+			error!("Failed to get teams from database: {e}");
+			Status::InternalServerError
+		})?
+		.sorted_by_key(|x| x.number);
+
+	let mut teams_string = String::new();
+	for team in teams {
+		teams_string.push_str(&render_team(team));
+	}
+	let page = page.replace("{{teams}}", &teams_string);
+
+	let page = create_page("Teams", &page);
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+fn render_team(team: Team) -> String {
+	let out = include_str!("../components/scouting/team_row.min.html");
+	let out = out.replace("{{number}}", &team.number.to_string());
+	let out = out.replace("{{name}}", &team.name);
+
+	out
+}
+
+/// Populate the database with teams from the API
+pub async fn populate_teams(
+	db: &mut DatabaseImpl,
+	first_client: &FirstClient,
+) -> anyhow::Result<()> {
+	println!("Getting teams from API...");
+	let teams = first_client
+		.get_teams(get_season(&Utc::now()) as i32)
+		.await
+		.context("Failed to get teams from FIRST API")?;
+
+	// Get the teams already existing in the database so then we don't recreate existing ones
+	println!("Getting existing teams from database...");
+	let existing_teams: HashSet<_> = db
+		.get_teams()
+		.await
+		.context("Failed to get existing teams from database")?
+		.map(|x| x.number)
+		.collect();
+
+	println!("Adding teams to database...");
+	for team in teams {
+		if existing_teams.contains(&team.team_number) {
+			continue;
+		}
+
+		let team = Team {
+			name: team.name_short,
+			number: team.team_number,
+			rookie_year: team.rookie_year,
+		};
+
+		db.create_team(team)
+			.await
+			.context("Failed to create team")?;
+	}
+
+	Ok(())
+}

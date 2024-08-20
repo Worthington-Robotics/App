@@ -16,6 +16,7 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{Member, MemberGroup, MemberKind, MemberMention},
+	scouting::{Team, TeamNumber},
 	tasks::{Checklist, Task},
 	util::ToDropdown,
 };
@@ -613,6 +614,76 @@ impl Database for SqlDatabase {
 			Ok(None)
 		}
 	}
+
+	async fn get_team(&self, id: TeamNumber) -> anyhow::Result<Option<Team>> {
+		let mut result = sqlx::query("SELECT * FROM teams WHERE Number = $1")
+			.bind(id as i32)
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let team = read_team(id, row).context("Failed to read team")?;
+
+				Ok(Some(team))
+			}
+			Err(e) => {
+				error!("Failed to get team {id} from database: {e}");
+				Err(anyhow!("Failed to get team from database"))
+			}
+		}
+	}
+
+	async fn create_team(&mut self, team: Team) -> anyhow::Result<()> {
+		// Remove the existing team
+		self.delete_team(team.number)
+			.await
+			.context("Failed to delete existing team")?;
+		sqlx::query("INSERT INTO teams (Number, Name, RookieYear) VALUES ($1, $2, $3)")
+			.bind(team.number as i32)
+			.bind(team.name)
+			.bind(team.rookie_year)
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new team in database")?;
+
+		Ok(())
+	}
+
+	async fn delete_team(&mut self, team: TeamNumber) -> anyhow::Result<()> {
+		let query = sqlx::query("DELETE FROM teams WHERE Number = $1").bind(team as i32);
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove team from database")?;
+
+		Ok(())
+	}
+
+	async fn get_teams(&self) -> anyhow::Result<impl Iterator<Item = Team>> {
+		let result = sqlx::query("SELECT * FROM teams")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let id = row.try_get::<i16, _>("number")? as TeamNumber;
+					let team = read_team(id, row).context("Failed to read team")?;
+					out.push(team);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get all teams from database: {e}");
+				Err(anyhow!("Failed to get teams from database"))
+			}
+		}
+	}
 }
 
 /// Setup the database
@@ -632,8 +703,9 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	let tasks_task = pool
 		.execute("CREATE TABLE IF NOT EXISTS tasks (Id text PRIMARY KEY, Checklist text, Text text, Done bool)");
 
-	let teams_task =
-		pool.execute("CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text)");
+	let teams_task = pool.execute(
+		"CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text, RookieYear int4)",
+	);
 
 	let robot_info_task = pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float4, Height float4, Weight float4, CanSpeaker bool, CanAmp bool, CanClimb bool, CanTrap bool, CanPass bool, CanDriveUnderStage bool)");
 
@@ -788,5 +860,17 @@ fn read_task(id: &str, row: PgRow) -> anyhow::Result<Task> {
 		checklist,
 		text,
 		done,
+	})
+}
+
+/// Read a team from the database
+fn read_team(id: TeamNumber, row: PgRow) -> anyhow::Result<Team> {
+	let name: String = row.try_get("name")?;
+	let rookie_year: i32 = row.try_get("rookieyear")?;
+
+	Ok(Team {
+		number: id,
+		name,
+		rookie_year,
 	})
 }
