@@ -142,6 +142,7 @@ async fn rocket() -> _ {
 				routes::tasks::checklist_page,
 				routes::settings::settings,
 				routes::scouting::teams,
+				routes::scouting::team_details,
 			],
 		)
 		.mount(

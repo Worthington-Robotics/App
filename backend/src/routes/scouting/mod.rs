@@ -14,7 +14,7 @@ use crate::{
 	db::{Database, DatabaseImpl},
 	events::get_season,
 	routes::OptionalSessionID,
-	scouting::Team,
+	scouting::{Team, TeamNumber},
 	State,
 };
 
@@ -68,6 +68,47 @@ fn render_team(team: Team) -> String {
 	let out = out.replace("{{name}}", &team.name);
 
 	out
+}
+
+#[rocket::get("/scouting/team/<id>")]
+pub async fn team_details(
+	id: TeamNumber,
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Team details page");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	if session_id.get_requesting_member(state).await.is_err() {
+		return Ok(redirect);
+	};
+
+	let lock = state.db.lock().await;
+	let team = lock
+		.get_team(id)
+		.await
+		.map_err(|e| {
+			error!("Failed to get team from database: {e}");
+			Status::InternalServerError
+		})?
+		.ok_or_else(|| {
+			error!("Team does not exist: {}", id);
+			Status::NotFound
+		})?;
+
+	let page = include_str!("../pages/scouting/team_details.min.html");
+	let page = page.replace("{{name}}", &team.name);
+	let page = page.replace("{{number}}", &team.number.to_string());
+	let page = page.replace("{{rookie-year}}", &team.rookie_year.to_string());
+
+	let page = create_page("Team Details", &page);
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
 /// Populate the database with teams from the API
