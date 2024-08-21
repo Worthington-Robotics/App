@@ -1,13 +1,13 @@
 {{worbots-header}}{{error}}
 <div class="cont col" id="event-details">
 	<h1>{{name}}</h1>
+	<h4 class="date">{{date}}</h4>
 	<div class="cont">
 		<a href="/calendar"><button>Back</button></a>
 		<a href="/create_event?id={{id}}">{{edit}}</a>
 		<div id="delete-button">{{delete}}</div>
 	</div>
 	<div class="cont col">
-		<strong>{{date}}</strong>
 	</div>
 	<div class="cont">
 		<label for="rsvp">RSVP</label>
@@ -36,4 +36,11 @@
 		});
 	});
 </script>
+<style>
+	.date {
+		color: var(--fg2);
+		font-weight: bold;
+		margin-top: -2rem;
+	}
+</style>
 {{footer}}

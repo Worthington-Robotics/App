@@ -55,6 +55,10 @@ button,
 input[type="submit"] {
 	color: var(--fg);
 	background-color: var(--wbblue);
+}
+
+button:not([disabled]),
+input[type="submit"] {
 	cursor: pointer;
 }
 

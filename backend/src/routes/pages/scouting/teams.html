@@ -1,13 +1,21 @@
 {{worbots-header}}
-<script src="/assets/sortable.min.js"></script>
+<script src="/assets/sortable.min.js" defer></script>
 <h1>Teams</h1>
 <div id="teams" class="cont col">
 	<input type="search" id="search" placeholder="Search for teams..." />
 	<br />
+	<div id="pages" class="cont">
+		<button class="page-button cont" disabled></button>
+		<button class="page-button cont" disabled></button>
+		<button class="page-button cont" style="transform: translateY(-4px);">1</button>
+		<button class="page-button cont">2</button>
+		<button class="page-button cont">3</button>
+	</div>
 	<table id="teams-cont" class="round" data-sortable>
 		<thead>
 			<tr>
-				<th class="n">#</th>
+				<th class="r" data-sortable="false" style="width:3.2rem"></th>
+				<th class="n" style="width: 3.2rem;">#</th>
 				<th>Name</th>
 			</tr>
 		</thead>
@@ -17,56 +25,199 @@
 	</table>
 </div>
 <style>
+	/* Start with all of the rows hidden */
+	tbody>tr {
+		display: none;
+	}
+
 	#teams-cont {
 		width: 90%;
 		overflow-x: scroll;
+		table-layout: fixed;
+	}
+
+	.n,
+	.r {
+		color: var(--fg2);
+		text-align: center;
+		font-weight: bold;
 	}
 
 	.n {
 		font-family: "Courier New", Courier, monospace;
-		color: var(--fg2);
-		font-weight: bold;
-		text-align: center;
 	}
 
 	.N {
 		font-weight: bold;
 	}
+
+	.first {
+		background-color: gold;
+		border-bottom-color: goldenrod;
+		border-left-color: goldenrod;
+		border-right-color: goldenrod;
+	}
+
+	.second {
+		background-color: lightgrey;
+		border-bottom-color: grey;
+		border-left-color: grey;
+		border-right-color: grey;
+	}
+
+	.third {
+		background-color: coral;
+		border-bottom-color: firebrick;
+		border-left-color: firebrick;
+		border-right-color: firebrick;
+	}
+
+	.first,
+	.second,
+	.third {
+		border-bottom-width: 0.25rem;
+		color: var(--bg2);
+	}
+
+	.page-button {
+		width: 2.3rem;
+		height: 2.3rem;
+	}
+
+	.page-button[disabled] {
+		background-color: var(--bg);
+		color: var(--bg);
+		cursor: default;
+	}
 </style>
 <script>
-	Sortable.initTable(document.getElementById("teams-cont"));
+	// Set up pagination
+	let page = 0;
+	const rowsPerPage = 50;
 
-	// Hydrate the rows
 	let rows = document
 		.getElementById("teams-cont-body")
 		.getElementsByTagName("tr");
+
+	// Hydrate the rows
 	for (let row of rows) {
-		let cols = row.getElementsByTagName("td");
-		let num = cols[0].innerText;
-		let name = cols[1];
-		name.dataset.value = name.innerText;
-		name.innerHTML = `<a href="/scouting/team/${num}">${name.innerText}</a>`;
+		let td = "td";
+		let rank = document.createElement(td);
+		rank.className = "r";
+		row.prepend(rank);
+		let cols = row.getElementsByTagName(td);
+		let num = cols[1].innerHTML;
+		let name = cols[2];
+		let nameValue = name.innerHTML;
+		name.dataset.value = nameValue;
+		name.innerHTML = `<a href="/scouting/team/${num}">${nameValue}</a>`;
 		name.firstChild.classList.add("nolink");
+	}
+
+	let pageButtons = document
+		.getElementById("pages")
+		.children;
+
+	// Updates the table by managing visible rows and adding rank numbers
+	function updateRows() {
+		let i = 0;
+		let pageStart = rowsPerPage * page;
+		let pageEnd = pageStart + rowsPerPage;
+		for (let row of rows) {
+			// Skip rows already hidden by search
+			if (row.dataset.search_hidden == "true") {
+				continue;
+			}
+
+			// Hide the row if it is outside of the current page
+			if (i >= pageEnd || i < pageStart) {
+				row.style.display = "none";
+			} else {
+				row.style.display = "table-row";
+
+				let rank = row.children[0];
+				rank.classList.remove("first");
+				rank.classList.remove("second");
+				rank.classList.remove("third");
+
+				rank.innerHTML = i + 1;
+				if (i == 0) {
+					rank.classList.add("first");
+				} else if (i == 1) {
+					rank.classList.add("second");
+				} else if (i == 2) {
+					rank.classList.add("third");
+				}
+			}
+
+			i++;
+		}
+
+		// Update page buttons
+
+		// Start with the 0-index page made 1-index, minus half the number of buttons
+		// so that the current page is in the center
+		let j = page + 1 - 2;
+		let pageCount = Math.ceil(i / rowsPerPage);
+		for (let button of pageButtons) {
+			button.innerHTML = j;
+			if (j > pageCount || j < 1) {
+				button.disabled = true;
+			} else {
+				button.disabled = false;
+			}
+			j++;
+		}
+	}
+
+	updateRows();
+
+	for (let button of pageButtons) {
+		button.addEventListener("click", (e) => {
+			// Minifier messes this up so we have to do this
+			let one = 1;
+			// Trick to parse string as int, plus a subtract of one since the page starts at 0
+			page = e.target.innerHTML * one - one;
+			updateRows();
+		})
 	}
 
 	document.getElementById("search").addEventListener("keyup", (e) => {
 		let search = e.target.value.toUpperCase();
-		let rows = document
-			.getElementById("teams-cont-body")
-			.getElementsByTagName("tr");
+
+		let shortSearch = search.length < 3;
+		// Go back to the first page when we update the search otherwise the user will be locked out
+		if (shortSearch) {
+			page = 0;
+		}
+		let rowsShown = 0;
 		for (let row of rows) {
+			// Speedup to not do a bunch of calculations on rows that will be hidden by pagination anyway
+			if (rowsShown > rowsPerPage) {
+				row.dataset.search_hidden = false;
+				continue;
+			}
 			let cols = row.getElementsByTagName("td");
-			let num = cols[0].innerText;
-			let name = cols[1].innerText;
+			let num = cols[1].innerHTML;
+			let name = cols[2].innerHTML;
 			if (
+				shortSearch ||
 				name.toUpperCase().indexOf(search) > -1 ||
 				num.toUpperCase().indexOf(search) > -1
 			) {
 				row.style.display = "";
+				row.dataset.search_hidden = false;
+				rowsShown++;
 			} else {
 				row.style.display = "none";
+				row.dataset
+				row.dataset.search_hidden = true;
 			}
 		}
+
+		updateRows();
 	});
+
+	document.getElementById("teams-cont").addEventListener("Sortable.sorted", updateRows);
 </script>
 {{footer}}

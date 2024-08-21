@@ -15,6 +15,13 @@ pub struct Team {
 	pub rookie_year: i32,
 }
 
+impl Team {
+	/// Get this team's sanitized name with things like emojis removed
+	pub fn sanitized_name(&self) -> String {
+		self.name.replace(|x: char| !x.is_ascii(), "")
+	}
+}
+
 /// Information about a team's robot, mostly obtained from pit scouting
 #[derive(Serialize, Deserialize, Clone)]
 pub struct RobotInfo {

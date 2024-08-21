@@ -82,7 +82,8 @@ where
 	date.format("%I:%M %p")
 		.to_string()
 		.replace(":00", "")
-		.replace(" 0", " ")
+		.trim_start_matches("0")
+		.to_owned()
 }
 
 /// Render a nice start and end date

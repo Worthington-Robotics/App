@@ -26,7 +26,6 @@ pub async fn teams(
 	state: &State,
 	all: bool,
 ) -> Result<PageOrRedirect, Status> {
-	dbg!(&all);
 	let span = span!(Level::DEBUG, "Teams");
 	let _enter = span.enter();
 
@@ -65,7 +64,7 @@ pub async fn teams(
 fn render_team(team: Team) -> String {
 	let out = include_str!("../components/scouting/team_row.min.html");
 	let out = out.replace("{{number}}", &team.number.to_string());
-	let out = out.replace("{{name}}", &team.name);
+	let out = out.replace("{{name}}", &team.sanitized_name());
 
 	out
 }

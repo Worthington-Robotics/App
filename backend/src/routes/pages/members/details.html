@@ -1,13 +1,11 @@
 {{worbots-header}}{{error}}
 <div class="cont col" id="member-details">
 	<h1>{{name}}</h1>
+	<h4 class="username">{{id}}</h4>
 	<div class="cont">
 		<a href="/member_list"><button>Back</button></a>
 		<a href="/create_member?id={{id}}">{{edit}}</a>
 		<div id="delete-button">{{delete}}</div>
-	</div>
-	<div class="cont col">
-		<h4>Username: {{id}}</h4>
 	</div>
 	<div class="cont col">
 		<h3>Attendance Stats</h3>
@@ -40,4 +38,11 @@
 		});
 	});
 </script>
+<style>
+	.username {
+		color: var(--fg2);
+		font-weight: bold;
+		margin-top: -2rem;
+	}
+</style>
 {{footer}}

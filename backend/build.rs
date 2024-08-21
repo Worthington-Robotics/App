@@ -29,6 +29,26 @@ fn scan_dir(dir: impl AsRef<Path>) {
 				match extension.as_ref() {
 					"html" | "css" => {
 						let mut text = std::fs::read_to_string(&path).unwrap();
+
+						// Hoist style tags to the top of the document so that elements below them are styled quicker
+						if extension.as_ref() == "html" {
+							if let Some(start_pos) = text.find("<style>") {
+								if let Some(end_pos) = text.find("</style>") {
+									// Make the end pos be at the end of the second style tag
+									let end_pos = end_pos + "</style>".len();
+
+									let before_style = &text[..start_pos];
+									let style = &text[start_pos..end_pos];
+									let after_style = &text[end_pos..];
+									let mut new_text = String::with_capacity(text.len());
+									new_text.push_str(style);
+									new_text.push_str(before_style);
+									new_text.push_str(after_style);
+									text = new_text;
+								}
+							}
+						}
+
 						// We have to wrap the css in style tags to trick the formatter into actually minifying it
 						if extension.as_ref() == "css" {
 							text = format!("<style>{text}</style>");
@@ -40,6 +60,7 @@ fn scan_dir(dir: impl AsRef<Path>) {
 						let mut out =
 							String::from_utf8(minify_html::minify(text.as_bytes(), &cfg)).unwrap();
 
+						// Remove the style tags that we added to trick the formatter
 						if extension.as_ref() == "css" {
 							out = out.replace("<style>", "");
 							out = out.replace("</style>", "");
