@@ -7,6 +7,7 @@ use rocket::{
 	http::Status,
 	response::{content::RawHtml, Redirect},
 };
+use rocket_async_compression::{Compress, Level as CompressionLevel};
 use tracing::{error, span, Level};
 
 use crate::{
@@ -18,24 +19,24 @@ use crate::{
 	State,
 };
 
-use super::{create_page, PageOrRedirect};
+use super::{create_page, PageOrRedirect, Scope};
 
 #[rocket::get("/scouting/teams?<all>")]
 pub async fn teams(
 	session_id: OptionalSessionID<'_>,
 	state: &State,
 	all: bool,
-) -> Result<PageOrRedirect, Status> {
+) -> Result<Compress<PageOrRedirect>, Status> {
 	let span = span!(Level::DEBUG, "Teams");
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
 	let Some(session_id) = session_id.to_session_id() else {
-		return Ok(redirect);
+		return Ok(Compress(redirect, CompressionLevel::Fastest));
 	};
 
 	if session_id.get_requesting_member(state).await.is_err() {
-		return Ok(redirect);
+		return Ok(Compress(redirect, CompressionLevel::Fastest));
 	};
 
 	let page = include_str!("../pages/scouting/teams.min.html");
@@ -56,9 +57,12 @@ pub async fn teams(
 	}
 	let page = page.replace("{{teams}}", &teams_string);
 
-	let page = create_page("Teams", &page);
+	let page = create_page("Teams", &page, Some(Scope::Scouting));
 
-	Ok(PageOrRedirect::Page(RawHtml(page)))
+	Ok(Compress(
+		PageOrRedirect::Page(RawHtml(page)),
+		CompressionLevel::Fastest,
+	))
 }
 
 fn render_team(team: Team) -> String {
@@ -105,7 +109,7 @@ pub async fn team_details(
 	let page = page.replace("{{number}}", &team.number.to_string());
 	let page = page.replace("{{rookie-year}}", &team.rookie_year.to_string());
 
-	let page = create_page("Team Details", &page);
+	let page = create_page("Team Details", &page, Some(Scope::Scouting));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }

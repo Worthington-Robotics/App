@@ -44,7 +44,7 @@ pub async fn settings(
 
 	// Replace the calendar ID for the copy button
 	let page = page.replace("{{cal-id}}", &member.calendar_id);
-	let page = create_page("Settings", &page);
+	let page = create_page("Settings", &page, Some(super::Scope::Home));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }

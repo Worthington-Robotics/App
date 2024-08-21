@@ -13,7 +13,7 @@ use crate::tasks::{Checklist, Task};
 use crate::util::generate_id;
 use crate::{routes::SessionID, State};
 
-use super::{create_page, PageOrRedirect};
+use super::{create_page, PageOrRedirect, Scope};
 
 #[rocket::get("/checklists")]
 pub async fn checklists(
@@ -62,7 +62,7 @@ pub async fn checklists(
 
 	let page = page.replace("{{add-checklist}}", &add_button);
 
-	let page = create_page("Todo", &page);
+	let page = create_page("Todo", &page, Some(Scope::Todo));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
@@ -119,7 +119,7 @@ pub async fn create_checklist_page(
 	let page = include_str!("pages/tasks/create_checklist.min.html");
 	let page = page.replace("{{id}}", &checklist.id);
 	let page = page.replace("{{name}}", &checklist.name);
-	let page = create_page("Create Checklist", &page);
+	let page = create_page("Create Checklist", &page, Some(Scope::Todo));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
@@ -197,7 +197,7 @@ pub async fn checklist_page(
 		},
 	);
 
-	let page = create_page("Checklist", &page);
+	let page = create_page("Checklist", &page, Some(Scope::Todo));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }

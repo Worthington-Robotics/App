@@ -16,7 +16,7 @@ use crate::routes::SessionID;
 use crate::util::{generate_id, render_date};
 use crate::{routes::OptionalSessionID, State};
 
-use super::{create_page, PageOrRedirect};
+use super::{create_page, PageOrRedirect, Scope};
 
 #[rocket::get("/inbox")]
 pub async fn inbox(
@@ -69,7 +69,7 @@ pub async fn inbox(
 
 	let page = page.replace("{{add}}", &add_button);
 
-	let page = create_page("Inbox", &page);
+	let page = create_page("Inbox", &page, Some(Scope::Announcements));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
@@ -219,7 +219,7 @@ pub async fn create_announcement_page(
 	}
 	let page = page.replace("{{mentions}}", &mentions_string);
 
-	let page = create_page("Create Announcement", &page);
+	let page = create_page("Create Announcement", &page, Some(Scope::Announcements));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
@@ -276,7 +276,7 @@ pub async fn announcement_details(
 	);
 	let page = page.replace("{{body}}", &body);
 
-	let page = create_page("Announcement", &page);
+	let page = create_page("Announcement", &page, Some(Scope::Announcements));
 
 	// Mark the announcement as read
 	if let Err(e) = state

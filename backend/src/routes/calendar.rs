@@ -22,7 +22,7 @@ use crate::{
 };
 use crate::{events::get_relevant_events, State};
 
-use super::{create_page, OptionalSessionID, PageOrRedirect, SessionID};
+use super::{create_page, OptionalSessionID, PageOrRedirect, Scope, SessionID};
 
 #[rocket::get("/calendar")]
 pub async fn calendar(
@@ -87,7 +87,7 @@ pub async fn calendar(
 	};
 	let page = page.replace("{{add-event}}", &new_button);
 
-	let page = create_page("Calendar", &page);
+	let page = create_page("Calendar", &page, Some(Scope::Events));
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
@@ -210,7 +210,7 @@ pub async fn event_details(
 	};
 	let page = page.replace("{{rsvp-checked}}", rsvp_checked);
 
-	let page = create_page("Event Details", &page);
+	let page = create_page("Event Details", &page, Some(Scope::Events));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
@@ -347,7 +347,7 @@ pub async fn create_event(
 	}
 	let page = page.replace("{{invites}}", &invites_string);
 
-	let page = create_page("Create Event", &page);
+	let page = create_page("Create Event", &page, Some(Scope::Events));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }

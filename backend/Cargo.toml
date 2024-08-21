@@ -21,6 +21,7 @@ password-hash = "0.5.0"
 rand = "0.8.5"
 reqwest = { version = "0.12.5", features = ["rustls-tls"] }
 rocket = { git = "https://github.com/rwf2/Rocket.git" }
+rocket_async_compression = { git = "https://github.com/lobsterwise/rocket_async_compression.git" }
 serde = "1.0.203"
 serde_json = "1.0.117"
 sqlx = { version = "0.8.0", features = [

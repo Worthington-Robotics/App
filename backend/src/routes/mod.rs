@@ -25,6 +25,8 @@ use rocket::{
 	Request, Responder,
 };
 use rocket::{Data, Orbit, Response, Rocket};
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 use tracing::{error, event, span, Level};
 
 use crate::db::Database;
@@ -63,7 +65,11 @@ pub async fn index(
 		return Ok(redirect);
 	};
 
-	let page = create_page("WorBots 4145", include_str!("pages/index.min.html"));
+	let page = create_page(
+		"WorBots 4145",
+		include_str!("pages/index.min.html"),
+		Some(Scope::Home),
+	);
 	let page = page.replace("{{name}}", &member.name);
 	let admin_panel = if member.is_elevated() {
 		include_str!("components/admin_panel.min.html")
@@ -190,14 +196,24 @@ impl<'r> SessionID<'r> {
 	}
 }
 
-pub fn create_page(title: &str, body: &str) -> String {
+pub fn create_page(title: &str, body: &str, scope: Option<Scope>) -> String {
 	static HEAD: &str = include_str!("components/util/head.min.html");
 	let head = HEAD.replace("{{title}}", &format!("{title} - WorBots"));
 	let out = head.replace("{{body}}", body);
-	let out = out.replace(
-		"{{footer}}",
-		include_str!("components/util/footer.min.html"),
-	);
+
+	// Render the footer
+	let mut footer = include_str!("components/util/footer.min.html").to_string();
+	for (i, variant) in Scope::iter().enumerate() {
+		let class = if scope.is_some_and(|x| x == variant) {
+			"ft-sel"
+		} else {
+			""
+		};
+
+		footer = footer.replace(&format!("{{{{sel{i}}}}}"), class);
+	}
+	let out = out.replace("{{footer}}", &footer);
+
 	let out = out.replace(
 		"{{worbots-header}}",
 		include_str!("components/util/worbots-header.min.html"),
@@ -207,11 +223,22 @@ pub fn create_page(title: &str, body: &str) -> String {
 	out
 }
 
+/// Different scopes of the application, for rendering the footer
+#[derive(EnumIter, PartialEq, Clone, Copy)]
+pub enum Scope {
+	Scouting,
+	Announcements,
+	Home,
+	Events,
+	Todo,
+}
+
 #[rocket::catch(404)]
 pub fn not_found() -> RawHtml<String> {
 	RawHtml(create_page(
 		"Not Found",
 		include_str!("pages/errors/404.min.html"),
+		None,
 	))
 }
 
@@ -220,6 +247,7 @@ pub fn internal_error() -> RawHtml<String> {
 	RawHtml(create_page(
 		"Internal Error",
 		include_str!("pages/errors/500.min.html"),
+		None,
 	))
 }
 

@@ -1,12 +1,14 @@
 {{worbots-header}}
 <h1>Events</h1>
 <div id="calendar" class="cont col">
-	<select name="filter" id="filter">
-		<option value="upcoming">Upcoming Events</option>
-		<option value="all">All Events</option>
-	</select>
+	<div class="cont">
+		<select name="filter" id="filter">
+			<option value="upcoming">Upcoming Events</option>
+			<option value="all">All Events</option>
+		</select>
+		{{add-event}}
+	</div>
 	<div id="events-cont" class="cont col item-cont">{{events}}</div>
-	{{add-event}}
 </div>
 <script>
 	function changeFilter(e) {
@@ -43,6 +45,11 @@
 	.ev-kind,
 	.ev-name {
 		font-weight: bold;
+	}
+
+	.ev-clock {
+		width: 1rem;
+		margin-right: -0.1rem;
 	}
 </style>
 {{footer}}

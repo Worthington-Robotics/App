@@ -11,6 +11,7 @@ use db::{Database, DatabaseImpl};
 use dotenv::dotenv;
 use member::Member;
 use rocket::{catchers, routes, tokio::sync::Mutex};
+use rocket_async_compression::CachedCompression;
 use routes::{scouting::populate_teams, Ratelimit};
 
 mod announcements;
@@ -158,6 +159,12 @@ async fn rocket() -> _ {
 		.register("/", catchers![routes::not_found, routes::internal_error])
 		.attach(Ratelimit::new())
 		.attach(AttendanceFairing::new(db_clone));
+
+	let compression = CachedCompression {
+		cached_path_prefixes: vec!["/assets/".into()],
+		..Default::default()
+	};
+	let out = out.attach(compression);
 
 	#[cfg(feature = "cachedb")]
 	let out = out.attach(SyncCache::new(db_clone2));

@@ -27,7 +27,7 @@ use crate::{
 };
 use crate::{db::Database, member::MemberKind};
 
-use super::{create_page, PageOrRedirect};
+use super::{create_page, PageOrRedirect, Scope};
 
 #[rocket::get("/api/member/<id>")]
 pub async fn get_member(
@@ -217,7 +217,7 @@ pub async fn member_list(
 	}
 
 	let page = include_str!("pages/members/member_list.min.html");
-	let page = create_page("Members", page);
+	let page = create_page("Members", page, Some(Scope::Home));
 
 	let mut member_list = String::new();
 	for member in state
@@ -372,7 +372,7 @@ pub async fn create_member_page(
 	let page = page.replace("__id__", &id);
 	let page = page.replace("{{password}}", password_field);
 
-	let page = create_page("Create Member", &page);
+	let page = create_page("Create Member", &page, Some(Scope::Home));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
@@ -436,7 +436,7 @@ pub async fn member_details(
 		&render_missed_events(&total_attendance.absences),
 	);
 
-	let page = create_page("Member Details", &page);
+	let page = create_page("Member Details", &page, Some(Scope::Home));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
