@@ -2,7 +2,12 @@
 <script src="/assets/sortable.min.js" defer></script>
 <h1>Teams</h1>
 <div id="teams" class="cont col">
-	<input type="search" id="search" placeholder="Search for teams..." />
+	<div id="comp-options" class="cont">
+		{{comp-options}}
+	</div>
+	<div class="cont">
+		<input type="search" id="search" placeholder="Search for teams..." />
+	</div>
 	<br />
 	<div id="pages" class="cont">
 		<button class="page-button cont" disabled></button>
@@ -88,6 +93,17 @@
 		background-color: var(--bg);
 		color: var(--bg);
 		cursor: default;
+	}
+
+	.comp>button,
+	.comp>button:hover {
+		background-color: var(--bg3);
+		padding: 0.5rem;
+	}
+
+	.comp.selected>button,
+	.comp.selected>button:hover {
+		background-color: var(--wbblueacc);
 	}
 </style>
 <script>

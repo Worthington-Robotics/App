@@ -476,7 +476,7 @@ pub async fn delete_member(
 		Status::InternalServerError
 	})? {
 		error!("Attempted to delete non-existent member {id}");
-		return Err(Status::BadRequest);
+		return Err(Status::NotFound);
 	}
 
 	if let Err(e) = lock.delete_member(id).await {

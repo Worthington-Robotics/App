@@ -8,6 +8,10 @@
 	<div class="cont col">
 		<h4>Rookie Year: {{rookie-year}}</h4>
 	</div>
+	<div class="cont col">
+		<h2>Competitions</h2>
+		{{comp-checkboxes}}
+	</div>
 </div>
 <style>
 	.number {
@@ -18,4 +22,22 @@
 		margin-top: -2rem;
 	}
 </style>
+<script>
+	function compCb(e) {
+		let comp = e.target.dataset.val;
+		fetch(`/api/update_team_competition/{{number}}?competition=${comp}`, {
+			method: "POST",
+		}).then((resp) => {
+			if (resp.status != 200) {
+				setError(resp.statusText);
+				e.target.checked = !e.target.checked;
+			}
+		});
+	}
+
+	for (let elem of document.getElementsByClassName("comp-cb")) {
+		let cb = elem.firstChild;
+		cb.addEventListener("change", compCb);
+	}
+</script>
 {{footer}}

@@ -144,6 +144,7 @@ async fn rocket() -> _ {
 				routes::settings::settings,
 				routes::scouting::teams,
 				routes::scouting::team_details,
+				routes::scouting::update_team_competition,
 			],
 		)
 		.mount(

@@ -16,7 +16,7 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{Member, MemberGroup, MemberKind, MemberMention},
-	scouting::{Team, TeamNumber},
+	scouting::{Competition, Team, TeamNumber},
 	tasks::{Checklist, Task},
 	util::ToDropdown,
 };
@@ -641,13 +641,21 @@ impl Database for SqlDatabase {
 		self.delete_team(team.number)
 			.await
 			.context("Failed to delete existing team")?;
-		sqlx::query("INSERT INTO teams (Number, Name, RookieYear) VALUES ($1, $2, $3)")
-			.bind(team.number as i32)
-			.bind(team.name)
-			.bind(team.rookie_year)
-			.execute(&self.pool)
-			.await
-			.context("Failed to create new team in database")?;
+		sqlx::query(
+			"INSERT INTO teams (Number, Name, RookieYear, Competitions) VALUES ($1, $2, $3, $4)",
+		)
+		.bind(team.number as i32)
+		.bind(team.name)
+		.bind(team.rookie_year)
+		.bind(
+			team.competitions
+				.into_iter()
+				.map(|x| x.to_string())
+				.collect::<Vec<_>>(),
+		)
+		.execute(&self.pool)
+		.await
+		.context("Failed to create new team in database")?;
 
 		Ok(())
 	}
@@ -704,7 +712,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		.execute("CREATE TABLE IF NOT EXISTS tasks (Id text PRIMARY KEY, Checklist text, Text text, Done bool)");
 
 	let teams_task = pool.execute(
-		"CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text, RookieYear int4)",
+		"CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text, RookieYear int4, Competitions text[])",
 	);
 
 	let robot_info_task = pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float4, Height float4, Weight float4, CanSpeaker bool, CanAmp bool, CanClimb bool, CanTrap bool, CanPass bool, CanDriveUnderStage bool)");
@@ -867,10 +875,15 @@ fn read_task(id: &str, row: PgRow) -> anyhow::Result<Task> {
 fn read_team(id: TeamNumber, row: PgRow) -> anyhow::Result<Team> {
 	let name: String = row.try_get("name")?;
 	let rookie_year: i32 = row.try_get("rookieyear")?;
+	let competitions: Vec<String> = row.try_get("competitions")?;
+	let competitions = competitions
+		.into_iter()
+		.filter_map(|x| Competition::from_db(&x));
 
 	Ok(Team {
 		number: id,
 		name,
 		rookie_year,
+		competitions: competitions.collect(),
 	})
 }

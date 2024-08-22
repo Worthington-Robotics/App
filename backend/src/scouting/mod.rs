@@ -3,6 +3,7 @@ pub mod matches;
 use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumIter, IntoStaticStr};
 
 /// Type for the number of a team
 pub type TeamNumber = u16;
@@ -13,12 +14,47 @@ pub struct Team {
 	pub number: TeamNumber,
 	pub name: String,
 	pub rookie_year: i32,
+	pub competitions: HashSet<Competition>,
 }
 
 impl Team {
 	/// Get this team's sanitized name with things like emojis removed
 	pub fn sanitized_name(&self) -> String {
 		self.name.replace(|x: char| !x.is_ascii(), "")
+	}
+}
+
+/// Competition that the team will attend
+#[derive(Display, EnumIter, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, IntoStaticStr)]
+#[serde(rename_all = "snake_case")]
+pub enum Competition {
+	Pittsburgh,
+	Buckeye,
+	MiamiValley,
+	Champs,
+	States,
+}
+
+impl Competition {
+	pub fn from_db(val: &str) -> Option<Self> {
+		match val {
+			"Pittsburgh" => Some(Self::Pittsburgh),
+			"Buckeye" => Some(Self::Buckeye),
+			"MiamiValley" => Some(Self::MiamiValley),
+			"Champs" => Some(Self::Champs),
+			"States" => Some(Self::States),
+			_ => None,
+		}
+	}
+
+	pub fn get_abbr(&self) -> &'static str {
+		match self {
+			Self::Pittsburgh => "GPR",
+			Self::Buckeye => "BR",
+			Self::MiamiValley => "MVR",
+			Self::Champs => "CMPTX",
+			Self::States => "OSC",
+		}
 	}
 }
 
