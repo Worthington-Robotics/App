@@ -12,7 +12,7 @@ use strum::IntoEnumIterator;
 use tracing::{error, span, Level};
 
 use crate::{
-	api::first::FirstClient,
+	api::{first::FirstClient, statbotics::StatboticsClient},
 	db::{Database, DatabaseImpl},
 	events::get_season,
 	routes::{OptionalSessionID, SessionID},
@@ -69,7 +69,7 @@ pub async fn teams(
 				continue;
 			}
 		}
-		teams_string.push_str(&render_team(team));
+		teams_string.push_str(&render_team(team, &state.statbotics_client).await);
 	}
 	let page = page.replace("{{teams}}", &teams_string);
 
@@ -103,10 +103,12 @@ pub async fn teams(
 	))
 }
 
-fn render_team(team: Team) -> String {
+async fn render_team(team: Team, stat_client: &StatboticsClient) -> String {
 	let out = include_str!("../components/scouting/team_row.min.html");
 	let out = out.replace("{{number}}", &team.number.to_string());
 	let out = out.replace("{{name}}", &team.sanitized_name());
+	let epa = stat_client.get_epa(team.number).await.unwrap_or(0.0);
+	let out = out.replace("{{epa}}", &format!("{epa:.2}"));
 
 	out
 }

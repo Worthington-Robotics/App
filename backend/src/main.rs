@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
-use api::first::FirstClient;
+use api::{first::FirstClient, statbotics::StatboticsClient};
 use argon2::Argon2;
 use attendance::AttendanceFairing;
 use auth::SessionManager;
@@ -78,12 +78,19 @@ async fn rocket() -> _ {
 			.expect("Failed to populate teams");
 	}
 
+	let statbotics_client = StatboticsClient::new(&req_client);
+	statbotics_client
+		.get_stats()
+		.await
+		.expect("Failed to get Statbotics stats");
+
 	let state = AppState {
 		db: Arc::new(Mutex::new(db)),
 		session_manager: Mutex::new(session_manager),
 		password_hash,
 		req_client,
 		first_client,
+		statbotics_client,
 	};
 
 	let db_clone = state.db.clone();
@@ -106,6 +113,7 @@ async fn rocket() -> _ {
 				routes::assets::main_css,
 				routes::assets::static_css,
 				routes::assets::sortable_js,
+				routes::assets::error_js,
 				routes::assets::logo,
 				routes::assets::rockwell,
 				routes::assets::icon_home,
@@ -180,6 +188,7 @@ pub struct AppState {
 	pub password_hash: Option<Argon2<'static>>,
 	pub req_client: reqwest::Client,
 	pub first_client: FirstClient,
+	pub statbotics_client: StatboticsClient,
 }
 
 pub type State = rocket::State<AppState>;

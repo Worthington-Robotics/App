@@ -16,14 +16,22 @@ pub fn main_css() -> RawCss<&'static str> {
 	RawCss(include_str!("../assets/main.min.css"))
 }
 
-#[rocket::get("/assets/static7.css")]
+#[rocket::get("/assets/static8.css")]
 pub fn static_css() -> CacheFor<RawCss<&'static str>> {
 	CacheFor(RawCss(include_str!("../assets/static.min.css")), ONE_DAY)
 }
 
 #[rocket::get("/assets/sortable.min.js")]
 pub fn sortable_js() -> CacheFor<RawJavaScript<&'static str>> {
-	CacheFor(RawJavaScript(include_str!("../assets/sortable.min.js")), ONE_WEEK)
+	CacheFor(
+		RawJavaScript(include_str!("../assets/sortable.min.js")),
+		ONE_WEEK,
+	)
+}
+
+#[rocket::get("/assets/error.js")]
+pub fn error_js() -> CacheFor<RawJavaScript<&'static str>> {
+	CacheFor(RawJavaScript(include_str!("../assets/error.js")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/logo-gears.svg")]

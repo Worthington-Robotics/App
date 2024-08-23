@@ -250,3 +250,16 @@ table {
 	transform: rotate(45deg);
 	-webkit-transform: rotate(45deg);
 }
+
+#error-cont {
+	width: 100vw;
+	position: fixed;
+	left: 0px;
+	top: 1.3rem;
+}
+
+#error {
+	width: 60%;
+	background-color: var(--wbred);
+	padding: 1.3rem;
+}
