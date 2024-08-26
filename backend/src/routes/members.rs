@@ -411,6 +411,16 @@ pub async fn member_details(
 	let page = include_str!("pages/members/details.min.html");
 	let page = page.replace("{{id}}", &member.id);
 	let page = page.replace("{{name}}", &member.name);
+	let page = page.replace("{{kind}}", &member.kind.to_string());
+
+	let date = if let Ok(date) = DateTime::parse_from_rfc2822(&member.creation_date) {
+		render_date(date)
+	} else {
+		error!("Failed to parse date");
+		"Invalid date".into()
+	};
+	let page = page.replace("{{creation-date}}", &date);
+
 	let page = page.replace("{{edit}}", include_str!("components/ui/edit.min.html"));
 	let page = page.replace("{{delete}}", include_str!("components/ui/delete.min.html"));
 

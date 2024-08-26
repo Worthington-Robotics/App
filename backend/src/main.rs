@@ -10,7 +10,10 @@ use db::cached::SyncCache;
 use db::{Database, DatabaseImpl};
 use dotenv::dotenv;
 use member::Member;
-use rocket::{catchers, routes, tokio::sync::Mutex};
+use rocket::{
+	catchers, routes,
+	tokio::{join, sync::Mutex},
+};
 use rocket_async_compression::CachedCompression;
 use routes::{scouting::populate_teams, Ratelimit};
 
@@ -42,21 +45,7 @@ async fn rocket() -> _ {
 	let session_id = session_manager.create("admin");
 	println!("Session ID: {session_id}");
 
-	let mut db = DatabaseImpl::open().await.expect("Failed to open database");
-	// Ensure that an admin member is present
-	let admin_member = Member {
-		id: "admin".into(),
-		name: "Admin".into(),
-		kind: member::MemberKind::Admin,
-		groups: HashSet::new(),
-		password: String::new(),
-		password_salt: None,
-		creation_date: DateTime::UNIX_EPOCH.to_rfc2822(),
-		calendar_id: String::new(),
-	};
-	db.create_member(admin_member)
-		.await
-		.expect("Failed to create admin member");
+	let db_task = setup_db();
 
 	// Load password hash
 	let params = argon2::Params::new(15000, 2, 1, None).expect("Failed to build Argon2 parameters");
@@ -69,6 +58,20 @@ async fn rocket() -> _ {
 
 	let req_client = reqwest::Client::new();
 
+	let statbotics_task = async {
+		let statbotics_client = StatboticsClient::new(&req_client);
+		if std::env::var("POPULATE_EPA").is_ok_and(|x| x == "1") {
+			statbotics_client
+				.get_stats()
+				.await
+				.expect("Failed to get Statbotics stats");
+		}
+
+		statbotics_client
+	};
+
+	let (mut db, statbotics_client) = join!(db_task, statbotics_task);
+
 	// Populate teams
 	let first_client = FirstClient::new(&req_client);
 	// This takes a while, so only do it if we need to
@@ -77,12 +80,6 @@ async fn rocket() -> _ {
 			.await
 			.expect("Failed to populate teams");
 	}
-
-	let statbotics_client = StatboticsClient::new(&req_client);
-	statbotics_client
-		.get_stats()
-		.await
-		.expect("Failed to get Statbotics stats");
 
 	let state = AppState {
 		db: Arc::new(Mutex::new(db)),
@@ -125,6 +122,8 @@ async fn rocket() -> _ {
 				routes::assets::icon_check,
 				routes::assets::icon_box,
 				routes::assets::icon_eye,
+				routes::assets::icon_star,
+				routes::assets::icon_user,
 				routes::login::login,
 				routes::login::authenticate,
 				routes::login::logout,
@@ -179,6 +178,27 @@ async fn rocket() -> _ {
 	let out = out.attach(SyncCache::new(db_clone2));
 
 	out
+}
+
+/// Database setup
+async fn setup_db() -> DatabaseImpl {
+	let mut db = DatabaseImpl::open().await.expect("Failed to open database");
+	// Ensure that an admin member is present
+	let admin_member = Member {
+		id: "admin".into(),
+		name: "Admin".into(),
+		kind: member::MemberKind::Admin,
+		groups: HashSet::new(),
+		password: String::new(),
+		password_salt: None,
+		creation_date: DateTime::UNIX_EPOCH.to_rfc2822(),
+		calendar_id: String::new(),
+	};
+	db.create_member(admin_member)
+		.await
+		.expect("Failed to create admin member");
+
+	db
 }
 
 /// Application state for Rocket

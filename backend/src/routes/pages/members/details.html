@@ -1,11 +1,21 @@
 {{worbots-header}}{{error}}
 <div class="cont col" id="member-details">
 	<h1>{{name}}</h1>
-	<h4 class="username">{{id}}</h4>
+	<h4 class="details-subtitle username">{{id}}</h4>
 	<div class="cont">
 		<a href="/member_list"><button>Back</button></a>
 		<a href="/create_member?id={{id}}">{{edit}}</a>
 		<div id="delete-button">{{delete}}</div>
+	</div>
+	<div class="cont">
+		<div class="cont">
+			<img src="/assets/icons/user.svg" class="details-icon" />
+			{{kind}}
+		</div>
+		<div class="cont">
+			<img src="/assets/icons/clock.svg" class="details-icon" />
+			{{creation-date}}
+		</div>
 	</div>
 	<div class="cont col">
 		<h3>Attendance Stats</h3>
@@ -38,11 +48,4 @@
 		});
 	});
 </script>
-<style>
-	.username {
-		color: var(--fg2);
-		font-weight: bold;
-		margin-top: -2rem;
-	}
-</style>
 {{footer}}

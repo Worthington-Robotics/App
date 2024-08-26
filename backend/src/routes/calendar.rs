@@ -179,6 +179,9 @@ pub async fn event_details(
 	let page = include_str!("pages/events/details.min.html");
 	let page = page.replace("{{id}}", &event.id);
 	let page = page.replace("{{name}}", &event.name);
+	let page = page.replace("{{kind}}", &event.kind.to_string());
+	let page = page.replace("{{urgency}}", &event.urgency.to_string());
+	let page = page.replace("{{visibility}}", &event.visibility.to_string());
 
 	let date = if let Ok(date) = DateTime::parse_from_rfc2822(&event.date) {
 		let end_date = event

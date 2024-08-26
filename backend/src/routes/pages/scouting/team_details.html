@@ -1,12 +1,15 @@
 {{worbots-header}}{{error}}
 <div class="cont col" id="team-details">
 	<h1>{{name}}</h1>
-	<h3 class="number">{{number}}</h3>
+	<h3 class="details-subtitle number">{{number}}</h3>
 	<div class="cont">
 		<button onclick="history.back()">Back</button>
 	</div>
-	<div class="cont col">
-		<h4>Rookie Year: {{rookie-year}}</h4>
+	<div class="cont">
+		<div class="cont">
+			<img src="/assets/icons/clock.svg" class="details-icon" />
+			{{rookie-year}}
+		</div>
 	</div>
 	<div class="cont col">
 		<h2>Competitions</h2>
@@ -16,10 +19,6 @@
 <style>
 	.number {
 		font-family: "Courier New", Courier, monospace;
-		color: var(--fg2);
-		font-weight: bold;
-		text-align: center;
-		margin-top: -2rem;
 	}
 </style>
 <script>

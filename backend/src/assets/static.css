@@ -200,6 +200,8 @@ select {
 	background-color: var(--bg2);
 }
 
+/* Tables */
+
 table,
 tr,
 td,
@@ -223,6 +225,8 @@ th[data-sorted=true] {
 table {
 	border-collapse: collapse;
 }
+
+/* Arrows */
 
 .arrow {
 	border: solid var(--fg2);
@@ -251,6 +255,8 @@ table {
 	-webkit-transform: rotate(45deg);
 }
 
+/* Errors */
+
 #error-cont {
 	width: 100vw;
 	position: fixed;
@@ -262,4 +268,18 @@ table {
 	width: 60%;
 	background-color: var(--wbred);
 	padding: 1.3rem;
+}
+
+/* Details pages */
+
+.details-subtitle {
+	color: var(--fg2);
+	font-weight: bold;
+	margin-top: -2rem;
+	margin-bottom: 0.3rem;
+}
+
+.details-icon {
+	width: 1.5rem;
+	margin-right: -0.55rem;
 }
