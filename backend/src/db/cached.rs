@@ -76,6 +76,13 @@ async fn populate_cache(sql: &SqlDatabase) -> anyhow::Result<JSONDatabase> {
 	{
 		cache.create_team(team).await?;
 	}
+	for stats in sql
+		.get_all_match_stats()
+		.await
+		.context("Failed to get match stats from database")?
+	{
+		cache.create_match_stats(stats).await?;
+	}
 
 	Ok(cache)
 }
@@ -322,6 +329,24 @@ impl Database for CacheDatabase {
 
 	async fn get_teams(&self) -> anyhow::Result<impl Iterator<Item = crate::scouting::Team>> {
 		self.cache.get_teams().await
+	}
+
+	async fn create_match_stats(
+		&mut self,
+		stats: crate::scouting::matches::MatchStats,
+	) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.create_match_stats(stats.clone()),
+			self.cache.create_match_stats(stats)
+		)?;
+
+		Ok(())
+	}
+
+	async fn get_all_match_stats(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = crate::scouting::matches::MatchStats>> {
+		self.cache.get_all_match_stats().await
 	}
 }
 

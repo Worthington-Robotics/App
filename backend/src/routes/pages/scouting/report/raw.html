@@ -1,0 +1,108 @@
+{{worbots-header}}{{error}}
+<h2>Raw Match Report</h2>
+<form id="raw-report-form" class="cont col">
+	<label for="team-number">Team Number</label>
+	<input type="number" class="field" name="team-number" id="team-number" />
+	<label for="auto-attempts">Auto Attempts</label>
+	<input type="number" class="field" name="auto-attempts" id="auto-attempts" />
+	<label for="auto-attempts">Auto Scores</label>
+	<input type="number" class="field" name="auto-scores" id="auto-scores" />
+	<label for="auto-attempts">Auto Collision</label>
+	<input type="checkbox" class="field" name="auto-collision" id="auto-collision" />
+	<label for="points-scored">Points Scored</label>
+	<input type="number" class="field" name="points-scored" id="points-scored" />
+	<label for="amp-attempts">Amp Attempts</label>
+	<input type="number" class="field" name="amp-attempts" id="amp-attempts" />
+	<label for="amp-scores">Amp Scores</label>
+	<input type="number" class="field" name="amp-scores" id="amp-scores" />
+	<label for="speaker-attempts">Speaker Attempts</label>
+	<input type="number" class="field" name="speaker-attempts" id="speaker-attempts" />
+	<label for="speaker-scores">Speaker Scores</label>
+	<input type="number" class="field" name="speaker-scores" id="speaker-scores" />
+	<label for="climb-attempted">Climb Attempted</label>
+	<input type="checkbox" class="field" name="climb-attempted" id="climb-attempted" />
+	<label for="climb-successful">Climb Successful</label>
+	<input type="checkbox" class="field" name="climb-successful" id="climb-successful" />
+	<label for="trap-attempted">Trap Attempted</label>
+	<input type="checkbox" class="field" name="trap-attempted" id="trap-attempted" />
+	<label for="trap-successful">Trap Successful</label>
+	<input type="checkbox" class="field" name="trap-successful" id="trap-successful" />
+	<label for="amplifications">Amplifications</label>
+	<input type="number" class="field" name="amplifications" id="amplifications" />
+	<label for="amplified-notes">Amplified Notes</label>
+	<input type="number" class="field" name="amplified-notes" id="amplified-notes" />
+	<label for="passes">Passes</label>
+	<input type="number" class="field" name="passes" id="passes" />
+	<label for="defenses">Defenses</label>
+	<input type="number" class="field" name="defenses" id="defenses" />
+	<label for="penalties">Penalties</label>
+	<input type="number" class="field" name="penalties" id="penalties" />
+	<label for="cycle-time">Cycle Time</label>
+	<input type="number" class="field" name="cycle-time" id="cycle-time" />
+	<label for="broken">Broken</label>
+	<input type="checkbox" class="field" name="broken" id="broken" />
+	<label for="showed-up">Showed Up</label>
+	<input type="checkbox" class="field" name="showed-up" id="showed-up" />
+	<label for="won">Won</label>
+	<input type="checkbox" class="field" name="won" id="won" />
+
+	<input type="submit" id="submit" value="Save" />
+</form>
+<script>
+	function onSubmit(event) {
+		event.preventDefault();
+
+		// We do lots of conversions to integers with * 1 here
+		const data = {
+			team_number: document.getElementById("team-number").value * 1,
+			match_id: "",
+			auto_attempts: document.getElementById("auto-attempts").value * 1,
+			auto_scores: document.getElementById("auto-scores").value * 1,
+			auto_collision: document.getElementById("auto-collision").checked,
+			points_scored: document.getElementById("points-scored").value * 1,
+			amp_attempts: document.getElementById("amp-attempts").value * 1,
+			amp_scores: document.getElementById("amp-scores").value * 1,
+			speaker_attempts: document.getElementById("speaker-attempts").value * 1,
+			speaker_scores: document.getElementById("speaker-scores").value * 1,
+			climb_attempted: document.getElementById("climb-attempted").checked,
+			climb_successful: document.getElementById("climb-successful").checked,
+			trap_attempted: document.getElementById("trap-attempted").checked,
+			trap_successful: document.getElementById("trap-successful").checked,
+			amplifications: document.getElementById("amplifications").value * 1,
+			amplified_notes: document.getElementById("amplified-notes").value * 1,
+			passes: document.getElementById("passes").value * 1,
+			defenses: document.getElementById("defenses").value * 1,
+			penalties: document.getElementById("penalties").value * 1,
+			cycle_time: document.getElementById("cycle-time").value * 1,
+			broken: document.getElementById("broken").checked,
+			showed_up: document.getElementById("showed-up").checked,
+			won: document.getElementById("won").checked,
+			notes: "",
+		};
+		const dataReady = encodeURIComponent(JSON.stringify(data));
+
+		fetch("/api/post_match_stats", {
+			method: "POST",
+			body: `data=${dataReady}`,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to post match results: " + response.statusText);
+				return;
+			}
+			window.location.href = "/scouting/teams";
+		});
+	}
+
+	document.getElementById("raw-report-form").addEventListener("submit", onSubmit);
+</script>
+<style>
+	.field {
+		width: 60%;
+	}
+
+	.member-checkbox>input {
+		margin-left: auto;
+	}
+</style>
+{{footer}}

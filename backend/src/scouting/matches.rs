@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::TeamNumber;
 
 /// A single match
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Match {
 	pub id: String,
 	pub red_alliance: Vec<TeamNumber>,
@@ -11,7 +11,7 @@ pub struct Match {
 }
 
 /// Stats for a single team in a match
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MatchStats {
 	/// The team that got these stats
 	pub team_number: TeamNumber,
@@ -51,10 +51,16 @@ pub struct MatchStats {
 	pub defenses: u8,
 	/// The number of penalties that the team incurred during the match
 	pub penalties: u8,
+	/// The team's average cycle time
+	#[serde(default)]
+	pub cycle_time: f32,
 	/// Whether the robot was reported as broken
 	pub broken: bool,
 	/// Whether or not the team showed up to the match
 	pub showed_up: bool,
+	/// Whether or not the team won the match
+	#[serde(default)]
+	pub won: bool,
 	/// Additional notes about the match
 	pub notes: String,
 }

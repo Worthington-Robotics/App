@@ -11,6 +11,28 @@
 			{{rookie-year}}
 		</div>
 	</div>
+	<h2>Stats</h2>
+	<div class="cont col" id="stats">
+		<div class="cont" id="stats-tabs">
+			<div class="round stats-tab" id="overall-tab">Overall</div>
+			<div class="round stats-tab" id="auto-tab">Auto</div>
+			<div class="round stats-tab" id="teleop-tab">Teleop</div>
+		</div>
+		<div class="cont" id="stats-body">
+			<div class="stats-section" id="overall-section">
+				<div class="stats-grid">
+					{{epa}}
+					{{apa}}
+					{{win-rate}}
+					{{matches}}
+					{{availability}}
+					{{penalties}}
+				</div>
+			</div>
+			<div class="stats-section" id="auto-section" style="display: none;"></div>
+			<div class="stats-section" id="teleop-section" style="display: none;"></div>
+		</div>
+	</div>
 	<div class="cont col">
 		<h2>Competitions</h2>
 		{{comp-checkboxes}}
@@ -19,6 +41,32 @@
 <style>
 	.number {
 		font-family: "Courier New", Courier, monospace;
+	}
+
+	.stats-tab {
+		background-color: var(--bg2);
+		padding: 0.9rem;
+	}
+
+	.stats-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.card {
+		background-color: var(--bg2);
+		padding: 1.0rem;
+		margin: 0.4rem;
+		padding-left: 1.5rem;
+		padding-right: 1.5rem;
+	}
+
+	.card-stat {
+		font-size: calc(2.5vw * var(--scale));
+	}
+
+	.card-title {
+		color: var(--fg3);
 	}
 </style>
 <script>

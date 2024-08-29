@@ -16,7 +16,7 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{Member, MemberGroup, MemberKind, MemberMention},
-	scouting::{Competition, Team, TeamNumber},
+	scouting::{matches::MatchStats, Competition, Team, TeamNumber},
 	tasks::{Checklist, Task},
 	util::ToDropdown,
 };
@@ -692,6 +692,40 @@ impl Database for SqlDatabase {
 			}
 		}
 	}
+
+	async fn create_match_stats(&mut self, stats: MatchStats) -> anyhow::Result<()> {
+		let serialized =
+			serde_json::to_string(&stats).context("Failed to serialize match stats")?;
+		sqlx::query("INSERT INTO match_stats (Team, Data) VALUES ($1, $2)")
+			.bind(stats.team_number as i32)
+			.bind(serialized)
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new match stats in database")?;
+
+		Ok(())
+	}
+
+	async fn get_all_match_stats(&self) -> anyhow::Result<impl Iterator<Item = MatchStats>> {
+		let result = sqlx::query("SELECT * FROM match_stats")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let stats = read_match_stats(row).context("Failed to read match stats")?;
+					out.push(stats);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get all match stats from database: {e}");
+				Err(anyhow!("Failed to get match stats from database"))
+			}
+		}
+	}
 }
 
 /// Setup the database
@@ -717,6 +751,9 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 
 	let robot_info_task = pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float4, Height float4, Weight float4, CanSpeaker bool, CanAmp bool, CanClimb bool, CanTrap bool, CanPass bool, CanDriveUnderStage bool)");
 
+	let match_stats_task =
+		pool.execute("CREATE TABLE IF NOT EXISTS match_stats (Team int2, Data text)");
+
 	let scouting_assignments_task = pool.execute(
 		"CREATE TABLE IF NOT EXISTS scouting_assignments (Member text PRIMARY KEY, Teams int2[])",
 	);
@@ -730,6 +767,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		tasks_task,
 		teams_task,
 		robot_info_task,
+		match_stats_task,
 		scouting_assignments_task
 	)
 	.context("Failed to execute database setup tasks")?;
@@ -886,4 +924,12 @@ fn read_team(id: TeamNumber, row: PgRow) -> anyhow::Result<Team> {
 		rookie_year,
 		competitions: competitions.collect(),
 	})
+}
+
+/// Read match stats from the database
+fn read_match_stats(row: PgRow) -> anyhow::Result<MatchStats> {
+	let data: &str = row.try_get("data")?;
+	let data = serde_json::from_str(data).context("Failed to deserialize data")?;
+
+	Ok(data)
 }

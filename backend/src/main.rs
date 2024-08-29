@@ -1,4 +1,7 @@
-use std::{collections::HashSet, sync::Arc};
+use std::{
+	collections::{HashMap, HashSet},
+	sync::Arc,
+};
 
 use api::{first::FirstClient, statbotics::StatboticsClient};
 use argon2::Argon2;
@@ -12,10 +15,14 @@ use dotenv::dotenv;
 use member::Member;
 use rocket::{
 	catchers, routes,
-	tokio::{join, sync::Mutex},
+	tokio::{
+		join,
+		sync::{Mutex, RwLock},
+	},
 };
 use rocket_async_compression::CachedCompression;
 use routes::{scouting::populate_teams, Ratelimit};
+use scouting::{TeamNumber, TeamStats, UpdateStats};
 
 mod announcements;
 mod api;
@@ -81,6 +88,8 @@ async fn rocket() -> _ {
 			.expect("Failed to populate teams");
 	}
 
+	let team_stats = Arc::new(RwLock::new(HashMap::new()));
+
 	let state = AppState {
 		db: Arc::new(Mutex::new(db)),
 		session_manager: Mutex::new(session_manager),
@@ -88,11 +97,13 @@ async fn rocket() -> _ {
 		req_client,
 		first_client,
 		statbotics_client,
+		team_stats: team_stats.clone(),
 	};
 
 	let db_clone = state.db.clone();
 	#[cfg(feature = "cachedb")]
 	let db_clone2 = state.db.clone();
+	let db_clone3 = state.db.clone();
 
 	let out = rocket::build()
 		.manage(state)
@@ -152,6 +163,8 @@ async fn rocket() -> _ {
 				routes::scouting::teams,
 				routes::scouting::team_details,
 				routes::scouting::update_team_competition,
+				routes::scouting::matches::create_match_stats,
+				routes::scouting::matches::match_report_raw,
 			],
 		)
 		.mount(
@@ -176,6 +189,8 @@ async fn rocket() -> _ {
 
 	#[cfg(feature = "cachedb")]
 	let out = out.attach(SyncCache::new(db_clone2));
+
+	let out = out.attach(UpdateStats::new(db_clone3, team_stats));
 
 	out
 }
@@ -209,6 +224,7 @@ pub struct AppState {
 	pub req_client: reqwest::Client,
 	pub first_client: FirstClient,
 	pub statbotics_client: StatboticsClient,
+	pub team_stats: Arc<RwLock<HashMap<TeamNumber, TeamStats>>>,
 }
 
 pub type State = rocket::State<AppState>;

@@ -1,4 +1,6 @@
-use std::collections::HashSet;
+pub mod matches;
+
+use std::{collections::HashSet, fmt::Display};
 
 use anyhow::Context;
 use chrono::Utc;
@@ -16,7 +18,7 @@ use crate::{
 	db::{Database, DatabaseImpl},
 	events::get_season,
 	routes::{OptionalSessionID, SessionID},
-	scouting::{Competition, Team, TeamNumber},
+	scouting::{Competition, Team, TeamNumber, TeamStats},
 	State,
 };
 
@@ -171,9 +173,49 @@ pub async fn team_details(
 	}
 	let page = page.replace("{{comp-checkboxes}}", &checkboxes_string);
 
+	// Create stats
+	let epa = state
+		.statbotics_client
+		.get_epa(id)
+		.await
+		.unwrap_or_default();
+	let page = page.replace("{{epa}}", &render_stat_card_float("EPA", epa));
+	let default_stats = TeamStats::default();
+	let lock2 = state.team_stats.read().await;
+	let team_stats = lock2.get(&id).unwrap_or(&default_stats);
+	let page = page.replace("{{apa}}", &render_stat_card_float("APA", team_stats.apa));
+	let page = page.replace(
+		"{{win-rate}}",
+		&render_stat_card_float("Win Rate", team_stats.win_rate),
+	);
+	let page = page.replace(
+		"{{matches}}",
+		&render_stat_card("Matches", team_stats.matches),
+	);
+	let page = page.replace(
+		"{{availability}}",
+		&render_stat_card_float("Availability", team_stats.availablity),
+	);
+	let page = page.replace(
+		"{{penalties}}",
+		&render_stat_card("Penalties", team_stats.penalties),
+	);
+
 	let page = create_page("Team Details", &page, Some(Scope::Scouting));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+fn render_stat_card(title: &str, stat: impl Display) -> String {
+	let out = include_str!("../components/scouting/stat_card.min.html");
+	let out = out.replace("{{stat}}", &stat.to_string());
+	let out = out.replace("{{title}}", title);
+
+	out
+}
+
+fn render_stat_card_float(title: &str, stat: f32) -> String {
+	render_stat_card(title, format!("{stat:.2}"))
 }
 
 #[rocket::post("/api/update_team_competition/<id>?<competition>")]
