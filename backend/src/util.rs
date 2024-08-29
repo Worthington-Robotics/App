@@ -111,3 +111,12 @@ where
 
 	out
 }
+
+/// Changes a number to one if it is zero
+pub fn fix_zero(x: f32) -> f32 {
+	if x == 0.0 {
+		1.0
+	} else {
+		x
+	}
+}

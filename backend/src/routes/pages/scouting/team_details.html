@@ -14,9 +14,10 @@
 	<h2>Stats</h2>
 	<div class="cont col" id="stats">
 		<div class="cont" id="stats-tabs">
-			<div class="round stats-tab" id="overall-tab">Overall</div>
-			<div class="round stats-tab" id="auto-tab">Auto</div>
-			<div class="round stats-tab" id="teleop-tab">Teleop</div>
+			<div class="round stats-tab selected" id="overall-tab" data-section="overall">Overall</div>
+			<div class="round stats-tab" id="auto-tab" data-section="auto">Auto</div>
+			<div class="round stats-tab" id="teleop-tab" data-section="teleop">Teleop</div>
+			<div class="round stats-tab" id="endgame-tab" data-section="endgame">Endgame</div>
 		</div>
 		<div class="cont" id="stats-body">
 			<div class="stats-section" id="overall-section">
@@ -29,8 +30,34 @@
 					{{penalties}}
 				</div>
 			</div>
-			<div class="stats-section" id="auto-section" style="display: none;"></div>
-			<div class="stats-section" id="teleop-section" style="display: none;"></div>
+			<div class="stats-section" id="auto-section" style="display: none;">
+				<div class="stats-grid">
+					{{auto-score}}
+					{{auto-accuracy}}
+					{{auto-collisions}}
+				</div>
+			</div>
+			<div class="stats-section" id="teleop-section" style="display: none;">
+				<div class="stats-grid">
+					{{cycle-time}}
+					{{amp-rate}}
+					{{amp-power}}
+					{{pass-average}}
+					{{speaker-score}}
+					{{amp-score}}
+					{{defense-average}}
+					{{speaker-accuracy}}
+					{{amp-accuracy}}
+				</div>
+			</div>
+			<div class="stats-section" id="endgame-section" style="display: none;">
+				<div class="stats-grid">
+					{{climb-score}}
+					{{climb-accuracy}}
+					{{trap-score}}
+					{{trap-accuracy}}
+				</div>
+			</div>
 		</div>
 	</div>
 	<div class="cont col">
@@ -48,6 +75,10 @@
 		padding: 0.9rem;
 	}
 
+	.stats-tab.selected {
+		background-color: var(--wbblueacc);
+	}
+
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -55,10 +86,8 @@
 
 	.card {
 		background-color: var(--bg2);
-		padding: 1.0rem;
+		padding: 1.0rem 1.3rem;
 		margin: 0.4rem;
-		padding-left: 1.5rem;
-		padding-right: 1.5rem;
 	}
 
 	.card-stat {
@@ -67,6 +96,10 @@
 
 	.card-title {
 		color: var(--fg3);
+	}
+
+	.card-stat.strong {
+		font-weight: bold;
 	}
 </style>
 <script>
@@ -85,6 +118,28 @@
 	for (let elem of document.getElementsByClassName("comp-cb")) {
 		let cb = elem.firstChild;
 		cb.addEventListener("change", compCb);
+	}
+
+	// Stats tab logic
+	let tabs = document.getElementsByClassName("stats-tab");
+	let sections = document.getElementsByClassName("stats-section");
+
+	function changeTab(section, tab) {
+		// Change the selected tab
+		for (let elem of tabs) {
+			elem.classList.remove("selected");
+		}
+		tab.classList.add("selected");
+
+		// Change the visible section
+		for (let elem of sections) {
+			elem.style.display = "none";
+		}
+		document.getElementById(`${section}-section`).style.display = "";
+	}
+
+	for (let elem of tabs) {
+		elem.addEventListener("click", (e) => changeTab(elem.dataset.section, e.target));
 	}
 </script>
 {{footer}}

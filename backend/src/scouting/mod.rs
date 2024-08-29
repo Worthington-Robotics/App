@@ -16,7 +16,10 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, IntoStaticStr};
 use tracing::error;
 
-use crate::db::{Database, DatabaseImpl};
+use crate::{
+	db::{Database, DatabaseImpl},
+	util::fix_zero,
+};
 
 /// Type for the number of a team
 pub type TeamNumber = u16;
@@ -104,22 +107,28 @@ pub struct TeamStats {
 	pub epa: f32,
 	pub apa: f32,
 	pub win_rate: f32,
+	pub speaker_score: f32,
 	pub speaker_accuracy: f32,
+	pub amp_score: f32,
 	pub amp_accuracy: f32,
+	pub climb_score: f32,
 	pub climb_accuracy: f32,
+	pub trap_score: f32,
 	pub trap_accuracy: f32,
 	/// Average number of notes scored per auto
 	pub auto_score: f32,
+	pub auto_collisions: u8,
+	pub auto_accuracy: f32,
 	/// Average number of amplifications per match
 	pub amplification_rate: f32,
 	/// Average number of notes per amplification
 	pub amplification_power: f32,
 	/// Average number of passes per match
-	pub pass_rate: f32,
+	pub pass_average: f32,
 	/// Average number of offensive moves per match
-	pub offense_rate: f32,
+	pub offense_average: f32,
 	/// Average number of defensive moves per match
-	pub defense_rate: f32,
+	pub defense_average: f32,
 	/// Average cycle time
 	pub cycle_time: f32,
 	/// Total number of penalties
@@ -160,16 +169,22 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		epa: 0.0,
 		apa: ctx.points_scored as f32 / match_count_f32,
 		win_rate: ctx.wins as f32 / match_count_f32,
-		speaker_accuracy: ctx.speaker_scores as f32 / ctx.speaker_attempts as f32,
-		amp_accuracy: ctx.amp_scores as f32 / ctx.amp_attempts as f32,
-		climb_accuracy: ctx.climb_attempts as f32 / ctx.climb_successes as f32,
-		trap_accuracy: ctx.trap_attempts as f32 / ctx.trap_successes as f32,
-		auto_score: ctx.auto_scores as f32 * 5.0 / match_count_f32,
+		speaker_score: ctx.speaker_scores as f32 / match_count_f32,
+		speaker_accuracy: ctx.speaker_scores as f32 / fix_zero(ctx.speaker_attempts as f32),
+		amp_score: ctx.amp_scores as f32 / match_count_f32,
+		amp_accuracy: ctx.amp_scores as f32 / fix_zero(ctx.amp_attempts as f32),
+		climb_score: ctx.climb_successes as f32 / match_count_f32,
+		climb_accuracy: ctx.climb_successes as f32 / fix_zero(ctx.climb_attempts as f32),
+		trap_score: ctx.trap_successes as f32 / match_count_f32,
+		trap_accuracy: ctx.trap_successes as f32 / fix_zero(ctx.trap_attempts as f32),
+		auto_score: ctx.auto_scores as f32 / match_count_f32,
+		auto_collisions: ctx.auto_collisions,
+		auto_accuracy: ctx.auto_scores as f32 / fix_zero(ctx.auto_attempts as f32),
 		amplification_rate: ctx.amplifications as f32 / match_count_f32,
 		amplification_power: ctx.amplified_notes as f32 / match_count_f32,
-		pass_rate: ctx.passes as f32 / match_count_f32,
-		offense_rate: (ctx.amp_scores as f32 + ctx.speaker_scores as f32) / match_count_f32,
-		defense_rate: ctx.defenses as f32 / match_count_f32,
+		pass_average: ctx.passes as f32 / match_count_f32,
+		offense_average: (ctx.amp_scores as f32 + ctx.speaker_scores as f32) / match_count_f32,
+		defense_average: ctx.defenses as f32 / match_count_f32,
 		cycle_time: ctx.cycle_time_sum as f32 / match_count_f32,
 		penalties: ctx.penalties,
 		availablity: (ctx.attendance - ctx.breaks) as f32 / match_count_f32,

@@ -160,6 +160,7 @@ async fn rocket() -> _ {
 				routes::tasks::create_checklist_page,
 				routes::tasks::checklist_page,
 				routes::settings::settings,
+				routes::scouting::index,
 				routes::scouting::teams,
 				routes::scouting::team_details,
 				routes::scouting::update_team_competition,

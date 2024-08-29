@@ -24,6 +24,30 @@ use crate::{
 
 use super::{create_page, PageOrRedirect, Scope};
 
+#[rocket::get("/scouting")]
+pub async fn index(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Scouting index");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	if session_id.get_requesting_member(state).await.is_err() {
+		return Ok(redirect);
+	};
+
+	let page = include_str!("../pages/scouting/index.min.html");
+
+	let page = create_page("Scouting", &page, Some(Scope::Scouting));
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
 #[rocket::get("/scouting/teams?<competition>")]
 pub async fn teams(
 	session_id: OptionalSessionID<'_>,
@@ -179,26 +203,93 @@ pub async fn team_details(
 		.get_epa(id)
 		.await
 		.unwrap_or_default();
-	let page = page.replace("{{epa}}", &render_stat_card_float("EPA", epa));
+	let page = page.replace("{{epa}}", &render_stat_card_float("EPA", epa, true));
 	let default_stats = TeamStats::default();
 	let lock2 = state.team_stats.read().await;
 	let team_stats = lock2.get(&id).unwrap_or(&default_stats);
-	let page = page.replace("{{apa}}", &render_stat_card_float("APA", team_stats.apa));
+	let page = page.replace(
+		"{{apa}}",
+		&render_stat_card_float("APA", team_stats.apa, true),
+	);
 	let page = page.replace(
 		"{{win-rate}}",
-		&render_stat_card_float("Win Rate", team_stats.win_rate),
+		&render_stat_card_pct("Win Rate", team_stats.win_rate, true),
 	);
 	let page = page.replace(
 		"{{matches}}",
-		&render_stat_card("Matches", team_stats.matches),
+		&render_stat_card("Matches", team_stats.matches, false),
 	);
 	let page = page.replace(
 		"{{availability}}",
-		&render_stat_card_float("Availability", team_stats.availablity),
+		&render_stat_card_pct("Availability", team_stats.availablity, false),
 	);
 	let page = page.replace(
 		"{{penalties}}",
-		&render_stat_card("Penalties", team_stats.penalties),
+		&render_stat_card("Penalties", team_stats.penalties, false),
+	);
+	let page = page.replace(
+		"{{auto-score}}",
+		&render_stat_card_float("Score", team_stats.auto_score, true),
+	);
+	let page = page.replace(
+		"{{auto-accuracy}}",
+		&render_stat_card_float("Accuracy", team_stats.auto_accuracy, true),
+	);
+	let page = page.replace(
+		"{{auto-collisions}}",
+		&render_stat_card("Collisions", team_stats.auto_collisions, false),
+	);
+	let page = page.replace(
+		"{{cycle-time}}",
+		&render_stat_card_float("CT", team_stats.cycle_time, true),
+	);
+	let page = page.replace(
+		"{{speaker-score}}",
+		&render_stat_card_float("Spkr Sco", team_stats.speaker_score, false),
+	);
+	let page = page.replace(
+		"{{amp-score}}",
+		&render_stat_card_float("Amp Sco", team_stats.amp_score, false),
+	);
+	let page = page.replace(
+		"{{pass-average}}",
+		&render_stat_card_float("Pass Avg", team_stats.pass_average, false),
+	);
+	let page = page.replace(
+		"{{speaker-accuracy}}",
+		&render_stat_card_pct("Spkr Acc", team_stats.speaker_accuracy, false),
+	);
+	let page = page.replace(
+		"{{amp-accuracy}}",
+		&render_stat_card_pct("Amp Acc", team_stats.amp_accuracy, false),
+	);
+	let page = page.replace(
+		"{{amp-rate}}",
+		&render_stat_card_float("Amp Rate", team_stats.amplification_rate, true),
+	);
+	let page = page.replace(
+		"{{amp-power}}",
+		&render_stat_card_float("Amp Pwr", team_stats.amplification_power, true),
+	);
+	let page = page.replace(
+		"{{defense-average}}",
+		&render_stat_card_float("Def Avg", team_stats.defense_average, false),
+	);
+	let page = page.replace(
+		"{{climb-score}}",
+		&render_stat_card_float("Climb Sco", team_stats.climb_score, true),
+	);
+	let page = page.replace(
+		"{{climb-accuracy}}",
+		&render_stat_card_pct("Climb Acc", team_stats.climb_accuracy, false),
+	);
+	let page = page.replace(
+		"{{trap-score}}",
+		&render_stat_card_float("Trap Sco", team_stats.trap_score, true),
+	);
+	let page = page.replace(
+		"{{trap-accuracy}}",
+		&render_stat_card_pct("Trap Acc", team_stats.trap_accuracy, false),
 	);
 
 	let page = create_page("Team Details", &page, Some(Scope::Scouting));
@@ -206,16 +297,22 @@ pub async fn team_details(
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
-fn render_stat_card(title: &str, stat: impl Display) -> String {
+fn render_stat_card(title: &str, stat: impl Display, strong: bool) -> String {
 	let out = include_str!("../components/scouting/stat_card.min.html");
 	let out = out.replace("{{stat}}", &stat.to_string());
 	let out = out.replace("{{title}}", title);
+	let class = if strong { "strong" } else { "" };
+	let out = out.replace("{{stat-class}}", class);
 
 	out
 }
 
-fn render_stat_card_float(title: &str, stat: f32) -> String {
-	render_stat_card(title, format!("{stat:.2}"))
+fn render_stat_card_float(title: &str, stat: f32, strong: bool) -> String {
+	render_stat_card(title, format!("{stat:.2}"), strong)
+}
+
+fn render_stat_card_pct(title: &str, stat: f32, strong: bool) -> String {
+	render_stat_card(title, format!("{:.1}%", stat * 100.0), strong)
 }
 
 #[rocket::post("/api/update_team_competition/<id>?<competition>")]
