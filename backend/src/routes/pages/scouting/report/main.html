@@ -6,14 +6,31 @@
 			<div id="match-time-value">0:00.0</div>
 			<button id="time-edit-button">Edit</button>
 			<button id="time-pause-button">Start</button>
+			<select id="time-speed">
+				<option value="1" selected>1x</option>
+				<option value="0.5">0.5x</option>
+				<option value="0.25">0.25x</option>
+			</select>
 		</div>
+	</div>
+</div>
+<div id="time-edit-popup-container" class="cont" style="display:none">
+	<div id="time-edit-popup" class="cont col round">
+		<h2>Edit Time</h2>
+		<form id="time-edit-form" class="cont col">
+			<label for="time-value">Time Value</label>
+			<input type="text" id="time-edit-field" name="time-value" />
+			<label for="time-offset">Time Offset</label>
+			<input type="text" id="time-offset" name="time-offset" />
+			<input type="submit" value="Save" />
+		</form>
 	</div>
 </div>
 <br />
 <div id="match-report" class="cont col">
 	<h2>Pre-Match</h2>
 	<label for="team-number">Team Number</label>
-	<input type="number" class="field" name="team-number" id="team-number" />
+	<input type="number" class="field" name="team-number" id="team-number" placeholder="0000" />
 	<div class="cont">
 		<input type="checkbox" name="showed-up" id="showed-up" class="field" />
 		<label for="showed-up">Showed Up?</label>
@@ -68,46 +85,58 @@
 	</div>
 	<h2>Review</h2>
 	<label for="notes">Match Notes</label>
-	<textarea name="notes" id="notes" class="round border"></textarea>
-	<button id="submit">Submit</button>
+	<textarea name="notes" id="notes" class="round border" placeholder="Enter extra match notes here..."></textarea>
+	<div class="cont">
+		<button id="clear">Clear</button>
+		<button id="submit">Submit</button>
+	</div>
 </div>
 <script>
 	// Object for all processing about the match
-	var M = {
-		// The time when the timer was last resumed, number or null
-		startTime: null,
-		// The base time, set whenever the timer is paused
-		baseTime: 0,
-		// The total time
-		time: 0,
-		timerRunning: false,
-		// Contains a list of [timestamp: number, success: bool]
-		autoScores: [],
-		autoIntakes: [],
-		speakerScores: [],
-		ampScores: [],
-		totalAutoScores: 0,
-		totalSpeakerScores: 0,
-		totalAmpScores: 0,
-		ampStartTime: null,
-		amplifications: 0,
-		amplifiedScores: 0,
-		passes: 0,
-		defenses: 0,
-		penalties: 0
-	};
+	var M = {};
+
+	// Initializes the match data. Can be used to clear the match data as well.
+	function initMatchData() {
+		M = {
+			// The time when the timer was last resumed, number or null
+			startTime: null,
+			// The base time, set whenever the timer is paused
+			baseTime: 0,
+			// The total time
+			time: 0,
+			timerRunning: false,
+			timeScale: 1,
+			timeOffset: 0,
+			// Contains a list of [timestamp: number, success: bool]
+			autoScores: [],
+			autoIntakes: [],
+			speakerScores: [],
+			ampScores: [],
+			totalAutoScores: 0,
+			totalSpeakerScores: 0,
+			totalAmpScores: 0,
+			ampStartTime: null,
+			amplifications: 0,
+			amplifiedScores: 0,
+			passes: 0,
+			defenses: 0,
+			penalties: 0
+		};
+	}
+
+	initMatchData();
 
 	let timerValue = document.getElementById("match-time-value");
 	// Background task for updating the timer
 	setInterval(() => {
 		if (M.timerRunning && M.startTime != null) {
-			// Length of a match plus extra
-			if (M.time > 140) {
+			// Length of a match plus extra, with the offset removed to account for it
+			if (M.time - M.timeOffset > 140) {
 				M.timerRunning = false;
 				document.getElementById("time-pause-button").innerHTML = "Match Finished";
 			} else {
 				let now = Date.now() / 1000;
-				let delta = now - M.startTime;
+				let delta = (now - M.startTime) * M.timeScale;
 				M.time = M.baseTime + delta;
 
 				// Turn off amplify button automatically
@@ -120,15 +149,13 @@
 			}
 		}
 
-		let minutes = Math.floor(M.time / 60);
-		let seconds = M.time % 60;
-		// Pad the seconds with a zero
-		let secondsFormatted = seconds.toFixed(1);
-		if (seconds < 10) {
-			secondsFormatted = "0" + secondsFormatted;
-		}
-		timerValue.innerHTML = `${minutes}:${secondsFormatted}`;
+		timerValue.innerHTML = renderTime(M.time);
 	}, 100);
+
+	function resetTimeBase() {
+		M.startTime = Date.now() / 1000;
+		M.baseTime = M.time;
+	}
 
 	document.getElementById("time-pause-button").addEventListener("click", (e) => {
 		// Match is over
@@ -139,12 +166,52 @@
 		if (M.timerRunning) {
 			e.target.innerHTML = "Play";
 		} else {
-			M.startTime = Date.now() / 1000;
-			M.baseTime = M.time;
+			resetTimeBase();
 			e.target.innerHTML = "Pause";
 		}
 		M.timerRunning = !M.timerRunning;
 	});
+
+	// Changing the speed of the timer
+	document.getElementById("time-speed").addEventListener("change", (e) => {
+		// Update the time base to prevent speed changes from changing the total time
+		resetTimeBase();
+		M.timeScale = e.target.value * 1;
+	});
+
+	// Time editing
+	let timeEditField = document.getElementById("time-edit-field");
+	let timeOffsetField = document.getElementById("time-offset");
+	let timeEditPopupContainer = document.getElementById("time-edit-popup-container");
+	document.getElementById("time-edit-button").addEventListener("click", (e) => {
+		if (M.timerRunning) {
+			return;
+		}
+
+		timeEditField.value = renderTime(M.time);
+		timeOffsetField.value = renderTime(M.timeOffset);
+		timeEditPopupContainer.style.display = "";
+	});
+	document.getElementById("time-edit-form").addEventListener("submit", (e) => {
+		e.preventDefault();
+
+		let newTime = parseTime(timeEditField.value);
+		if (newTime != -1) {
+			M.time = newTime;
+			resetTimeBase();
+		} else {
+			setError("Invalid time");
+		}
+
+		let timeOffset = parseTime(timeOffsetField.value);
+		if (timeOffset != -1) {
+			M.timeOffset = timeOffset;
+		} else {
+			setError("Invalid time");
+		}
+
+		timeEditPopupContainer.style.display = "none";
+	})
 
 	// Event buttons
 	document.getElementById("auto-score").addEventListener("click", () => {
@@ -209,9 +276,12 @@
 		let cycleTimes = [];
 		for (let item of M.ampScores.concat(M.speakerScores)) {
 			if (item[1]) {
-				cycleTimes.push(item[0]);
+				cycleTimes.push(item[0] - M.timeOffset);
 			}
 		}
+		// Cycle times will be out of order due to the amp and speaker scores being concatted
+		cycleTimes.sort((a, b) => a - b);
+
 		let cycleTimeSum = 0;
 		for (let i = 1; i < cycleTimes.length; i++) {
 			let delta = cycleTimes[i] - cycleTimes[i - 1];
@@ -276,9 +346,51 @@
 			}
 			window.location.href = "/scouting";
 		});
+
 	}
 
 	document.getElementById("submit").addEventListener("click", onSubmit);
+
+	document.getElementById("clear").addEventListener("click", () => {
+		initMatchData();
+		document.getElementById("team-number").value = null;
+		document.getElementById("showed-up").checked = false;
+		document.getElementById("climb-attempted").checked = false;
+		document.getElementById("climb-successful").checked = false;
+		document.getElementById("trap-attempted").checked = false;
+		document.getElementById("trap-successful").checked = false;
+		document.getElementById("won").checked = false;
+		document.getElementById("broken").checked = false;
+		document.getElementById("notes").value = "";
+
+		document.getElementById("time-speed").value = "1";
+		document.getElementById("time-pause-button").innerHTML = "Play";
+	});
+
+	// Parses a time (m:ss or s). Returns -1 on error.
+	function parseTime(time) {
+		let elems = time.split(':');
+		if (elems.length == 2) {
+			return elems[0] * 60 + elems[1] * 1;
+		} else if (elems.length == 1) {
+			return elems[0] * 1;
+		} else {
+			return -1;
+		}
+	}
+
+	// Renders a time as m:ss
+	function renderTime(time) {
+		let minutes = Math.floor(time / 60);
+		let seconds = time % 60;
+		// Pad the seconds with a zero
+		let secondsFormatted = seconds.toFixed(1);
+		if (seconds < 10) {
+			secondsFormatted = "0" + secondsFormatted;
+		}
+
+		return `${minutes}:${secondsFormatted}`;
+	}
 </script>
 <style>
 	#time-container {
@@ -296,13 +408,34 @@
 		background-color: var(--bg3);
 	}
 
+	#time-speed {
+		width: 4rem;
+	}
+
+	#time-edit-popup-container {
+		position: fixed;
+		left: 0;
+		top: 0;
+		width: 100vw;
+		height: 100vh;
+		z-index: 100;
+		background-color: rgba(0, 0, 0, 0.5);
+	}
+
+	#time-edit-popup {
+		background-color: var(--bg2);
+		padding: 1.5rem;
+	}
+
 	.miss,
-	.penalty {
+	.penalty,
+	#clear {
 		background-color: var(--wbred);
 	}
 
 	.miss:hover,
-	.penalty:hover {
+	.penalty:hover,
+	#clear:hover {
 		background-color: var(--wbredacc);
 	}
 
@@ -334,6 +467,7 @@
 		resize: none;
 		width: 85%;
 		height: 12rem;
+		padding: 1rem;
 	}
 </style>
 {{footer}}
