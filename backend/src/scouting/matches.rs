@@ -21,6 +21,12 @@ pub struct MatchStats {
 	pub auto_attempts: u8,
 	/// The number of times that the team scored during auto
 	pub auto_scores: u8,
+	/// The number of auto intake attempts
+	#[serde(default)]
+	pub auto_intake_attempts: u8,
+	/// The number of auto intake successes
+	#[serde(default)]
+	pub auto_intake_successes: u8,
 	/// Whether or not the robot collided with another during auto
 	pub auto_collision: bool,
 	/// The total number of points that the team scored
@@ -54,6 +60,9 @@ pub struct MatchStats {
 	/// The team's average cycle time
 	#[serde(default)]
 	pub cycle_time: f32,
+	/// The team's individual cycle timestamps
+	#[serde(default)]
+	pub cycle_times: Vec<f32>,
 	/// Whether the robot was reported as broken
 	pub broken: bool,
 	/// Whether or not the team showed up to the match

@@ -1,0 +1,225 @@
+{{worbots-header}}{{error}}
+<h1>Match Report</h1>
+<div id="time-container">
+	<div class="cont">
+		<div id="match-time" class="cont round">
+			<div id="match-time-value">0:00.0</div>
+			<button id="time-edit-button">Edit</button>
+			<button id="time-pause-button">Start</button>
+		</div>
+	</div>
+</div>
+<br />
+<div id="match-report" class="cont col">
+	<h2>Pre-Match</h2>
+	<label for="team-number">Team Number</label>
+	<input type="number" class="field" name="team-number" id="team-number" />
+	<div class="cont">
+		<input type="checkbox" name="showed-up" id="showed-up" class="field" />
+		<label for="showed-up">Showed Up?</label>
+	</div>
+	<h2>Auto</h2>
+	<div class="section-grid">
+		<button id="auto-score" class="grid-button">Score</button>
+		<button id="auto-miss" class="grid-button miss">Miss</button>
+		<button id="auto-intake" class="grid-button">Intake</button>
+		<button id="auto-intake-miss" class="grid-button miss">Intake Miss</button>
+		<button class="grid-button penalty">Penalty</button>
+	</div>
+	<h2>Teleop</h2>
+	<div class="section-grid">
+		<button id="speaker-score" class="grid-button">Speaker Score</button>
+		<button id="speaker-miss" class="grid-button miss">Speaker Miss</button>
+		<button id="amp-score" class="grid-button">Amp Score</button>
+		<button id="amp-miss" class="grid-button miss">Amp Miss</button>
+		<button id="pass" class="grid-button">Pass</button>
+		<button id="defend" class="grid-button">Defend</button>
+		<button id="amplify" class="grid-button">Amplify</button>
+		<button class="grid-button penalty">Penalty</button>
+	</div>
+	<h2>Post-Match</h2>
+	<div class="cont">
+		<input type="checkbox" name="won" id="won" class="field" />
+		<label for="won">Won?</label>
+	</div>
+	<div class="cont">
+		<input type="checkbox" name="broken" id="broken" class="field" />
+		<label for="broken">Broken?</label>
+	</div>
+</div>
+<script>
+	// Object for all processing about the match
+	var M = {
+		// The time when the timer was last resumed, number or null
+		startTime: null,
+		// The base time, set whenever the timer is paused
+		baseTime: 0,
+		// The total time
+		time: 0,
+		timerRunning: false,
+		// Contains a list of [timestamp: number, success: bool]
+		autoScores: [],
+		autoIntakes: [],
+		speakerScores: [],
+		ampScores: [],
+		ampStartTime: null,
+		amplifications: 0,
+		amplifiedScores: 0,
+		passes: 0,
+		defenses: 0,
+		penalties: 0
+	};
+
+	let timerValue = document.getElementById("match-time-value");
+	// Background task for updating the timer
+	setInterval(() => {
+		if (M.timerRunning && M.startTime != null) {
+			// Length of a match plus extra
+			if (M.time > 140) {
+				M.timerRunning = false;
+				document.getElementById("time-pause-button").innerHTML = "Match Finished";
+			} else {
+				let now = Date.now() / 1000;
+				let delta = now - M.startTime;
+				M.time = M.baseTime + delta;
+
+				// Turn off amplify button automatically
+				if (M.ampStartTime != null && now - M.ampStartTime > 10) {
+					M.ampStartTime = null;
+					let elem = document.getElementById("amplify");
+					elem.innerHTML = "Amplify";
+					elem.classList.remove("selected");
+				}
+			}
+		}
+
+		let minutes = Math.floor(M.time / 60);
+		let seconds = M.time % 60;
+		// Pad the seconds with a zero
+		let secondsFormatted = seconds.toFixed(1);
+		if (seconds < 10) {
+			secondsFormatted = "0" + secondsFormatted;
+		}
+		timerValue.innerHTML = `${minutes}:${secondsFormatted}`;
+	}, 100);
+
+	document.getElementById("time-pause-button").addEventListener("click", (e) => {
+		// Match is over
+		if (M.time > 140) {
+			return;
+		}
+
+		if (M.timerRunning) {
+			e.target.innerHTML = "Play";
+		} else {
+			M.startTime = Date.now() / 1000;
+			M.baseTime = M.time;
+			e.target.innerHTML = "Pause";
+		}
+		M.timerRunning = !M.timerRunning;
+	});
+
+	// Event buttons
+	document.getElementById("auto-score").addEventListener("click", () => {
+		M.autoScores.push([M.time, true]);
+	});
+	document.getElementById("auto-miss").addEventListener("click", () => {
+		M.autoScores.push([M.time, false]);
+	});
+	document.getElementById("auto-intake").addEventListener("click", () => {
+		M.autoIntakes.push([M.time, true]);
+	});
+	document.getElementById("auto-intake-miss").addEventListener("click", () => {
+		M.autoIntakes.push([M.time, false]);
+	});
+	document.getElementById("speaker-score").addEventListener("click", () => {
+		M.speakerScores.push([M.time, true]);
+		if (M.ampStartTime != null) {
+			M.amplifiedScores++;
+		}
+	});
+	document.getElementById("speaker-miss").addEventListener("click", () => {
+		M.speakerScores.push([M.time, false]);
+	});
+	document.getElementById("amp-score").addEventListener("click", () => {
+		M.ampScores.push([M.time, true]);
+	});
+	document.getElementById("amp-miss").addEventListener("click", () => {
+		M.ampScores.push([M.time, false]);
+	});
+	document.getElementById("pass").addEventListener("click", () => {
+		M.passes++;
+	});
+	document.getElementById("defend").addEventListener("click", () => {
+		M.defenses++;
+	});
+	for (let elem of document.getElementsByClassName("penalty")) {
+		elem.addEventListener("click", () => {
+			M.penalties++;
+		})
+	}
+
+	document.getElementById("amplify").addEventListener("click", (e) => {
+		if (M.ampStartTime == null) {
+			M.ampStartTime = Date.now() / 1000;
+			M.amplifications++;
+			e.target.innerHTML = "Amplified!";
+			e.target.classList.add("selected");
+		} else {
+			M.ampStartTime = null;
+			e.target.innerHTML = "Amplify";
+			e.target.classList.remove("selected");
+		}
+	});
+</script>
+<style>
+	#time-container {
+		position: sticky;
+		top: 0.8rem;
+	}
+
+	#match-time {
+		background-color: var(--bg2);
+		padding: 0.8rem;
+		width: 80%;
+	}
+
+	#time-edit-button {
+		background-color: var(--bg3);
+	}
+
+	.miss,
+	.penalty {
+		background-color: var(--wbred);
+	}
+
+	.miss:hover,
+	.penalty:hover {
+		background-color: var(--wbredacc);
+	}
+
+	.section-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		width: 20rem;
+	}
+
+	.grid-button {
+		margin: 0.4rem;
+	}
+
+	#pass,
+	#defend {
+		background-color: var(--bg3);
+	}
+
+	#amplify {
+		background-color: goldenrod;
+	}
+
+	#amplify.selected {
+		background-color: gold;
+		color: var(--bg);
+	}
+</style>
+{{footer}}

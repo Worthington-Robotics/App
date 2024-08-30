@@ -47,7 +47,7 @@ pub async fn get_member(
 	})?
 	.ok_or_else(|| {
 		error!("Unknown member ID {}", requesting_member.id);
-		Status::InternalServerError
+		Status::NotFound
 	})?;
 
 	/*
@@ -58,7 +58,8 @@ pub async fn get_member(
 		Privilege::Standard => {
 			if requesting_member.id != desired_member.id {
 				error!("Member attempted to fetch member other than themselves");
-				return Err(Status::Unauthorized);
+				// Prevent user enumeration
+				return Err(Status::NotFound);
 			}
 		}
 		Privilege::Elevated => {}
@@ -392,7 +393,8 @@ pub async fn member_details(
 	};
 
 	if session_id.verify_elevated(state).await.is_err() {
-		return Ok(redirect);
+		// Prevent user enumeration
+		return Err(Status::NotFound);
 	};
 
 	let lock = state.db.lock().await;

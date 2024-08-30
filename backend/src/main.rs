@@ -163,8 +163,10 @@ async fn rocket() -> _ {
 				routes::scouting::index,
 				routes::scouting::teams,
 				routes::scouting::team_details,
+				routes::scouting::admin,
 				routes::scouting::update_team_competition,
 				routes::scouting::matches::create_match_stats,
+				routes::scouting::matches::match_report_main,
 				routes::scouting::matches::match_report_raw,
 			],
 		)

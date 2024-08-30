@@ -131,6 +131,8 @@ pub struct TeamStats {
 	pub defense_average: f32,
 	/// Average cycle time
 	pub cycle_time: f32,
+	/// Consistency of cycle time
+	pub cycle_time_consistency: f32,
 	/// Total number of penalties
 	pub penalties: u8,
 	/// Rate that the team shows up to the match with a working robot (0-1)
@@ -186,6 +188,8 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		offense_average: (ctx.amp_scores as f32 + ctx.speaker_scores as f32) / match_count_f32,
 		defense_average: ctx.defenses as f32 / match_count_f32,
 		cycle_time: ctx.cycle_time_sum as f32 / match_count_f32,
+		cycle_time_consistency: ctx.cycle_time_consistency_sum as f32
+			/ fix_zero(ctx.cycle_time_consistency_count as f32),
 		penalties: ctx.penalties,
 		availablity: (ctx.attendance - ctx.breaks) as f32 / match_count_f32,
 		matches: ctx.total_matches as u16,
@@ -215,6 +219,9 @@ struct StatsContext {
 	defenses: u16,
 	penalties: u8,
 	cycle_time_sum: f32,
+	cycle_time_consistency_sum: f32,
+	/// Total number of matches where cycle time consistency was added to the sum
+	cycle_time_consistency_count: u16,
 	breaks: u8,
 	/// Total number of times the team showed up for the match
 	attendance: u8,
@@ -253,6 +260,10 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	ctx.penalties += stats.penalties;
 
 	ctx.cycle_time_sum += stats.cycle_time;
+	if let Some(consistency) = calculate_cycle_consistency(&stats.cycle_times) {
+		ctx.cycle_time_consistency_sum += consistency;
+		ctx.cycle_time_consistency_count += 1;
+	}
 
 	if stats.broken {
 		ctx.breaks += 1;
@@ -331,4 +342,50 @@ impl Fairing for UpdateStats {
 			}
 		});
 	}
+}
+
+/// Calculate the consistency of cycle times by getting the r^2 value of the linear regression of the times.
+/// Returns None if there are no cycle times
+fn calculate_cycle_consistency(cycle_times: &[f32]) -> Option<f32> {
+	if cycle_times.is_empty() {
+		return None;
+	}
+
+	let x_mean = cycle_times.iter().sum::<f32>() / cycle_times.len() as f32;
+	// All of the y-values will just be a linear sequence of integers, so the mean is the number of y-values / 2
+	let y_mean = cycle_times.len() as f32 / 2.0;
+
+	// First calculate the a coefficient of the regression y = ax + b
+	let mut numerator = 0.0;
+	let mut denominator = 0.0;
+	for (i, time) in cycle_times.into_iter().enumerate() {
+		let x = *time;
+		let y = i as f32;
+		numerator += (x - x_mean) * (y - y_mean);
+		denominator += (x - x_mean).powi(2);
+	}
+	let a = numerator / denominator;
+
+	// Now calculate b
+	let b = y_mean - (a * x_mean);
+
+	/* Calculate the sum of the residuals (deltas of actual values from the regression) each squared,
+		along with the total sum of squares, which is the y deltas from the y mean each squared
+	*/
+	let mut ssr = 0.0;
+	let mut sst = 0.0;
+	for (i, time) in cycle_times.into_iter().enumerate() {
+		let x = *time;
+		let y = i as f32;
+		let expected_y = a * x + b;
+		let delta = y - expected_y;
+		ssr += delta * delta;
+
+		let delta = y - y_mean;
+		sst += delta * delta;
+	}
+
+	let r_2 = 1.0 - (ssr / sst);
+
+	Some(r_2)
 }

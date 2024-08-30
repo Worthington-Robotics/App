@@ -12,6 +12,7 @@
 	--bg3: #2e2e2e;
 	--bg4: #444444;
 	--wbred: #d80001;
+	--wbredacc: #ec1a1a;
 	--wbblue: #2134d9;
 	--wbblueacc: #3849d9;
 	--wbbluebg: #1b246e;
@@ -124,6 +125,7 @@ h1 {
 
 h2 {
 	font-size: calc(3vw * var(--scale));
+	margin-bottom: 0.3rem;
 }
 
 h3 {

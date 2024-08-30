@@ -37,11 +37,18 @@ pub async fn index(
 		return Ok(redirect);
 	};
 
-	if session_id.get_requesting_member(state).await.is_err() {
+	let Ok(requesting_member) = session_id.get_requesting_member(state).await else {
 		return Ok(redirect);
 	};
 
 	let page = include_str!("../pages/scouting/index.min.html");
+
+	let admin_display = if requesting_member.is_elevated() {
+		""
+	} else {
+		"none"
+	};
+	let page = page.replace("{{admin-display}}", admin_display);
 
 	let page = create_page("Scouting", &page, Some(Scope::Scouting));
 
@@ -244,6 +251,10 @@ pub async fn team_details(
 		&render_stat_card_float("CT", team_stats.cycle_time, true),
 	);
 	let page = page.replace(
+		"{{cycle-time-consistency}}",
+		&render_stat_card_pct("CTC", team_stats.cycle_time_consistency, true),
+	);
+	let page = page.replace(
 		"{{speaker-score}}",
 		&render_stat_card_float("Spkr Sco", team_stats.speaker_score, false),
 	);
@@ -313,6 +324,30 @@ fn render_stat_card_float(title: &str, stat: f32, strong: bool) -> String {
 
 fn render_stat_card_pct(title: &str, stat: f32, strong: bool) -> String {
 	render_stat_card(title, format!("{:.1}%", stat * 100.0), strong)
+}
+
+#[rocket::get("/scouting/admin")]
+pub async fn admin(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Scouting admin page");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	if session_id.verify_elevated(state).await.is_err() {
+		return Ok(redirect);
+	};
+
+	let page = include_str!("../pages/scouting/admin.min.html");
+
+	let page = create_page("Scouting Administration", &page, Some(Scope::Scouting));
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
 #[rocket::post("/api/update_team_competition/<id>?<competition>")]
