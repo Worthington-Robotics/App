@@ -6,6 +6,7 @@ use rocket::{
 	},
 };
 
+// We don't have to cache this as most browsers do anyway
 #[rocket::get("/favicon.ico")]
 pub fn favicon() -> Ico {
 	Ico(include_bytes!("../assets/worbots-logo.ico"))
@@ -16,7 +17,7 @@ pub fn main_css() -> RawCss<&'static str> {
 	RawCss(include_str!("../assets/main.min.css"))
 }
 
-#[rocket::get("/assets/static10.css")]
+#[rocket::get("/assets/static11.css")]
 pub fn static_css() -> CacheFor<RawCss<&'static str>> {
 	CacheFor(RawCss(include_str!("../assets/static.min.css")), ONE_DAY)
 }
@@ -40,8 +41,8 @@ pub fn logo() -> CacheFor<Svg> {
 }
 
 #[rocket::get("/assets/rockwell_regular.otf")]
-pub fn rockwell() -> &'static [u8] {
-	include_bytes!("../assets/Rockwell Regular.otf")
+pub fn rockwell() -> CacheFor<&'static [u8]> {
+	CacheFor(include_bytes!("../assets/Rockwell Regular.otf"), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/home.svg")]

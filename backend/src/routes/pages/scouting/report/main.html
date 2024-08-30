@@ -39,6 +39,22 @@
 	</div>
 	<h2>Post-Match</h2>
 	<div class="cont">
+		<input type="checkbox" name="climb-attempted" id="climb-attempted" class="field" />
+		<label for="climb-attempted">Climb Attempted?</label>
+	</div>
+	<div class="cont">
+		<input type="checkbox" name="climb-successful" id="climb-successful" class="field" />
+		<label for="climb-attempted">Climb Successful?</label>
+	</div>
+	<div class="cont">
+		<input type="checkbox" name="trap-attempted" id="trap-attempted" class="field" />
+		<label for="trap-attempted">Trap Attempted?</label>
+	</div>
+	<div class="cont">
+		<input type="checkbox" name="trap-successful" id="trap-successful" class="field" />
+		<label for="trap-attempted">Trap Successful?</label>
+	</div>
+	<div class="cont">
 		<input type="checkbox" name="won" id="won" class="field" />
 		<label for="won">Won?</label>
 	</div>
@@ -46,6 +62,14 @@
 		<input type="checkbox" name="broken" id="broken" class="field" />
 		<label for="broken">Broken?</label>
 	</div>
+	<div class="cont">
+		<input type="checkbox" name="collision" id="collision" class="field" />
+		<label for="collision">Collision During Auto?</label>
+	</div>
+	<h2>Review</h2>
+	<label for="notes">Match Notes</label>
+	<textarea name="notes" id="notes" class="round border"></textarea>
+	<button id="submit">Submit</button>
 </div>
 <script>
 	// Object for all processing about the match
@@ -62,6 +86,9 @@
 		autoIntakes: [],
 		speakerScores: [],
 		ampScores: [],
+		totalAutoScores: 0,
+		totalSpeakerScores: 0,
+		totalAmpScores: 0,
 		ampStartTime: null,
 		amplifications: 0,
 		amplifiedScores: 0,
@@ -122,6 +149,7 @@
 	// Event buttons
 	document.getElementById("auto-score").addEventListener("click", () => {
 		M.autoScores.push([M.time, true]);
+		M.totalAutoScores++;
 	});
 	document.getElementById("auto-miss").addEventListener("click", () => {
 		M.autoScores.push([M.time, false]);
@@ -137,12 +165,14 @@
 		if (M.ampStartTime != null) {
 			M.amplifiedScores++;
 		}
+		M.totalSpeakerScores++;
 	});
 	document.getElementById("speaker-miss").addEventListener("click", () => {
 		M.speakerScores.push([M.time, false]);
 	});
 	document.getElementById("amp-score").addEventListener("click", () => {
 		M.ampScores.push([M.time, true]);
+		M.totalAmpScores++;
 	});
 	document.getElementById("amp-miss").addEventListener("click", () => {
 		M.ampScores.push([M.time, false]);
@@ -171,6 +201,84 @@
 			e.target.classList.remove("selected");
 		}
 	});
+
+	function onSubmit(event) {
+		event.preventDefault();
+
+		// Calculate cycle times and cycle time average
+		let cycleTimes = [];
+		for (let item of M.ampScores.concat(M.speakerScores)) {
+			if (item[1]) {
+				cycleTimes.push(item[0]);
+			}
+		}
+		let cycleTimeSum = 0;
+		for (let i = 1; i < cycleTimes.length; i++) {
+			let delta = cycleTimes[i] - cycleTimes[i - 1];
+			cycleTimeSum += delta;
+		}
+		let cycleTime = 0;
+		// Prevent div by zero
+		if (cycleTimes.length > 1) {
+			cycleTime = cycleTimeSum / (cycleTimes.length - 1);
+		}
+
+		let climbSuccess = document.getElementById("climb-successful").checked;
+		let trapSuccess = document.getElementById("trap-successful").checked;
+
+		// Calculate points scored
+		let pointsScored = 0;
+		pointsScored += M.totalAutoScores;
+		pointsScored += M.totalAmpScores;
+		pointsScored += (M.totalSpeakerScores - M.amplifiedScores) * 2;
+		pointsScored += M.amplifiedScores * 5;
+		pointsScored += climbSuccess ? 3 : 0;
+		pointsScored += trapSuccess ? 5 : 0;
+
+		// We do lots of conversions to integers with * 1 here
+		const data = {
+			team_number: document.getElementById("team-number").value * 1,
+			match_id: "",
+			auto_attempts: M.autoScores.length,
+			auto_scores: M.totalAutoScores,
+			auto_collision: document.getElementById("collision").checked,
+			points_scored: pointsScored,
+			amp_attempts: M.ampScores.length,
+			amp_scores: M.totalAmpScores,
+			speaker_attempts: M.speakerScores.length,
+			speaker_scores: M.totalSpeakerScores,
+			climb_attempted: document.getElementById("climb-attempted").checked,
+			climb_successful: climbSuccess,
+			trap_attempted: document.getElementById("trap-attempted").checked,
+			trap_successful: trapSuccess,
+			amplifications: M.amplifications,
+			amplified_notes: M.amplifiedScores,
+			passes: M.passes,
+			defenses: M.defenses,
+			penalties: M.penalties,
+			cycle_time: cycleTime,
+			cycle_times: cycleTimes,
+			broken: document.getElementById("broken").checked,
+			showed_up: document.getElementById("showed-up").checked,
+			won: document.getElementById("won").checked,
+			notes: document.getElementById("notes").value,
+		};
+		const dataReady = encodeURIComponent(JSON.stringify(data));
+
+		fetch("/api/post_match_stats", {
+			method: "POST",
+			body: `data=${dataReady}`,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to post match results: " + response.statusText);
+				return;
+			}
+			window.location.href = "/scouting";
+		});
+	}
+
+	document.getElementById("submit").addEventListener("click", onSubmit);
 </script>
 <style>
 	#time-container {
@@ -220,6 +328,12 @@
 	#amplify.selected {
 		background-color: gold;
 		color: var(--bg);
+	}
+
+	textarea {
+		resize: none;
+		width: 85%;
+		height: 12rem;
 	}
 </style>
 {{footer}}

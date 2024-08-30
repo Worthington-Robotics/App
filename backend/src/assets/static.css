@@ -28,7 +28,7 @@
 
 h1,
 h2 {
-	font-family: "Rockwell Regular";
+	font-family: "Rockwell Regular", serif;
 }
 
 h1,
@@ -43,6 +43,7 @@ p {
 @font-face {
 	font-family: Rockwell Regular;
 	src: url(/assets/rockwell_regular.otf);
+	font-display: swap;
 }
 
 @media only screen and (min-width: 768px) {
