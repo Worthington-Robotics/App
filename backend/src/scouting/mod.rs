@@ -76,28 +76,56 @@ impl Competition {
 	}
 }
 
-/// Information about a team's robot, mostly obtained from pit scouting
-#[derive(Serialize, Deserialize, Clone)]
-pub struct RobotInfo {
-	pub number: TeamNumber,
+/// Information about a team and their robot, mostly obtained from pit scouting
+#[derive(Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct TeamInfo {
 	/// The max speed of the robot, in feet per second
-	pub max_speed: f32,
+	pub max_speed: Option<f32>,
 	/// The height of the robot, in feet
-	pub height: f32,
+	pub height: Option<f32>,
 	/// The weight of the robot, in pounds
-	pub weight: f32,
+	pub weight: Option<f32>,
 	/// Whether or not the robot can shoot in the speaker
-	pub can_speaker: bool,
+	pub can_speaker: Option<bool>,
 	/// Whether or not the robot can shoot in the amp
-	pub can_amp: bool,
+	pub can_amp: Option<bool>,
 	/// Whether or not the robot can climb
-	pub can_climb: bool,
+	pub can_climb: Option<bool>,
 	/// Whether or not the robot can shoot in the trap
-	pub can_trap: bool,
+	pub can_trap: Option<bool>,
 	/// Whether or not the robot can pass notes
-	pub can_pass: bool,
+	pub can_pass: Option<bool>,
 	/// Whether or not the robot can drive under the stage
-	pub can_drive_under_stage: bool,
+	pub can_drive_under_stage: Option<bool>,
+	/// Whether or not the robot can pick up from the ground
+	pub can_ground_intake: Option<bool>,
+	/// Whether or not the robot can pick up from the source
+	pub can_source_intake: Option<bool>,
+	/// The intake type of the robot
+	pub intake_type: Option<IntakeType>,
+	/// The drivetrain type of the robot
+	pub drivetrain_type: Option<DriveTrainType>,
+	/// Additional notes about the robot
+	pub notes: String,
+}
+
+/// Different types of intakes
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum IntakeType {
+	OverBumper,
+	UnderBumper,
+}
+
+/// Different types of drivetrains
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DriveTrainType {
+	Swerve,
+	Tank,
+	Mecanum,
+	Other,
 }
 
 /// Stored and calculated stats for a single team

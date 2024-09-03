@@ -1,14 +1,9 @@
 {{worbots-header}}{{error}}
 <h2>Create/Edit Checklist</h2>
 <form id="cl-form" class="cont col">
-	<input
-		type="text"
-		name="name"
-		id="name-field"
-		class="create-cl-field"
-		placeholder="Enter checklist name..."
-		value="{{name}}"
-	/>
+	<button onclick="history.back()">Back</button>
+	<input type="text" name="name" id="name-field" class="create-cl-field" placeholder="Enter checklist name..."
+		value="{{name}}" />
 
 	<input type="submit" id="submit" value="Save" />
 </form>

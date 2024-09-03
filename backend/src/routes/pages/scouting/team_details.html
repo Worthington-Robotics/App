@@ -4,12 +4,8 @@
 	<h3 class="details-subtitle number">{{number}}</h3>
 	<div class="cont">
 		<button onclick="history.back()">Back</button>
-	</div>
-	<div class="cont">
-		<div class="cont">
-			<img src="/assets/icons/clock.svg" class="details-icon" />
-			{{rookie-year}}
-		</div>
+		<img src="/assets/icons/calendar.svg" class="details-icon" />
+		{{rookie-year}}
 	</div>
 	<h2>Stats</h2>
 	<div class="cont col" id="stats">
@@ -62,6 +58,30 @@
 		</div>
 	</div>
 	<div class="cont col">
+		<h2>Info</h2>
+		<div class="stats-grid">
+			{{max-speed}}
+			{{height}}
+			{{weight}}
+			{{can-speaker}}
+			{{can-amp}}
+			{{can-climb}}
+			{{can-trap}}
+			{{can-pass}}
+			{{can-drive-under-stage}}
+			{{can-ground-intake}}
+			{{can-source-intake}}
+			{{intake-type}}
+		</div>
+		<div class="cont">
+			<a href="/scouting/team/{{number}}/edit_info">{{edit-button}}</a>
+		</div>
+		<h3>Notes</h3>
+		<div id="notes">
+			{{notes}}
+		</div>
+	</div>
+	<div class="cont col">
 		<h2>Competitions</h2>
 		{{comp-checkboxes}}
 	</div>
@@ -97,10 +117,20 @@
 
 	.card-title {
 		color: var(--fg3);
+		text-align: center;
 	}
 
 	.card-stat.strong {
 		font-weight: bold;
+	}
+
+	#notes {
+		text-align: center;
+		color: var(--fg2);
+	}
+
+	h3 {
+		margin-bottom: 0.4rem;
 	}
 </style>
 <script>

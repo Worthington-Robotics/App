@@ -1,6 +1,7 @@
 {{worbots-header}}{{error}}
-<h2>Raw Match Report</h2>
+<h1>Raw Match Report</h1>
 <form id="raw-report-form" class="cont col">
+	<button onclick="history.back()">Back</button>
 	<label for="team-number">Team Number</label>
 	<input type="number" class="field" name="team-number" id="team-number" />
 	<label for="auto-attempts">Auto Attempts</label>
@@ -45,6 +46,8 @@
 	<input type="checkbox" class="field" name="showed-up" id="showed-up" />
 	<label for="won">Won</label>
 	<input type="checkbox" class="field" name="won" id="won" />
+	<label for="notes">Additional Notes</label>
+	<textarea name="notes" id="notes" class="round border">{{notes}}</textarea>
 
 	<input type="submit" id="submit" value="Save" />
 </form>
@@ -77,7 +80,7 @@
 			broken: document.getElementById("broken").checked,
 			showed_up: document.getElementById("showed-up").checked,
 			won: document.getElementById("won").checked,
-			notes: "",
+			notes: document.getElementById("notes").value,
 		};
 		const dataReady = encodeURIComponent(JSON.stringify(data));
 

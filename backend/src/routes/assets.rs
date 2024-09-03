@@ -17,7 +17,7 @@ pub fn main_css() -> RawCss<&'static str> {
 	RawCss(include_str!("../assets/main.min.css"))
 }
 
-#[rocket::get("/assets/static11.css")]
+#[rocket::get("/assets/static12.css")]
 pub fn static_css() -> CacheFor<RawCss<&'static str>> {
 	CacheFor(RawCss(include_str!("../assets/static.min.css")), ONE_DAY)
 }
@@ -98,6 +98,11 @@ pub fn icon_star() -> CacheFor<Svg> {
 #[rocket::get("/assets/icons/user.svg")]
 pub fn icon_user() -> CacheFor<Svg> {
 	CacheFor(Svg(include_str!("../assets/icons/user.svg")), ONE_WEEK)
+}
+
+#[rocket::get("/assets/icons/calendar.svg")]
+pub fn icon_calendar() -> CacheFor<Svg> {
+	CacheFor(Svg(include_str!("../assets/icons/calendar.svg")), ONE_WEEK)
 }
 
 #[derive(Responder)]

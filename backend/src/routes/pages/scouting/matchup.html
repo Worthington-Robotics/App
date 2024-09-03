@@ -1,0 +1,90 @@
+{{worbots-header}}
+<h1>Matchup</h1>
+<div class="cont col">
+	<div id="team-selection" class="cont col">
+		<div id="team-selection-grid">
+			<div class="cont col round alliance-selection" style="border-color: var(--wbred)">
+				<h3>Red Alliance</h3>
+				<label for="team1">Team 1</label>
+				<input type="number" name="team1" id="team1" class="team-input" value="{{team1}}" />
+				<label for="team2">Team 2</label>
+				<input type="number" name="team2" id="team2" class="team-input" value="{{team2}}" />
+				<label for="team3">Team 3</label>
+				<input type="number" name="team3" id="team3" class="team-input" value="{{team3}}" />
+			</div>
+			<div class="cont col round alliance-selection" style="border-color: var(--wbblue)">
+				<h3>Blue Alliance</h3>
+				<label for="team4">Team 1</label>
+				<input type="number" name="team4" id="team4" class="team-input" value="{{team4}}" />
+				<label for="team5">Team 2</label>
+				<input type="number" name="team5" id="team5" class="team-input" value="{{team5}}" />
+				<label for="team3">Team 6</label>
+				<input type="number" name="team6" id="team6" class="team-input" value="{{team6}}" />
+			</div>
+		</div>
+		<button id="update-button">Update</button>
+	</div>
+	<div id="breakdowns" class="cont col">
+		<div id="breakdowns-grid">
+			{{red-breakdown}}
+			{{blue-breakdown}}
+		</div>
+	</div>
+</div>
+<style>
+	#team-selection-grid,
+	#breakdowns-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		width: 25rem;
+	}
+
+	.alliance-selection,
+	.breakdown {
+		padding-bottom: 1.5rem;
+		border: 0.3rem solid;
+		margin: 0.4rem;
+	}
+
+	.team-input {
+		width: 6rem;
+	}
+
+	#update-button {
+		background-color: var(--bg2);
+	}
+
+	#update-button.indicated {
+		background-color: var(--wbblue);
+	}
+
+	.stat {
+		font-size: calc(2.5vw * var(--scale));
+	}
+
+	.stat-header {
+		color: var(--fg3);
+		font-size: calc(1.6vw * var(--scale));
+	}
+</style>
+<script>
+	// Indicate the update button when any of the team inputs change
+	let updateButton = document.getElementById("update-button");
+	for (let elem of document.getElementsByClassName("team-input")) {
+		elem.addEventListener("change", () => {
+			updateButton.classList.add("indicated");
+		})
+	}
+
+	document.getElementById("update-button").addEventListener("click", () => {
+		let team1 = document.getElementById("team1").value;
+		let team2 = document.getElementById("team2").value;
+		let team3 = document.getElementById("team3").value;
+		let team4 = document.getElementById("team4").value;
+		let team5 = document.getElementById("team5").value;
+		let team6 = document.getElementById("team6").value;
+
+		window.location.href = `/scouting/matchup?team=${team1}&team=${team2}&team=${team3}&team=${team4}&team=${team5}&team=${team6}`;
+	})
+</script>
+{{footer}}

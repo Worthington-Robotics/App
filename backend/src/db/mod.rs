@@ -3,7 +3,7 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::Event,
 	member::Member,
-	scouting::{matches::MatchStats, Team, TeamNumber},
+	scouting::{matches::MatchStats, TeamInfo, Team, TeamNumber},
 	tasks::{Checklist, Task},
 };
 
@@ -140,4 +140,10 @@ pub trait Database {
 
 	/// Get a list of all match stats
 	async fn get_all_match_stats(&self) -> anyhow::Result<impl Iterator<Item = MatchStats>>;
+
+	/// Get team info
+	async fn get_team_info(&self, team: TeamNumber) -> anyhow::Result<Option<TeamInfo>>;
+
+	/// Create robot info for a team
+	async fn create_team_info(&mut self, team: TeamNumber, info: TeamInfo) -> anyhow::Result<()>;
 }

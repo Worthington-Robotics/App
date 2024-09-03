@@ -1,0 +1,111 @@
+{{worbots-header}}{{error}}
+<h1>Team Info</h1>
+<form id="team-info-form" class="cont col">
+	<button onclick="history.back()">Back</button>
+	<h2>Basic Stats</h2>
+	<label for="max-speed">Max Speed</label>
+	<input type="number" name="max-speed" id="max-speed" class="field" placeholder="0.00" step=any
+		value="{{max-speed}}" />
+	<label for="height">Height</label>
+	<input type="number" name="height" id="height" class="field" placeholder="0.00" step=any value="{{height}}" />
+	<label for="weight">Weight</label>
+	<input type="number" name="weight" id="weight" class="field" placeholder="0.00" step=any value="{{weight}}" />
+	<h2>Robot Information</h2>
+	<label for="drivetrain-type">Drivetrain Type</label>
+	<select name="drivetrain-type" id="drivetrain-type" class="field">
+		<option value="none">Unknown</option>
+		<option value="swerve" {{swerve-selected}}>Swerve</option>
+		<option value="tank" {{tank-selected}}>Tank</option>
+		<option value="mecanum" {{mecanum-selected}}>Mecanum</option>
+		<option value="other" {{drive-other-selected}}>Other</option>
+	</select>
+	<label for="intake-type">Intake Type</label>
+	<select name="intake-type" id="intake-type" class="field">
+		<option value="none">Unknown</option>
+		<option value="under_bumper" {{under-bumper-selected}}>Under the Bumper</option>
+		<option value="over_bumper" {{over-bumper-selected}}>Over the Bumper</option>
+	</select>
+	<h2>Capabilities</h2>
+	<label for="can-speaker">Can Speaker?</label>
+	<input type="checkbox" class="field" name="can-speaker" id="can-speaker" {{can-speaker-checked}} />
+	<label for="can-amp">Can Amp?</label>
+	<input type="checkbox" class="field" name="can-amp" id="can-amp" {{can-amp-checked}} />
+	<label for="can-climb">Can Climb?</label>
+	<input type="checkbox" class="field" name="can-climb" id="can-climb" {{can-climb-checked}} />
+	<label for="can-trap">Can Trap?</label>
+	<input type="checkbox" class="field" name="can-trap" id="can-trap" {{can-trap-checked}} />
+	<label for="can-pass">Can Pass?</label>
+	<input type="checkbox" class="field" name="can-pass" id="can-pass" {{can-pass-checked}} />
+	<label for="can-drive-under-stage">Can Drive Under Stage?</label>
+	<input type="checkbox" class="field" name="can-drive-under-stage" id="can-drive-under-stage"
+		{{can-drive-under-stage-checked}} />
+	<label for="can-ground-intake">Can Pickup From Ground?</label>
+	<input type="checkbox" class="field" name="can-ground-intake" id="can-ground-intake" {{can-ground-intake-checked}} />
+	<label for="can-source-intake">Can Pickup From Source?</label>
+	<input type="checkbox" class="field" name="can-source-intake" id="can-source-intake" {{can-source-intake-checked}} />
+	<h2>Other</h2>
+	<label for="notes">Additional Notes</label>
+	<textarea name="notes" id="notes" class="round border">{{notes}}</textarea>
+
+	<input type="submit" id="submit" value="Save" />
+</form>
+<script>
+	function onSubmit(event) {
+		event.preventDefault();
+
+		let drivetrainType = document.getElementById("drivetrain-type").value;
+		if (drivetrainType == "none") {
+			drivetrainType = null;
+		}
+
+		let intakeType = document.getElementById("intake-type").value;
+		if (intakeType == "none") {
+			intakeType = null;
+		}
+
+		// We do lots of conversions to numbers with * 1 here
+		const data = {
+			max_speed: document.getElementById("max-speed").value * 1,
+			height: document.getElementById("height").value * 1,
+			weight: document.getElementById("weight").value * 1,
+			can_speaker: document.getElementById("can-speaker").checked,
+			can_amp: document.getElementById("can-amp").checked,
+			can_climb: document.getElementById("can-climb").checked,
+			can_trap: document.getElementById("can-trap").checked,
+			can_pass: document.getElementById("can-pass").checked,
+			can_drive_under_stage: document.getElementById("can-drive-under-stage").checked,
+			can_ground_intake: document.getElementById("can-ground-intake").checked,
+			can_source_intake: document.getElementById("can-source-intake").checked,
+			intake_type: intakeType,
+			drivetrain_type: drivetrainType,
+			notes: document.getElementById("notes").value,
+		};
+		const dataReady = encodeURIComponent(JSON.stringify(data));
+
+		fetch("/api/create_team_info", {
+			method: "POST",
+			body: `team={{team-number}}&data=${dataReady}`,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to update team info: " + response.statusText);
+				return;
+			}
+			window.location.href = "/scouting/team/{{team-number}}";
+		});
+	}
+
+	document.getElementById("team-info-form").addEventListener("submit", onSubmit);
+</script>
+<style>
+	.info-field {
+		width: 60%;
+	}
+
+	textarea {
+		resize: none;
+		width: 85%;
+		height: 12rem;
+	}
+</style>
+{{footer}}

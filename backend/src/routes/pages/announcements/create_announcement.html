@@ -1,6 +1,7 @@
 {{worbots-header}}{{error}}
-<h2>Create Announcement</h2>
+<h1>Create Announcement</h1>
 <form id="announce-form" class="cont col">
+	<button onclick="history.back()">Back</button>
 	<input type="text" name="title" id="title-field" class="announce-field" placeholder="Enter announcement title..." />
 	<label for="body">Announcement Body</label>
 	<textarea name="body" id="body-field" class="round border"></textarea>
@@ -59,12 +60,6 @@
 
 	.group-mention-label {
 		color: lightcoral;
-	}
-
-	textarea {
-		resize: none;
-		width: 85%;
-		height: 12rem;
 	}
 </style>
 {{footer}}

@@ -99,6 +99,13 @@ input[type=""] {
 	border-color: var(--bg3);
 }
 
+textarea {
+	resize: none;
+	width: 85%;
+	height: 12rem;
+	padding: 1rem;
+}
+
 a.nolink:link {
 	color: var(--fg);
 	text-decoration: none;
@@ -131,11 +138,13 @@ h2 {
 
 h3 {
 	font-size: calc(2vw * var(--scale));
+	margin-bottom: 0.3rem;
 }
 
 h4 {
 	font-size: calc(1.7vw * var(--scale));
 	color: var(--fg2);
+	margin-bottom: 0.2rem;
 }
 
 /* Footer */

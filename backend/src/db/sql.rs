@@ -16,7 +16,7 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{Member, MemberGroup, MemberKind, MemberMention},
-	scouting::{matches::MatchStats, Competition, Team, TeamNumber},
+	scouting::{matches::MatchStats, Competition, Team, TeamInfo, TeamNumber},
 	tasks::{Checklist, Task},
 	util::ToDropdown,
 };
@@ -726,6 +726,39 @@ impl Database for SqlDatabase {
 			}
 		}
 	}
+
+	async fn get_team_info(&self, team: TeamNumber) -> anyhow::Result<Option<TeamInfo>> {
+		let mut result = sqlx::query("SELECT * FROM team_info WHERE Team = $1")
+			.bind(team as i32)
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let info = read_team_info(row).context("Failed to read team info")?;
+
+				Ok(Some(info))
+			}
+			Err(e) => {
+				error!("Failed to get team info for team {team} from database: {e}");
+				Err(anyhow!("Failed to get team info from database"))
+			}
+		}
+	}
+
+	async fn create_team_info(&mut self, team: TeamNumber, info: TeamInfo) -> anyhow::Result<()> {
+		let serialized = serde_json::to_string(&info).context("Failed to serialize team info")?;
+		sqlx::query("INSERT INTO team_info (Team, Data) VALUES ($1, $2)")
+			.bind(team as i32)
+			.bind(serialized)
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new team info in database")?;
+
+		Ok(())
+	}
 }
 
 /// Setup the database
@@ -749,7 +782,8 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		"CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text, RookieYear int4, Competitions text[])",
 	);
 
-	let robot_info_task = pool.execute("CREATE TABLE IF NOT EXISTS robot_info (TeamNumber int2 PRIMARY KEY, MaxSpeed float4, Height float4, Weight float4, CanSpeaker bool, CanAmp bool, CanClimb bool, CanTrap bool, CanPass bool, CanDriveUnderStage bool)");
+	let team_info_task =
+		pool.execute("CREATE TABLE IF NOT EXISTS team_info (Team int2, Data text)");
 
 	let match_stats_task =
 		pool.execute("CREATE TABLE IF NOT EXISTS match_stats (Team int2, Data text)");
@@ -766,7 +800,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		checklists_task,
 		tasks_task,
 		teams_task,
-		robot_info_task,
+		team_info_task,
 		match_stats_task,
 		scouting_assignments_task
 	)
@@ -928,6 +962,14 @@ fn read_team(id: TeamNumber, row: PgRow) -> anyhow::Result<Team> {
 
 /// Read match stats from the database
 fn read_match_stats(row: PgRow) -> anyhow::Result<MatchStats> {
+	let data: &str = row.try_get("data")?;
+	let data = serde_json::from_str(data).context("Failed to deserialize data")?;
+
+	Ok(data)
+}
+
+/// Read team info from the database
+fn read_team_info(row: PgRow) -> anyhow::Result<TeamInfo> {
 	let data: &str = row.try_get("data")?;
 	let data = serde_json::from_str(data).context("Failed to deserialize data")?;
 

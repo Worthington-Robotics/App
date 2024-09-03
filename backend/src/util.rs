@@ -120,3 +120,21 @@ pub fn fix_zero(x: f32) -> f32 {
 		x
 	}
 }
+
+/// Creates the attribute for a checkbox to say whether it is checked or not based on a boolean
+pub fn checkbox_attr(val: bool) -> &'static str {
+	if val {
+		"checked"
+	} else {
+		""
+	}
+}
+
+/// Creates the attribute for an HTML selection option to say whether it is selected or not based on a boolean
+pub fn selected_attr(val: bool) -> &'static str {
+	if val {
+		"selected"
+	} else {
+		""
+	}
+}

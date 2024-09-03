@@ -248,6 +248,13 @@ pub fn get_upcoming_events<'a>(events: Vec<&'a Event>) -> Vec<&'a Event> {
 
 /// Get the competition season of a date
 pub fn get_season(date: &DateTime<Utc>) -> u32 {
+	// Allow overriding with an environment variable
+	if let Ok(season) = std::env::var("FRC_SEASON") {
+		if let Ok(season) = season.parse() {
+			return season;
+		}
+	}
+
 	// Pre-season
 	if date.month() >= 9 {
 		date.year() as u32 + 1

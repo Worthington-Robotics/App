@@ -348,6 +348,30 @@ impl Database for CacheDatabase {
 	) -> anyhow::Result<impl Iterator<Item = crate::scouting::matches::MatchStats>> {
 		self.cache.get_all_match_stats().await
 	}
+
+	async fn get_team_info(
+		&self,
+		team: TeamNumber,
+	) -> anyhow::Result<Option<crate::scouting::TeamInfo>> {
+		if let Some(info) = self.cache.get_team_info(team).await? {
+			Ok(Some(info))
+		} else {
+			self.sql.get_team_info(team).await
+		}
+	}
+
+	async fn create_team_info(
+		&mut self,
+		team: TeamNumber,
+		info: crate::scouting::TeamInfo,
+	) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.create_team_info(team, info.clone()),
+			self.cache.create_team_info(team, info)
+		)?;
+
+		Ok(())
+	}
 }
 
 /// Fairing for periodically syncing the cache
