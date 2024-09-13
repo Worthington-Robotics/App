@@ -1,3 +1,4 @@
+pub mod autos;
 pub mod matches;
 pub mod matchup;
 pub mod teams;

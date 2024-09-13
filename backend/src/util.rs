@@ -138,3 +138,13 @@ pub fn selected_attr(val: bool) -> &'static str {
 		""
 	}
 }
+
+/// Creates a vector of the same element
+pub fn vector_splat<T: Clone>(e: T, n: usize) -> Vec<T> {
+	let mut out = Vec::with_capacity(n);
+	for _ in 0..n {
+		out.push(e.clone());
+	}
+
+	out
+}

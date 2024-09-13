@@ -4,12 +4,21 @@
 	<button onclick="history.back()">Back</button>
 	<h2>Basic Stats</h2>
 	<label for="max-speed">Max Speed</label>
-	<input type="number" name="max-speed" id="max-speed" class="field" placeholder="0.00" step=any
-		value="{{max-speed}}" />
+	<div class="cont">
+		<input type="number" name="max-speed" id="max-speed" class="field" placeholder="0.00" step=any
+			value="{{max-speed}}" />
+		<button id="max-speed-convert">m/s > ft/s</button>
+	</div>
 	<label for="height">Height</label>
-	<input type="number" name="height" id="height" class="field" placeholder="0.00" step=any value="{{height}}" />
+	<div class="cont">
+		<input type="number" name="height" id="height" class="field" placeholder="0.00" step=any value="{{height}}" />
+		<button id="height-convert">m > ft</button>
+	</div>
 	<label for="weight">Weight</label>
-	<input type="number" name="weight" id="weight" class="field" placeholder="0.00" step=any value="{{weight}}" />
+	<div class="cont">
+		<input type="number" name="weight" id="weight" class="field" placeholder="0.00" step=any value="{{weight}}" />
+		<button id="weight-convert">kg > lb</button>
+	</div>
 	<h2>Robot Information</h2>
 	<label for="drivetrain-type">Drivetrain Type</label>
 	<select name="drivetrain-type" id="drivetrain-type" class="field">
@@ -96,6 +105,23 @@
 	}
 
 	document.getElementById("team-info-form").addEventListener("submit", onSubmit);
+
+	// Unit conversion buttons
+	document.getElementById("max-speed-convert").addEventListener("click", (e) => {
+		e.preventDefault();
+		let elem = document.getElementById("max-speed");
+		elem.value = elem.value * 3.281;
+	});
+	document.getElementById("height-convert").addEventListener("click", (e) => {
+		e.preventDefault();
+		let elem = document.getElementById("height");
+		elem.value = elem.value * 3.281;
+	});
+	document.getElementById("weight-convert").addEventListener("click", (e) => {
+		e.preventDefault();
+		let elem = document.getElementById("weight");
+		elem.value = elem.value * 2.205;
+	});
 </script>
 <style>
 	.info-field {

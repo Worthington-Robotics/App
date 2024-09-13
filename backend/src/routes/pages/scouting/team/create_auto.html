@@ -1,0 +1,45 @@
+{{worbots-header}}{{error}}
+<h1>Create Auto</h1>
+<form id="auto-form" class="cont col">
+	<button onclick="history.back()">Back</button>
+	<input type="text" name="name" id="name-field" class="field" placeholder="Enter auto name..." />
+	<label for="piece-count">Piece Count</label>
+	<input type="number" class="field" name="piece-count" id="piece-count" />
+
+	<input type="submit" id="submit" value="Save" />
+</form>
+<script>
+	function onSubmit(event) {
+		event.preventDefault();
+
+		const name = encodeURIComponent(document.getElementById("name-field").value);
+		const pieceCount = document.getElementById("piece-count").value;
+
+		let requestBody = `name=${name}&team={{team-number}}`;
+		for (let i = 0; i < pieceCount; i++) {
+			requestBody += "&shot_x_points=0.0";
+			requestBody += "&shot_y_points=0.0";
+			requestBody += "&shot_time_points=0.0";
+		}
+
+		fetch("/api/create_auto", {
+			method: "POST",
+			body: requestBody,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to create auto: " + response.statusText);
+				return;
+			}
+			window.location.href = "/scouting/team/{{team-number}}/autos";
+		});
+	}
+
+	document.getElementById("auto-form").addEventListener("submit", onSubmit);
+</script>
+<style>
+	.field {
+		width: 60%;
+	}
+</style>
+{{footer}}

@@ -1,0 +1,44 @@
+{{worbots-header}}{{error}}
+<div class="cont col">
+	<h1>{{team-number}}</h1>
+	<h3 class="details-subtitle">Autos</h3>
+	<div class="cont">
+		<a href="/scouting/team/{{team-number}}"><button>Back</button></a>
+		<a href="/scouting/create_auto/{{team-number}}">{{add-button}}</a>
+	</div>
+	<div id="auto-sections">
+		{{autos}}
+	</div>
+</div>
+<style>
+	#auto-sections {
+		width: 90%;
+	}
+
+	.auto-section {
+		width: 100%;
+	}
+
+	.section-autos-container {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		width: 100%;
+	}
+
+	.auto {
+		background-color: var(--bg2);
+		padding: 2.0rem 1.0rem;
+		margin: 0.4rem;
+	}
+
+	.auto-name {
+		font-size: calc(1.6vw * var(--scale));
+	}
+
+	.auto-score,
+	.auto-acc {
+		font-size: calc(1.3vw * var(--scale));
+		color: var(--fg2);
+	}
+</style>
+{{footer}}

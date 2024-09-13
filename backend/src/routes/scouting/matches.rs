@@ -1,3 +1,4 @@
+use chrono::Utc;
 use rocket::{
 	form::{Form, FromForm},
 	http::Status,
@@ -8,6 +9,7 @@ use tracing::{error, span, Level};
 use crate::{
 	db::Database,
 	routes::{create_page, OptionalSessionID, PageOrRedirect, Scope, SessionID},
+	scouting::matches::MatchStats,
 	State,
 };
 
@@ -20,12 +22,16 @@ pub async fn create_match_stats(
 	let span = span!(Level::DEBUG, "Creating match stats");
 	let _enter = span.enter();
 
-	session_id.get_requesting_member(state).await?;
+	let requesting_member = session_id.get_requesting_member(state).await?;
 
-	let stats = serde_json::from_str(&stats.data).map_err(|e| {
+	let mut stats: MatchStats = serde_json::from_str(&stats.data).map_err(|e| {
 		error!("Invalid match stats data: {e}");
 		Status::BadRequest
 	})?;
+
+	// Fill out record info
+	stats.recorder = Some(requesting_member.id.clone());
+	stats.record_time = Some(Utc::now().to_rfc2822());
 
 	let mut lock = state.db.lock().await;
 

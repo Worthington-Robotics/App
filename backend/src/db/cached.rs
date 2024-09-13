@@ -372,6 +372,37 @@ impl Database for CacheDatabase {
 
 		Ok(())
 	}
+
+	async fn get_auto(&self, id: &str) -> anyhow::Result<Option<crate::scouting::autos::Auto>> {
+		if let Some(auto) = self.cache.get_auto(id).await? {
+			Ok(Some(auto))
+		} else {
+			self.sql.get_auto(id).await
+		}
+	}
+
+	async fn create_auto(&mut self, auto: crate::scouting::autos::Auto) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.create_auto(auto.clone()),
+			self.cache.create_auto(auto)
+		)?;
+
+		Ok(())
+	}
+
+	async fn delete_auto(&mut self, auto: &str) -> anyhow::Result<()> {
+		self.sql.delete_auto(auto).await?;
+		self.cache.delete_auto(auto).await?;
+
+		Ok(())
+	}
+
+	async fn get_autos(
+		&self,
+		team: TeamNumber,
+	) -> anyhow::Result<impl Iterator<Item = crate::scouting::autos::Auto>> {
+		self.cache.get_autos(team).await
+	}
 }
 
 /// Fairing for periodically syncing the cache

@@ -16,7 +16,11 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{Member, MemberGroup, MemberKind, MemberMention},
-	scouting::{matches::MatchStats, Competition, Team, TeamInfo, TeamNumber},
+	scouting::{
+		autos::{Auto, AutoPoint},
+		matches::MatchStats,
+		Competition, Team, TeamInfo, TeamNumber,
+	},
 	tasks::{Checklist, Task},
 	util::ToDropdown,
 };
@@ -759,6 +763,93 @@ impl Database for SqlDatabase {
 
 		Ok(())
 	}
+
+	async fn get_auto(&self, id: &str) -> anyhow::Result<Option<Auto>> {
+		let mut result = sqlx::query("SELECT * FROM autos WHERE Id = $1")
+			.bind(id)
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let team = row.try_get::<i16, _>("team")? as TeamNumber;
+				let auto = read_auto(id, team, row).context("Failed to read auto")?;
+
+				Ok(Some(auto))
+			}
+			Err(e) => {
+				error!("Failed to get auto {id} from database: {e}");
+				Err(anyhow!("Failed to get auto from database"))
+			}
+		}
+	}
+
+	async fn create_auto(&mut self, auto: Auto) -> anyhow::Result<()> {
+		// Remove the existing auto
+		self.delete_auto(&auto.id)
+			.await
+			.context("Failed to delete existing auto")?;
+
+		let (x_points, y_points, time_points) = AutoPoint::list_to_fields(&auto.points);
+		let (shot_x_points, shot_y_points, shot_time_points) =
+			AutoPoint::list_to_fields(&auto.shots);
+
+		sqlx::query(
+			"INSERT INTO autos (Id, Name, Team, XPoints, YPoints, TimePoints, ShotXPoints, ShotYPoints, ShotTimePoints, Notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+		)
+		.bind(auto.id)
+		.bind(auto.name)
+		.bind(auto.team as i32)
+		.bind(x_points)
+		.bind(y_points)
+		.bind(time_points)
+		.bind(shot_x_points)
+		.bind(shot_y_points)
+		.bind(shot_time_points)
+		.bind(auto.notes.into_iter().map(|x| x as i32).collect::<Vec<_>>())
+		.execute(&self.pool)
+		.await
+		.context("Failed to create new auto in database")?;
+
+		Ok(())
+	}
+
+	async fn delete_auto(&mut self, auto: &str) -> anyhow::Result<()> {
+		let query = sqlx::query("DELETE FROM autos WHERE Id = $1").bind(auto);
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove auto from database")?;
+
+		Ok(())
+	}
+
+	async fn get_autos(&self, team: TeamNumber) -> anyhow::Result<impl Iterator<Item = Auto>> {
+		let result = sqlx::query("SELECT * FROM autos WHERE Team = $1")
+			.bind(team as i32)
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let id: String = row.try_get("id")?;
+					let team = row.try_get::<i16, _>("team")? as TeamNumber;
+					let auto = read_auto(&id, team, row).context("Failed to read auto")?;
+					out.push(auto);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get all autos from database: {e}");
+				Err(anyhow!("Failed to get autos from database"))
+			}
+		}
+	}
 }
 
 /// Setup the database
@@ -792,6 +883,10 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		"CREATE TABLE IF NOT EXISTS scouting_assignments (Member text PRIMARY KEY, Teams int2[])",
 	);
 
+	let autos_task = pool.execute(
+		"CREATE TABLE IF NOT EXISTS autos (Id text PRIMARY KEY, Name text, Team int2, XPoints float4[], YPoints float4[], TimePoints float4[], ShotXPoints float4[], ShotYPoints float4[], ShotTimePoints float4[], Notes int2[])",
+	);
+
 	try_join!(
 		members_task,
 		events_task,
@@ -802,7 +897,8 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		teams_task,
 		team_info_task,
 		match_stats_task,
-		scouting_assignments_task
+		scouting_assignments_task,
+		autos_task,
 	)
 	.context("Failed to execute database setup tasks")?;
 
@@ -974,4 +1070,29 @@ fn read_team_info(row: PgRow) -> anyhow::Result<TeamInfo> {
 	let data = serde_json::from_str(data).context("Failed to deserialize data")?;
 
 	Ok(data)
+}
+
+/// Read an auto from the database
+fn read_auto(id: &str, team: TeamNumber, row: PgRow) -> anyhow::Result<Auto> {
+	let name: String = row.try_get("name")?;
+	let x_points: Vec<f32> = row.try_get("xpoints")?;
+	let y_points: Vec<f32> = row.try_get("ypoints")?;
+	let time_points: Vec<f32> = row.try_get("timepoints")?;
+	let shot_x_points: Vec<f32> = row.try_get("shotxpoints")?;
+	let shot_y_points: Vec<f32> = row.try_get("shotypoints")?;
+	let shot_time_points: Vec<f32> = row.try_get("shottimepoints")?;
+	let notes: Vec<u8> = row.try_get("notes")?;
+
+	let points = AutoPoint::list_from_fields(&x_points, &y_points, &time_points);
+	let shot_points =
+		AutoPoint::list_from_fields(&shot_x_points, &shot_y_points, &shot_time_points);
+
+	Ok(Auto {
+		id: id.to_string(),
+		name,
+		team,
+		points,
+		shots: shot_points,
+		notes: notes.into_iter().collect(),
+	})
 }

@@ -1,11 +1,14 @@
+pub mod autos;
 pub mod matches;
 
 use std::{
 	collections::{HashMap, HashSet},
+	ops::DerefMut,
 	sync::Arc,
 	time::Duration,
 };
 
+use autos::{calculate_auto_stats, AutoStats};
 use matches::MatchStats;
 use rocket::{
 	fairing::{Fairing, Info, Kind},
@@ -164,7 +167,7 @@ pub struct TeamStats {
 	/// Total number of penalties
 	pub penalties: u8,
 	/// Rate that the team shows up to the match with a working robot (0-1)
-	pub availablity: f32,
+	pub reliability: f32,
 	/// Total number of matches the team has played
 	pub matches: u16,
 }
@@ -219,7 +222,7 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		cycle_time_consistency: ctx.cycle_time_consistency_sum as f32
 			/ fix_zero(ctx.cycle_time_consistency_count as f32),
 		penalties: ctx.penalties,
-		availablity: (ctx.attendance - ctx.breaks) as f32 / match_count_f32,
+		reliability: (ctx.attendance - ctx.breaks as u16) as f32 / match_count_f32,
 		matches: ctx.total_matches as u16,
 		..Default::default()
 	}
@@ -252,7 +255,7 @@ struct StatsContext {
 	cycle_time_consistency_count: u16,
 	breaks: u8,
 	/// Total number of times the team showed up for the match
-	attendance: u8,
+	attendance: u16,
 	wins: u16,
 }
 
@@ -308,14 +311,20 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 pub struct UpdateStats {
 	db: Arc<Mutex<DatabaseImpl>>,
 	team_stats: Arc<RwLock<HashMap<TeamNumber, TeamStats>>>,
+	auto_stats: Arc<RwLock<HashMap<String, AutoStats>>>,
 }
 
 impl UpdateStats {
 	pub fn new(
 		db: Arc<Mutex<DatabaseImpl>>,
 		team_stats: Arc<RwLock<HashMap<TeamNumber, TeamStats>>>,
+		auto_stats: Arc<RwLock<HashMap<String, AutoStats>>>,
 	) -> Self {
-		Self { db, team_stats }
+		Self {
+			db,
+			team_stats,
+			auto_stats,
+		}
 	}
 }
 
@@ -332,6 +341,7 @@ impl Fairing for UpdateStats {
 		// Periodically update stats
 		let db = self.db.clone();
 		let stored_stats = self.team_stats.clone();
+		let stored_auto_stats = self.auto_stats.clone();
 		rocket::tokio::spawn(async move {
 			loop {
 				// In a scope so that locks aren't held while waiting for the next loop
@@ -355,15 +365,28 @@ impl Fairing for UpdateStats {
 							}
 						};
 
-					let teams = teams.map(|x| x.number);
+					let teams: Vec<_> = teams.map(|x| x.number).collect();
 
-					let mut stats = HashMap::with_capacity(teams.size_hint().0);
-					for team in teams {
-						let team_stats = calculate_team_stats(team, &match_stats);
-						stats.insert(team, team_stats);
+					let mut stats = HashMap::with_capacity(teams.len());
+					for team in &teams {
+						let team_stats = calculate_team_stats(*team, &match_stats);
+						stats.insert(*team, team_stats);
 					}
 
 					*stored_stats.write().await = stats;
+
+					let mut auto_stats = stored_auto_stats.write().await;
+					for team in teams {
+						let autos = match lock.get_autos(team).await {
+							Ok(autos) => autos,
+							Err(e) => {
+								error!("Failed to update stats: Failed to get autos for team from database: {e}");
+								return;
+							}
+						};
+
+						calculate_auto_stats(team, &match_stats, autos, auto_stats.deref_mut());
+					}
 				}
 
 				rocket::tokio::time::sleep(Duration::from_secs(30)).await;

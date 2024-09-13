@@ -4,11 +4,12 @@ use rocket::{
 	http::Status,
 	response::{content::RawHtml, Redirect},
 };
-use tracing::{span, Level};
+use tracing::{error, span, Level};
 
 use crate::{
+	db::Database,
 	routes::OptionalSessionID,
-	scouting::{TeamNumber, TeamStats},
+	scouting::{DriveTrainType, Team, TeamInfo, TeamNumber, TeamStats},
 	State,
 };
 
@@ -49,20 +50,75 @@ pub async fn matchup(
 
 	let team_stats = state.team_stats.read().await;
 
-	let red_alliance = if teams.len() > 3 {
-		&teams[0..3]
+	let lock = state.db.lock().await;
+
+	// Collect teams and team info into two separate maps
+	let mut db_teams_red = HashMap::with_capacity(3);
+	let mut db_teams_blue = HashMap::with_capacity(3);
+	let mut team_info_red = HashMap::with_capacity(3);
+	let mut team_info_blue = HashMap::with_capacity(3);
+	for (i, team) in teams.iter().enumerate() {
+		if let Some(team) = team {
+			if let Ok(Some(valid_team)) = lock.get_team(*team).await.map_err(|e| {
+				error!("Failed to get team from database: {e}");
+				e
+			}) {
+				if i < 3 {
+					db_teams_red.insert(*team, valid_team);
+				} else {
+					db_teams_blue.insert(*team, valid_team);
+				}
+			}
+
+			if let Ok(Some(valid_info)) = lock.get_team_info(*team).await.map_err(|e| {
+				error!("Failed to get team info from database: {e}");
+				e
+			}) {
+				if i < 3 {
+					team_info_red.insert(*team, valid_info);
+				} else {
+					team_info_blue.insert(*team, valid_info);
+				}
+			}
+		}
+	}
+
+	// Don't include the breakdowns if no teams are provided
+	let page = if teams.iter().any(|x| x.is_some()) {
+		let red_alliance = if teams.len() > 3 {
+			&teams[0..3]
+		} else {
+			&teams[0..]
+		};
+		let page = page.replace(
+			"{{red-breakdown}}",
+			&render_alliance_breakdown(
+				AllianceColor::Red,
+				red_alliance,
+				team_stats.deref(),
+				&db_teams_red,
+				&team_info_red,
+			),
+		);
+		let blue_alliance = if teams.len() > 3 { &teams[3..] } else { &[] };
+		let page = page.replace(
+			"{{blue-breakdown}}",
+			&render_alliance_breakdown(
+				AllianceColor::Blue,
+				blue_alliance,
+				team_stats.deref(),
+				&db_teams_blue,
+				&team_info_blue,
+			),
+		);
+
+		page
 	} else {
-		&teams[0..]
+		let page = page.replace("{{red-breakdown}}", "");
+		let page = page.replace("{{blue-breakdown}}", "");
+
+		page
 	};
-	let page = page.replace(
-		"{{red-breakdown}}",
-		&render_alliance_breakdown(AllianceColor::Red, red_alliance, team_stats.deref()),
-	);
-	let blue_alliance = if teams.len() > 3 { &teams[3..] } else { &[] };
-	let page = page.replace(
-		"{{blue-breakdown}}",
-		&render_alliance_breakdown(AllianceColor::Blue, blue_alliance, team_stats.deref()),
-	);
 
 	let page = create_page("Matchup", &page, Some(Scope::Scouting));
 
@@ -74,6 +130,8 @@ fn render_alliance_breakdown(
 	alliance: AllianceColor,
 	teams: &[Option<TeamNumber>],
 	team_stats: &HashMap<TeamNumber, TeamStats>,
+	db_teams: &HashMap<TeamNumber, Team>,
+	team_info: &HashMap<TeamNumber, TeamInfo>,
 ) -> String {
 	let default_stats = TeamStats::default();
 	let mut all_stats = Vec::new();
@@ -98,7 +156,7 @@ fn render_alliance_breakdown(
 		},
 	);
 
-	let out = out.replace("{{expected-points}}", &point_total.to_string());
+	let out = out.replace("{{expected-points}}", &format!("{point_total:.1}"));
 
 	// Why can't floats just be ord
 	let mut max = 0.0;
@@ -115,6 +173,49 @@ fn render_alliance_breakdown(
 
 	let out = out.replace("{{mvp}}", &mvp);
 
+	// Create tips
+	let mut tips_string = String::new();
+
+	// These tips being added should be ordered so that the most important ones are first and at the top in the breakdown
+	let def_avg = all_stats
+		.iter()
+		.fold(0.0, |acc, x| acc + x.1.defense_average)
+		/ 3.0;
+	if def_avg >= 3.0 {
+		tips_string.push_str(&Tip::StrongDefense.render());
+	}
+
+	if let Some(geezer) = db_teams.values().find(|x| x.rookie_year <= 2008) {
+		tips_string.push_str(&Tip::VeteranTeam(geezer.number).render());
+	}
+
+	if let Some(mecanum) = team_info
+		.iter()
+		.find(|x| x.1.drivetrain_type == Some(DriveTrainType::Mecanum))
+		.map(|x| x.0)
+	{
+		tips_string.push_str(&Tip::MecanumBot(*mecanum).render());
+	}
+
+	if let Some(zoomer) = team_info
+		.iter()
+		.find(|x| x.1.max_speed.is_some_and(|x| x >= 16.0))
+		.map(|x| x.0)
+	{
+		tips_string.push_str(&Tip::HighSpeed(*zoomer).render());
+	}
+
+	// If it isn't filled out, assume that they can amp
+	if team_info.values().all(|x| !x.can_amp.unwrap_or(true)) {
+		tips_string.push_str(&Tip::CantAmp.render());
+	}
+
+	if team_stats.values().any(|x| x.pass_average >= 2.5) {
+		tips_string.push_str(&Tip::StrongPassing.render());
+	}
+
+	let out = out.replace("{{tips}}", &tips_string);
+
 	out
 }
 
@@ -122,4 +223,29 @@ fn render_alliance_breakdown(
 enum AllianceColor {
 	Red,
 	Blue,
+}
+
+enum Tip {
+	VeteranTeam(TeamNumber),
+	MecanumBot(TeamNumber),
+	HighSpeed(TeamNumber),
+	StrongDefense,
+	CantAmp,
+	StrongPassing,
+}
+
+impl Tip {
+	/// Render a single tip for an alliance breakdown
+	fn render(self) -> String {
+		let title = match self {
+			Self::VeteranTeam(team) => format!("Veteran Team:<br />{team}"),
+			Self::MecanumBot(team) => format!("Mechanum Bot:<br />{team}"),
+			Self::HighSpeed(team) => format!("High Speed:<br />{team}"),
+			Self::StrongDefense => "Strong Defense".into(),
+			Self::CantAmp => "Can't Amp".into(),
+			Self::StrongPassing => "Strong Passing".into(),
+		};
+
+		format!("<div class=\"cont round tip\">{title}</div>")
+	}
 }

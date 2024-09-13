@@ -37,6 +37,8 @@
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		width: 25rem;
+		/* This is done to make the breakdowns not resize based on content and line up at the same points */
+		align-items: flex-start;
 	}
 
 	.alliance-selection,
@@ -65,6 +67,13 @@
 	.stat-header {
 		color: var(--fg3);
 		font-size: calc(1.6vw * var(--scale));
+	}
+
+	.tip {
+		background-color: var(--bg2);
+		padding: 0.75rem;
+		text-align: center;
+		border: 0.2rem solid var(--fg3);
 	}
 </style>
 <script>

@@ -22,7 +22,7 @@ use rocket::{
 };
 use rocket_async_compression::CachedCompression;
 use routes::{scouting::populate_teams, Ratelimit};
-use scouting::{TeamNumber, TeamStats, UpdateStats};
+use scouting::{autos::AutoStats, TeamNumber, TeamStats, UpdateStats};
 
 mod announcements;
 mod api;
@@ -89,6 +89,7 @@ async fn rocket() -> _ {
 	}
 
 	let team_stats = Arc::new(RwLock::new(HashMap::new()));
+	let auto_stats = Arc::new(RwLock::new(HashMap::new()));
 
 	let state = AppState {
 		db: Arc::new(Mutex::new(db)),
@@ -98,6 +99,7 @@ async fn rocket() -> _ {
 		first_client,
 		statbotics_client,
 		team_stats: team_stats.clone(),
+		auto_stats: auto_stats.clone(),
 	};
 
 	let db_clone = state.db.clone();
@@ -172,6 +174,11 @@ async fn rocket() -> _ {
 				routes::scouting::matches::match_report_main,
 				routes::scouting::matches::match_report_raw,
 				routes::scouting::matchup::matchup,
+				routes::scouting::autos::autos_page,
+				routes::scouting::autos::create_auto,
+				routes::scouting::autos::rename_auto,
+				routes::scouting::autos::create_auto_page,
+				routes::scouting::autos::get_autos,
 			],
 		)
 		.mount(
@@ -197,7 +204,7 @@ async fn rocket() -> _ {
 	#[cfg(feature = "cachedb")]
 	let out = out.attach(SyncCache::new(db_clone2));
 
-	let out = out.attach(UpdateStats::new(db_clone3, team_stats));
+	let out = out.attach(UpdateStats::new(db_clone3, team_stats, auto_stats));
 
 	out
 }
@@ -232,6 +239,7 @@ pub struct AppState {
 	pub first_client: FirstClient,
 	pub statbotics_client: StatboticsClient,
 	pub team_stats: Arc<RwLock<HashMap<TeamNumber, TeamStats>>>,
+	pub auto_stats: Arc<RwLock<HashMap<String, AutoStats>>>,
 }
 
 pub type State = rocket::State<AppState>;

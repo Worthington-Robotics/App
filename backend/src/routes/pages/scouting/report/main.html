@@ -3,6 +3,7 @@
 <div class="cont">
 	<button onclick="history.back()">Back</button>
 </div>
+<br />
 <div id="time-container">
 	<div class="cont">
 		<div id="match-time" class="cont round">
@@ -46,6 +47,10 @@
 		<button id="auto-intake-miss" class="grid-button miss">Intake Miss</button>
 		<button class="grid-button penalty">Penalty</button>
 	</div>
+	<label for="auto">Auto</label>
+	<select name="auto" id="auto" class="field">
+		<option value="none">Unknown</option>
+	</select>
 	<h2>Teleop</h2>
 	<div class="section-grid">
 		<button id="speaker-score" class="grid-button">Speaker Score</button>
@@ -308,10 +313,23 @@
 		pointsScored += climbSuccess ? 3 : 0;
 		pointsScored += trapSuccess ? 5 : 0;
 
+		// Record auto shots
+		let autoShots = [];
+		for (let shot of M.autoScores) {
+			autoShots.push(shot[1]);
+		}
+
+		let auto = document.getElementById("auto").value;
+		if (auto == "none") {
+			auto = null;
+		}
+
 		// We do lots of conversions to integers with * 1 here
 		const data = {
 			team_number: document.getElementById("team-number").value * 1,
 			match_id: "",
+			auto_shots: autoShots,
+			auto: auto,
 			auto_attempts: M.autoScores.length,
 			auto_scores: M.totalAutoScores,
 			auto_collision: document.getElementById("collision").checked,
@@ -349,7 +367,6 @@
 			}
 			window.location.href = "/scouting";
 		});
-
 	}
 
 	document.getElementById("submit").addEventListener("click", onSubmit);
@@ -369,6 +386,39 @@
 		document.getElementById("time-speed").value = "1";
 		document.getElementById("time-pause-button").innerHTML = "Play";
 	});
+
+	// Fill in auto options when a team is selected (the element is unfocused)
+	document.getElementById("team-number").addEventListener("change", (e) => {
+		fetch(`/api/get_autos/${e.target.value}`).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to get autos for team: " + response.statusText);
+				return;
+			}
+
+			response.text().then((text) => {
+				try {
+					let autos = JSON.parse(text);
+					let select = document.getElementById("auto");
+					// Clear the existing options
+					select.innerHTML = "";
+					select.appendChild(createOption("none", "Unknown"));
+					for (let auto of autos) {
+						select.appendChild(createOption(auto.id, auto.name));
+					}
+				} catch (e) {
+					setError("Failed to parse autos: " + e);
+				}
+			})
+		});
+	});
+
+	// Creates an option element
+	function createOption(value, name) {
+		let out = document.createElement("option");
+		out.value = value;
+		out.innerHTML = name;
+		return out;
+	}
 
 	// Parses a time (m:ss or s). Returns -1 on error.
 	function parseTime(time) {

@@ -6,6 +6,7 @@
 		<button onclick="history.back()">Back</button>
 		<img src="/assets/icons/calendar.svg" class="details-icon" />
 		{{rookie-year}}
+		<a href="/scouting/team/{{number}}/autos"><button style="background-color: var(--bg3);">Autos</button></a>
 	</div>
 	<h2>Stats</h2>
 	<div class="cont col" id="stats">
@@ -22,7 +23,7 @@
 					{{apa}}
 					{{win-rate}}
 					{{matches}}
-					{{availability}}
+					{{reliability}}
 					{{penalties}}
 				</div>
 			</div>
@@ -63,6 +64,8 @@
 			{{max-speed}}
 			{{height}}
 			{{weight}}
+			{{drivetrain-type}}
+			{{intake-type}}
 			{{can-speaker}}
 			{{can-amp}}
 			{{can-climb}}
@@ -71,7 +74,6 @@
 			{{can-drive-under-stage}}
 			{{can-ground-intake}}
 			{{can-source-intake}}
-			{{intake-type}}
 		</div>
 		<div class="cont">
 			<a href="/scouting/team/{{number}}/edit_info">{{edit-button}}</a>

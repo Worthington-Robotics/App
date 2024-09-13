@@ -17,7 +17,7 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::Event,
 	member::Member,
-	scouting::{matches::MatchStats, ScoutingAssignments, Team, TeamInfo, TeamNumber},
+	scouting::{autos::Auto, matches::MatchStats, ScoutingAssignments, Team, TeamInfo, TeamNumber},
 	tasks::{Checklist, Task},
 };
 
@@ -273,6 +273,29 @@ impl Database for JSONDatabase {
 		self.contents.team_info.insert(team, info);
 		self.write()
 	}
+
+	async fn get_auto(&self, auto: &str) -> anyhow::Result<Option<Auto>> {
+		Ok(self.contents.autos.get(auto).cloned())
+	}
+
+	async fn create_auto(&mut self, auto: Auto) -> anyhow::Result<()> {
+		self.contents.autos.insert(auto.id.clone(), auto);
+		self.write()
+	}
+
+	async fn delete_auto(&mut self, auto: &str) -> anyhow::Result<()> {
+		self.contents.autos.remove(auto);
+		self.write()
+	}
+
+	async fn get_autos(&self, team: TeamNumber) -> anyhow::Result<impl Iterator<Item = Auto>> {
+		Ok(self
+			.contents
+			.autos
+			.values()
+			.filter(move |x| x.team == team)
+			.cloned())
+	}
 }
 
 impl JSONDatabase {
@@ -319,4 +342,6 @@ struct DatabaseContents {
 	tasks: HashMap<String, Task>,
 	#[serde(default)]
 	match_stats: Vec<MatchStats>,
+	#[serde(default)]
+	autos: HashMap<String, Auto>,
 }

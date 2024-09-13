@@ -144,7 +144,7 @@ pub async fn team_details(
 			Status::NotFound
 		})?;
 
-	let page = include_str!("../pages/scouting/team_details.min.html");
+	let page = include_str!("../pages/scouting/team/details.min.html");
 	let page = page.replace("{{name}}", &team.name);
 	let page = page.replace("{{number}}", &team.number.to_string());
 	let page = page.replace("{{rookie-year}}", &team.rookie_year.to_string());
@@ -200,8 +200,8 @@ pub async fn team_details(
 		&render_stat_card("Matches", team_stats.matches, false),
 	);
 	let page = page.replace(
-		"{{availability}}",
-		&render_stat_card_pct("Availability", team_stats.availablity, false),
+		"{{reliability}}",
+		&render_stat_card_pct("Reliability", team_stats.reliability, false),
 	);
 	let page = page.replace(
 		"{{penalties}}",
@@ -341,6 +341,19 @@ pub async fn team_details(
 			false,
 		),
 	);
+	let page = page.replace(
+		"{{drivetrain-type}}",
+		&render_stat_card_optional(
+			"Drivetrain",
+			team_info.drivetrain_type.map(|x| match x {
+				DriveTrainType::Swerve => "S",
+				DriveTrainType::Tank => "T",
+				DriveTrainType::Mecanum => "M",
+				DriveTrainType::Other => "O",
+			}),
+			false,
+		),
+	);
 	let page = page.replace("{{notes}}", &team_info.notes);
 
 	let page = create_page("Team Details", &page, Some(Scope::Scouting));
@@ -418,7 +431,7 @@ pub async fn team_info_page(
 		})?
 		.unwrap_or_default();
 
-	let page = include_str!("../pages/scouting/team_info.min.html");
+	let page = include_str!("../pages/scouting/team/info.min.html");
 	let page = page.replace("{{team-number}}", &team.to_string());
 	let page = page.replace(
 		"{{max-speed}}",

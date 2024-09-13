@@ -17,6 +17,18 @@ pub struct MatchStats {
 	pub team_number: TeamNumber,
 	/// The match where these stats occurred
 	pub match_id: String,
+	/// The member who recorded these stats
+	#[serde(default)]
+	pub recorder: Option<String>,
+	/// When the stats were recorded, as a DateTime
+	#[serde(default)]
+	pub record_time: Option<String>,
+	/// The auto that the team ran during this match
+	#[serde(default)]
+	pub auto: Option<String>,
+	/// The hits/misses of the shots of the auto, in order
+	#[serde(default)]
+	pub auto_shots: Vec<bool>,
 	/// The number of times that the team attempted to score during auto
 	pub auto_attempts: u8,
 	/// The number of times that the team scored during auto
