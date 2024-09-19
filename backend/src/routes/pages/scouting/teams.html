@@ -127,7 +127,7 @@
 		let name = cols[2];
 		let nameValue = name.innerHTML;
 		name.dataset.value = nameValue;
-		name.innerHTML = `<a href="/scouting/team/${num}">${nameValue}</a>`;
+		name.innerHTML = `<a href="/scouting/team/${num}?competition={{competition}}">${nameValue}</a>`;
 		name.firstChild.classList.add("nolink");
 	}
 

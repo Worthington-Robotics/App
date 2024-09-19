@@ -95,6 +95,8 @@ pub async fn teams(
 	}
 	let page = page.replace("{{comp-options}}", &comps_string);
 
+	let page = page.replace("{{competition}}", competition);
+
 	let page = create_page("Teams", &page, Some(Scope::Scouting));
 
 	Ok(Compress(
@@ -113,14 +115,17 @@ async fn render_team(team: Team, stat_client: &StatboticsClient) -> String {
 	out
 }
 
-#[rocket::get("/scouting/team/<id>")]
+#[rocket::get("/scouting/team/<id>?<competition>")]
 pub async fn team_details(
 	id: TeamNumber,
 	session_id: OptionalSessionID<'_>,
 	state: &State,
+	competition: Option<&str>,
 ) -> Result<PageOrRedirect, Status> {
 	let span = span!(Level::DEBUG, "Team details page");
 	let _enter = span.enter();
+
+	let competition_str = competition.unwrap_or_default();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
 	let Some(session_id) = session_id.to_session_id() else {
@@ -148,6 +153,7 @@ pub async fn team_details(
 	let page = page.replace("{{name}}", &team.name);
 	let page = page.replace("{{number}}", &team.number.to_string());
 	let page = page.replace("{{rookie-year}}", &team.rookie_year.to_string());
+	let page = page.replace("{{competition}}", competition_str);
 
 	// Create checkboxes for changing competition status
 	let disabled_attr = if requesting_member.is_elevated() {
