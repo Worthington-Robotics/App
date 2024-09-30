@@ -100,6 +100,7 @@ async fn rocket() -> _ {
 		statbotics_client,
 		team_stats: team_stats.clone(),
 		auto_stats: auto_stats.clone(),
+		auto_images: Arc::new(Mutex::new(HashMap::new())),
 	};
 
 	let db_clone = state.db.clone();
@@ -138,6 +139,7 @@ async fn rocket() -> _ {
 				routes::assets::icon_star,
 				routes::assets::icon_user,
 				routes::assets::icon_calendar,
+				routes::assets::icon_location,
 				routes::login::login,
 				routes::login::authenticate,
 				routes::login::logout,
@@ -179,6 +181,8 @@ async fn rocket() -> _ {
 				routes::scouting::autos::rename_auto,
 				routes::scouting::autos::create_auto_page,
 				routes::scouting::autos::get_autos,
+				routes::scouting::autos::auto_details,
+				routes::scouting::autos::auto_image,
 			],
 		)
 		.mount(
@@ -240,6 +244,7 @@ pub struct AppState {
 	pub statbotics_client: StatboticsClient,
 	pub team_stats: Arc<RwLock<HashMap<TeamNumber, TeamStats>>>,
 	pub auto_stats: Arc<RwLock<HashMap<String, AutoStats>>>,
+	pub auto_images: Arc<Mutex<HashMap<String, Vec<u8>>>>,
 }
 
 pub type State = rocket::State<AppState>;

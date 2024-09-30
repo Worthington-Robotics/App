@@ -89,6 +89,10 @@ pub struct TeamInfo {
 	pub height: Option<f32>,
 	/// The weight of the robot, in pounds
 	pub weight: Option<f32>,
+	/// The length of the robot, from front to back, in feet
+	pub length: Option<f32>,
+	/// The width of the robot, from left to right, in feet
+	pub width: Option<f32>,
 	/// Whether or not the robot can shoot in the speaker
 	pub can_speaker: Option<bool>,
 	/// Whether or not the robot can shoot in the amp

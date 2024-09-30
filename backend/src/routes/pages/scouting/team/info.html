@@ -19,6 +19,16 @@
 		<input type="number" name="weight" id="weight" class="field" placeholder="0.00" step=any value="{{weight}}" />
 		<button id="weight-convert">kg > lb</button>
 	</div>
+	<label for="length">Length</label>
+	<div class="cont">
+		<input type="number" name="length" id="length" class="field" placeholder="0.00" step=any value="{{length}}" />
+		<button id="length-convert">m > ft</button>
+	</div>
+	<label for="width">Width</label>
+	<div class="cont">
+		<input type="number" name="width" id="width" class="field" placeholder="0.00" step=any value="{{width}}" />
+		<button id="width-convert">m > ft</button>
+	</div>
 	<h2>Robot Information</h2>
 	<label for="drivetrain-type">Drivetrain Type</label>
 	<select name="drivetrain-type" id="drivetrain-type" class="field">
@@ -77,6 +87,8 @@
 			max_speed: document.getElementById("max-speed").value * 1,
 			height: document.getElementById("height").value * 1,
 			weight: document.getElementById("weight").value * 1,
+			length: document.getElementById("length").value * 1,
+			width: document.getElementById("width").value * 1,
 			can_speaker: document.getElementById("can-speaker").checked,
 			can_amp: document.getElementById("can-amp").checked,
 			can_climb: document.getElementById("can-climb").checked,
@@ -121,6 +133,16 @@
 		e.preventDefault();
 		let elem = document.getElementById("weight");
 		elem.value = elem.value * 2.205;
+	});
+	document.getElementById("length-convert").addEventListener("click", (e) => {
+		e.preventDefault();
+		let elem = document.getElementById("length");
+		elem.value = elem.value * 3.281;
+	});
+	document.getElementById("width-convert").addEventListener("click", (e) => {
+		e.preventDefault();
+		let elem = document.getElementById("width");
+		elem.value = elem.value * 3.281;
 	});
 </script>
 <style>

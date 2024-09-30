@@ -1,0 +1,67 @@
+{{worbots-header}}{{error}}
+<div class="cont col" id="auto-details">
+	<h1>{{name}}</h1>
+	<div class="cont">
+		<button onclick="history.back()">Back</button>
+		<div class="cont">
+			<img src="/assets/icons/box.svg" class="details-icon" />
+			{{piece-count}}
+		</div>
+		<div class="cont">
+			<img src="/assets/icons/location.svg" class="details-icon" />
+			{{starting-position}}
+		</div>
+	</div>
+	<h2>Stats</h2>
+	<div class="cont col" id="stats">
+		<div class="cont" id="stats-body">
+			<div class="stats-grid">
+				{{average-score}}
+				{{accuracy}}
+				{{time-per-shot}}
+				{{usage-rate}}
+				{{duration}}
+				{{time-to-first-shot}}
+				{{max-speed}}
+				{{distance-travelled}}
+			</div>
+		</div>
+	</div>
+	<div class="cont col" id="view">
+		<img src="/scouting/auto/{{id}}/image.svg" width="200px" id="auto-image" />
+	</div>
+</div>
+<style>
+	.stats-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.card {
+		background-color: var(--bg2);
+		padding: 1.0rem 1.3rem;
+		margin: 0.4rem;
+	}
+
+	.card-stat {
+		font-size: calc(2.5vw * var(--scale));
+	}
+
+	.card-title {
+		color: var(--fg3);
+		text-align: center;
+	}
+
+	.card-stat.strong {
+		font-weight: bold;
+	}
+
+	h3 {
+		margin-bottom: 0.4rem;
+	}
+
+	#auto-image {
+		width: 15rem;
+	}
+</style>
+{{footer}}

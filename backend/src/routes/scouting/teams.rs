@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use itertools::Itertools;
 use rocket::{
 	form::Form,
@@ -20,7 +18,11 @@ use crate::{
 	State,
 };
 
-use super::{create_page, PageOrRedirect, Scope};
+use super::{
+	create_page, render_stat_card, render_stat_card_float, render_stat_card_optional,
+	render_stat_card_optional_bool, render_stat_card_optional_float, render_stat_card_pct,
+	PageOrRedirect, Scope,
+};
 
 #[rocket::get("/scouting/teams?<competition>")]
 pub async fn teams(
@@ -305,6 +307,14 @@ pub async fn team_details(
 		&render_stat_card_optional_float("Weight", team_info.weight, true),
 	);
 	let page = page.replace(
+		"{{length}}",
+		&render_stat_card_optional_float("Length", team_info.length, false),
+	);
+	let page = page.replace(
+		"{{width}}",
+		&render_stat_card_optional_float("Width", team_info.width, false),
+	);
+	let page = page.replace(
 		"{{can-speaker}}",
 		&render_stat_card_optional_bool("Speaker?", team_info.can_speaker, false),
 	);
@@ -367,48 +377,6 @@ pub async fn team_details(
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
-fn render_stat_card(title: &str, stat: impl Display, strong: bool) -> String {
-	let out = include_str!("../components/scouting/stat_card.min.html");
-	let out = out.replace("{{stat}}", &stat.to_string());
-	let out = out.replace("{{title}}", title);
-	let class = if strong { "strong" } else { "" };
-	let out = out.replace("{{stat-class}}", class);
-
-	out
-}
-
-fn render_stat_card_float(title: &str, stat: f32, strong: bool) -> String {
-	render_stat_card(title, format!("{stat:.2}"), strong)
-}
-
-fn render_stat_card_pct(title: &str, stat: f32, strong: bool) -> String {
-	render_stat_card(title, format!("{:.1}%", stat * 100.0), strong)
-}
-
-fn render_stat_card_optional(title: &str, stat: Option<impl Display>, strong: bool) -> String {
-	if let Some(stat) = stat {
-		render_stat_card(title, stat, strong)
-	} else {
-		render_stat_card(title, "?", strong)
-	}
-}
-
-fn render_stat_card_optional_bool(title: &str, stat: Option<bool>, strong: bool) -> String {
-	if let Some(stat) = stat {
-		render_stat_card(title, if stat { "Yes" } else { "No" }, strong)
-	} else {
-		render_stat_card(title, "?", strong)
-	}
-}
-
-fn render_stat_card_optional_float(title: &str, stat: Option<f32>, strong: bool) -> String {
-	if let Some(stat) = stat {
-		render_stat_card_float(title, stat, strong)
-	} else {
-		render_stat_card(title, "?", strong)
-	}
-}
-
 #[rocket::get("/scouting/team/<team>/edit_info")]
 pub async fn team_info_page(
 	session_id: OptionalSessionID<'_>,
@@ -453,6 +421,14 @@ pub async fn team_info_page(
 	let page = page.replace(
 		"{{weight}}",
 		&team_info.weight.map(|x| x.to_string()).unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{length}}",
+		&team_info.length.map(|x| x.to_string()).unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{width}}",
+		&team_info.width.map(|x| x.to_string()).unwrap_or_default(),
 	);
 	let page = page.replace(
 		"{{can-speaker-checked}}",

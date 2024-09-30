@@ -3,7 +3,7 @@ pub mod matches;
 pub mod matchup;
 pub mod teams;
 
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 use anyhow::Context;
 use chrono::Utc;
@@ -118,4 +118,48 @@ pub async fn populate_teams(
 	}
 
 	Ok(())
+}
+
+// Functions for rendering stat cards
+
+pub fn render_stat_card(title: &str, stat: impl Display, strong: bool) -> String {
+	let out = include_str!("../components/scouting/stat_card.min.html");
+	let out = out.replace("{{stat}}", &stat.to_string());
+	let out = out.replace("{{title}}", title);
+	let class = if strong { "strong" } else { "" };
+	let out = out.replace("{{stat-class}}", class);
+
+	out
+}
+
+pub fn render_stat_card_float(title: &str, stat: f32, strong: bool) -> String {
+	render_stat_card(title, format!("{stat:.2}"), strong)
+}
+
+pub fn render_stat_card_pct(title: &str, stat: f32, strong: bool) -> String {
+	render_stat_card(title, format!("{:.1}%", stat * 100.0), strong)
+}
+
+pub fn render_stat_card_optional(title: &str, stat: Option<impl Display>, strong: bool) -> String {
+	if let Some(stat) = stat {
+		render_stat_card(title, stat, strong)
+	} else {
+		render_stat_card(title, "?", strong)
+	}
+}
+
+pub fn render_stat_card_optional_bool(title: &str, stat: Option<bool>, strong: bool) -> String {
+	if let Some(stat) = stat {
+		render_stat_card(title, if stat { "Yes" } else { "No" }, strong)
+	} else {
+		render_stat_card(title, "?", strong)
+	}
+}
+
+pub fn render_stat_card_optional_float(title: &str, stat: Option<f32>, strong: bool) -> String {
+	if let Some(stat) = stat {
+		render_stat_card_float(title, stat, strong)
+	} else {
+		render_stat_card(title, "?", strong)
+	}
 }

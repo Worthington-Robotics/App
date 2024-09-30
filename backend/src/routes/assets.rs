@@ -37,7 +37,7 @@ pub fn error_js() -> CacheFor<RawJavaScript<&'static str>> {
 
 #[rocket::get("/assets/logo-gears.svg")]
 pub fn logo() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/logo-gears.svg")), ONE_YEAR)
+	CacheFor(Svg(include_bytes!("../assets/logo-gears.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/rockwell_regular.otf")]
@@ -47,78 +47,93 @@ pub fn rockwell() -> CacheFor<&'static [u8]> {
 
 #[rocket::get("/assets/icons/home.svg")]
 pub fn icon_home() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/home.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/home.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/clock.svg")]
 pub fn icon_clock() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/clock.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/clock.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/plus.svg")]
 pub fn icon_plus() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/plus.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/plus.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/mail.svg")]
 pub fn icon_mail() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/mail.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/mail.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/edit.svg")]
 pub fn icon_edit() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/edit.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/edit.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/delete2.svg")]
 pub fn icon_delete() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/delete.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/delete.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/check.svg")]
 pub fn icon_check() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/check.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/check.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/box.svg")]
 pub fn icon_box() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/box.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/box.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/eye.svg")]
 pub fn icon_eye() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/eye.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/eye.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/star.svg")]
 pub fn icon_star() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/star.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/star.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/user.svg")]
 pub fn icon_user() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/user.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/user.svg")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/icons/calendar.svg")]
 pub fn icon_calendar() -> CacheFor<Svg> {
-	CacheFor(Svg(include_str!("../assets/icons/calendar.svg")), ONE_WEEK)
+	CacheFor(
+		Svg(include_bytes!("../assets/icons/calendar.svg")),
+		ONE_WEEK,
+	)
+}
+
+#[rocket::get("/assets/icons/location.svg")]
+pub fn icon_location() -> CacheFor<Svg> {
+	CacheFor(
+		Svg(include_bytes!("../assets/icons/location.svg")),
+		ONE_WEEK,
+	)
 }
 
 #[derive(Responder)]
 #[response(content_type = "image/x-icon")]
-pub struct Ico(&'static [u8]);
+pub struct Ico(pub &'static [u8]);
 
 #[derive(Responder)]
 #[response(content_type = "image/svg+xml")]
-pub struct Svg(&'static str);
+pub struct Svg(pub &'static [u8]);
+
+#[derive(Responder)]
+#[response(content_type = "image/svg+xml")]
+pub struct SvgDynamic(pub Vec<u8>);
 
 #[derive(Responder)]
 #[response(content_type = "image/png")]
-pub struct Png(&'static [u8]);
+pub struct Png(pub &'static [u8]);
 
 /// Simple responder to set cache headers for asset responses
-pub struct CacheFor<R>(R, usize);
+pub struct CacheFor<R>(pub R, pub usize);
 
 impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for CacheFor<R> {
 	fn respond_to(self, request: &'r rocket::Request<'_>) -> rocket::response::Result<'o> {
@@ -132,6 +147,6 @@ impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for CacheFor<R> {
 	}
 }
 
-const ONE_YEAR: usize = 31536000;
-const ONE_WEEK: usize = 604800;
-const ONE_DAY: usize = 86400;
+pub const ONE_YEAR: usize = 31536000;
+pub const ONE_WEEK: usize = 604800;
+pub const ONE_DAY: usize = 86400;

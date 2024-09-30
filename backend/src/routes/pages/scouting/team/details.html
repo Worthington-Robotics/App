@@ -6,7 +6,7 @@
 		<a href="/scouting/teams?competition={{competition}}"><button>Back</button></a>
 		<img src="/assets/icons/calendar.svg" class="details-icon" />
 		{{rookie-year}}
-		<a href="/scouting/team/{{number}}/autos"><button style="background-color: var(--bg3);">Autos</button></a>
+		<a href="/scouting/team/{{number}}/autos"><button style="background-color: var(--bg2);">Autos</button></a>
 	</div>
 	<h2>Stats</h2>
 	<div class="cont col" id="stats">
@@ -64,6 +64,8 @@
 			{{max-speed}}
 			{{height}}
 			{{weight}}
+			{{length}}
+			{{width}}
 			{{drivetrain-type}}
 			{{intake-type}}
 			{{can-speaker}}
@@ -96,6 +98,7 @@
 	.stats-tab {
 		background-color: var(--bg2);
 		padding: 0.9rem;
+		cursor: pointer;
 	}
 
 	.stats-tab.selected {
