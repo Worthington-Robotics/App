@@ -125,6 +125,7 @@ async fn rocket() -> _ {
 				routes::assets::static_css,
 				routes::assets::sortable_js,
 				routes::assets::error_js,
+				routes::assets::prompt_js,
 				routes::assets::logo,
 				routes::assets::rockwell,
 				routes::assets::icon_home,

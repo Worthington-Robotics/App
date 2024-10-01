@@ -1,4 +1,4 @@
-{{worbots-header}}{{error}}
+{{worbots-header}}{{error}}{{prompt}}
 <div class="cont col" id="checklist-details">
 	<h1>{{name}}</h1>
 	<div class="cont">
@@ -19,14 +19,16 @@
 	let deleteButton = document.getElementById("delete-button");
 	if (deleteButton != null) {
 		deleteButton.addEventListener("click", () => {
-			fetch("/api/delete_checklist/{{id}}", {
-				method: "DELETE",
-			}).then((resp) => {
-				if (resp.status == 200) {
-					window.location.href = "/checklists";
-				} else {
-					setError(resp.statusText);
-				}
+			showConfirmPrompt("delete this checklist", () => {
+				fetch("/api/delete_checklist/{{id}}", {
+					method: "DELETE",
+				}).then((resp) => {
+					if (resp.status == 200) {
+						window.location.href = "/checklists";
+					} else {
+						setError(resp.statusText);
+					}
+				});
 			});
 		});
 	}

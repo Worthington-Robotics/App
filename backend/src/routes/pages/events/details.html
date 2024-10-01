@@ -1,4 +1,4 @@
-{{worbots-header}}{{error}}
+{{worbots-header}}{{error}}{{prompt}}
 <div class="cont col" id="event-details">
 	<h1>{{name}}</h1>
 	<h4 class="details-subtitle date">{{date}}</h4>
@@ -28,14 +28,16 @@
 </div>
 <script>
 	document.getElementById("delete-button").addEventListener("click", () => {
-		fetch("/api/delete_event/{{id}}", {
-			method: "DELETE",
-		}).then((resp) => {
-			if (resp.status == 200) {
-				window.location.href = "/calendar";
-			} else {
-				setError(resp.statusText);
-			}
+		showConfirmPrompt("delete this event", () => {
+			fetch("/api/delete_event/{{id}}", {
+				method: "DELETE",
+			}).then((resp) => {
+				if (resp.status == 200) {
+					window.location.href = "/calendar";
+				} else {
+					setError(resp.statusText);
+				}
+			});
 		});
 	});
 	document.getElementById("rsvp").addEventListener("change", (e) => {

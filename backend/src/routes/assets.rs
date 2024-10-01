@@ -35,6 +35,11 @@ pub fn error_js() -> CacheFor<RawJavaScript<&'static str>> {
 	CacheFor(RawJavaScript(include_str!("../assets/error.js")), ONE_WEEK)
 }
 
+#[rocket::get("/assets/prompt.js")]
+pub fn prompt_js() -> RawJavaScript<&'static str> {
+	RawJavaScript(include_str!("../assets/scripts/prompt.js"))
+}
+
 #[rocket::get("/assets/logo-gears.svg")]
 pub fn logo() -> CacheFor<Svg> {
 	CacheFor(Svg(include_bytes!("../assets/logo-gears.svg")), ONE_YEAR)

@@ -1,0 +1,34 @@
+<script id="prompt-script" src="/assets/prompt.js" defer></script>
+<div id="prompt-container" class="cont" style="display:none">
+	<div id="prompt" class="cont col round">
+		<div id="prompt-text"></div>
+		<div class="cont">
+			<button id="prompt-cancel">Cancel</button>
+			<button id="prompt-confirm">Confirm</button>
+		</div>
+	</div>
+</div>
+<style>
+	#prompt-container {
+		position: fixed;
+		left: 0;
+		top: 0;
+		width: 100vw;
+		height: 100vh;
+		z-index: 100;
+		background-color: rgba(0, 0, 0, 0.5);
+	}
+
+	#prompt {
+		background-color: var(--bg2);
+		padding: 1.5rem;
+	}
+
+	#prompt-cancel {
+		background-color: var(--bg3);
+	}
+
+	#prompt-confirm {
+		background-color: var(--wbred);
+	}
+</style>

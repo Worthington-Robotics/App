@@ -219,6 +219,7 @@ pub fn create_page(title: &str, body: &str, scope: Option<Scope>) -> String {
 		include_str!("components/util/worbots-header.min.html"),
 	);
 	let out = out.replace("{{error}}", include_str!("components/util/error.min.html"));
+	let out = out.replace("{{prompt}}", include_str!("components/util/prompt.min.html"));
 
 	out
 }
