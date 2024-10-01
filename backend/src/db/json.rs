@@ -17,7 +17,10 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::Event,
 	member::Member,
-	scouting::{autos::Auto, matches::MatchStats, ScoutingAssignments, Team, TeamInfo, TeamNumber},
+	scouting::{
+		autos::Auto, matches::MatchStats, status::StatusUpdate, ScoutingAssignments, Team,
+		TeamInfo, TeamNumber,
+	},
 	tasks::{Checklist, Task},
 };
 
@@ -296,6 +299,26 @@ impl Database for JSONDatabase {
 			.filter(move |x| x.team == team)
 			.cloned())
 	}
+
+	async fn get_team_status(&self, team: TeamNumber) -> anyhow::Result<Vec<StatusUpdate>> {
+		Ok(self
+			.contents
+			.team_status
+			.iter()
+			.filter(move |x| x.team == team)
+			.cloned()
+			.collect())
+	}
+
+	async fn update_team_status(&mut self, update: StatusUpdate) -> anyhow::Result<()> {
+		self.contents.team_status.push(update);
+
+		self.write()
+	}
+
+	async fn get_all_status(&self) -> anyhow::Result<Vec<StatusUpdate>> {
+		Ok(self.contents.team_status.clone())
+	}
 }
 
 impl JSONDatabase {
@@ -344,4 +367,6 @@ struct DatabaseContents {
 	match_stats: Vec<MatchStats>,
 	#[serde(default)]
 	autos: HashMap<String, Auto>,
+	#[serde(default)]
+	team_status: Vec<StatusUpdate>,
 }

@@ -1,6 +1,7 @@
 pub mod autos;
 pub mod matches;
 pub mod matchup;
+pub mod status;
 pub mod teams;
 
 use std::{collections::HashSet, fmt::Display};

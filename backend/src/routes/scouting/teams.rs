@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use itertools::Itertools;
 use rocket::{
 	form::Form,
@@ -11,9 +13,11 @@ use tracing::{error, span, Level};
 
 use crate::{
 	api::statbotics::StatboticsClient,
-	db::Database,
+	db::{Database, DatabaseImpl},
 	routes::{OptionalSessionID, SessionID},
-	scouting::{Competition, DriveTrainType, IntakeType, Team, TeamNumber, TeamStats},
+	scouting::{
+		status::RobotStatus, Competition, DriveTrainType, IntakeType, Team, TeamNumber, TeamStats,
+	},
 	util::{checkbox_attr, selected_attr},
 	State,
 };
@@ -71,7 +75,7 @@ pub async fn teams(
 				continue;
 			}
 		}
-		teams_string.push_str(&render_team(team, &state.statbotics_client).await);
+		teams_string.push_str(&render_team(team, &state.statbotics_client, lock.deref()).await);
 	}
 	let page = page.replace("{{teams}}", &teams_string);
 
@@ -107,12 +111,29 @@ pub async fn teams(
 	))
 }
 
-async fn render_team(team: Team, stat_client: &StatboticsClient) -> String {
+async fn render_team(team: Team, stat_client: &StatboticsClient, db: &DatabaseImpl) -> String {
 	let out = include_str!("../components/scouting/team_row.min.html");
 	let out = out.replace("{{number}}", &team.number.to_string());
 	let out = out.replace("{{name}}", &team.sanitized_name());
 	let epa = stat_client.get_epa(team.number).await.unwrap_or(0.0);
 	let out = out.replace("{{epa}}", &format!("{epa:.2}"));
+
+	let status = if let Ok(status_updates) = db.get_team_status(team.number).await {
+		let status = RobotStatus::get_from_updates(&status_updates);
+		if status == RobotStatus::Good {
+			String::new()
+		} else {
+			format!(
+				"<div class=\"cont round status\" style=\"background-color: {}\">{}</div>",
+				status.get_color(),
+				status.get_abbr()
+			)
+		}
+	} else {
+		error!("Failed to get team status from database");
+		String::new()
+	};
+	let out = out.replace("{{status}}", &status);
 
 	out
 }
@@ -156,6 +177,15 @@ pub async fn team_details(
 	let page = page.replace("{{number}}", &team.number.to_string());
 	let page = page.replace("{{rookie-year}}", &team.rookie_year.to_string());
 	let page = page.replace("{{competition}}", competition_str);
+
+	let status_updates = lock.get_team_status(team.number).await.map_err(|e| {
+		error!("Failed to get team status updates from database: {e}");
+		Status::InternalServerError
+	})?;
+
+	let current_status = RobotStatus::get_from_updates(&status_updates);
+	let page = page.replace("{{status}}", &current_status.to_string());
+	let page = page.replace("{{status-color}}", current_status.get_color());
 
 	// Create checkboxes for changing competition status
 	let disabled_attr = if requesting_member.is_elevated() {
@@ -351,8 +381,8 @@ pub async fn team_details(
 		&render_stat_card_optional(
 			"Intake",
 			team_info.intake_type.map(|x| match x {
-				IntakeType::OverBumper => "OB",
-				IntakeType::UnderBumper => "UB",
+				IntakeType::OverBumper => "OtB",
+				IntakeType::UnderBumper => "UtB",
 			}),
 			false,
 		),
@@ -362,10 +392,10 @@ pub async fn team_details(
 		&render_stat_card_optional(
 			"Drivetrain",
 			team_info.drivetrain_type.map(|x| match x {
-				DriveTrainType::Swerve => "S",
-				DriveTrainType::Tank => "T",
-				DriveTrainType::Mecanum => "M",
-				DriveTrainType::Other => "O",
+				DriveTrainType::Swerve => "Sw",
+				DriveTrainType::Tank => "Tk",
+				DriveTrainType::Mecanum => "Mc",
+				DriveTrainType::Other => "Ot",
 			}),
 			false,
 		),

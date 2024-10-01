@@ -36,6 +36,10 @@
 	<label for="team-number">Team Number</label>
 	<input type="number" class="field" name="team-number" id="team-number" placeholder="0000" />
 	<div class="cont">
+		<input type="checkbox" name="recorded-live" id="recorded-live" class="field" />
+		<label for="recorded-live">Recording Live?</label>
+	</div>
+	<div class="cont">
 		<input type="checkbox" name="showed-up" id="showed-up" class="field" />
 		<label for="showed-up">Showed Up?</label>
 	</div>
@@ -83,10 +87,12 @@
 		<input type="checkbox" name="won" id="won" class="field" />
 		<label for="won">Won?</label>
 	</div>
-	<div class="cont">
-		<input type="checkbox" name="broken" id="broken" class="field" />
-		<label for="broken">Broken?</label>
-	</div>
+	<label for="status">Robot Status</label>
+	<select id="status" name="status">
+		<option value="Good">Good</option>
+		<option value="Injured">Injured</option>
+		<option value="Broken">Broken</option>
+	</select>
 	<div class="cont">
 		<input type="checkbox" name="collision" id="collision" class="field" />
 		<label for="collision">Collision During Auto?</label>
@@ -329,6 +335,7 @@
 		const data = {
 			team_number: document.getElementById("team-number").value * 1,
 			match_id: "",
+			recorded_live: document.getElementById("recorded-live").checked,
 			auto_shots: autoShots,
 			auto: auto,
 			auto_attempts: M.autoScores.length,
@@ -350,7 +357,7 @@
 			penalties: M.penalties,
 			cycle_time: cycleTime,
 			cycle_times: cycleTimes,
-			broken: document.getElementById("broken").checked,
+			status: document.getElementById("status").value,
 			showed_up: document.getElementById("showed-up").checked,
 			won: document.getElementById("won").checked,
 			notes: document.getElementById("notes").value,

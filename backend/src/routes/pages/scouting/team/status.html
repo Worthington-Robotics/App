@@ -1,0 +1,67 @@
+{{worbots-header}}{{error}}
+<div class="cont col" id="team-status">
+	<h1>Robot Status</h1>
+	<h3 class="details-subtitle number">{{number}}</h3>
+	<div class="cont">
+		<button onclick="history.back()">Back</button>
+	</div>
+	<br />
+	<div class="cont">{{reasons}}</div>
+	<br />
+	<div class="cont col item-cont" id="updates-cont">
+		{{updates}}
+		<form class="cont col item round" id="update-status">
+			<select id="status-value">
+				<option value="Good">Good</option>
+				<option value="Injured">Injured</option>
+				<option value="Broken">Broken</option>
+			</select>
+			<input type="text" placeholder="Extra details..." id="new-details" />
+			<input type="submit" id="update-submit" value="Update" />
+		</form>
+	</div>
+</div>
+<script>
+	function onAdd(event) {
+		event.preventDefault();
+
+		const status = document.getElementById("status-value").value;
+		const details = document.getElementById("new-details").value;
+
+		fetch("/api/update_team_status", {
+			method: "POST",
+			body: `details=${details}&team={{number}}&status=${status}`,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to update team status: " + response.statusText);
+				return;
+			}
+			window.location.reload();
+		});
+	}
+
+	document.getElementById("update-status").addEventListener("submit", onAdd);
+</script>
+<style>
+	.number {
+		font-family: "Courier New", Courier, monospace;
+	}
+
+	.status {
+		padding: 0.5rem;
+		color: var(--bg3);
+	}
+
+	.reason {
+		padding: 0.5rem;
+		background-color: var(--bg3);
+	}
+
+	.update-details {
+		font-size: calc(1.32vw * var(--scale));
+		color: var(--fg2);
+		text-align: center;
+	}
+</style>
+{{footer}}

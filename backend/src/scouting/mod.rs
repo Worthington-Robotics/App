@@ -1,5 +1,6 @@
 pub mod autos;
 pub mod matches;
+pub mod status;
 
 use std::{
 	collections::{HashMap, HashSet},
@@ -16,6 +17,7 @@ use rocket::{
 	Orbit, Rocket,
 };
 use serde::{Deserialize, Serialize};
+use status::RobotStatus;
 use strum_macros::{Display, EnumIter, IntoStaticStr};
 use tracing::error;
 
@@ -300,7 +302,7 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		ctx.cycle_time_consistency_count += 1;
 	}
 
-	if stats.broken {
+	if stats.status != RobotStatus::Good {
 		ctx.breaks += 1;
 	}
 	if stats.showed_up {

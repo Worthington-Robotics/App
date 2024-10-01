@@ -183,6 +183,8 @@ async fn rocket() -> _ {
 				routes::scouting::autos::get_autos,
 				routes::scouting::autos::auto_details,
 				routes::scouting::autos::auto_image,
+				routes::scouting::status::team_status_page,
+				routes::scouting::status::update_status,
 			],
 		)
 		.mount(

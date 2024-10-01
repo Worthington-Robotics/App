@@ -10,7 +10,7 @@ use tracing::{error, span, Level};
 use crate::db::Database;
 use crate::routes::OptionalSessionID;
 use crate::tasks::{Checklist, Task};
-use crate::util::generate_id;
+use crate::util::{fix_zero, generate_id, render_progress_ring};
 use crate::{routes::SessionID, State};
 
 use super::{create_page, PageOrRedirect, Scope};
@@ -46,8 +46,17 @@ pub async fn checklists(
 		.rev();
 	let mut checklists_string = String::new();
 
+	let tasks: Vec<_> = lock
+		.get_tasks()
+		.await
+		.map_err(|e| {
+			error!("Failed to get tasks from database: {e}");
+			Status::InternalServerError
+		})?
+		.collect();
+
 	for checklist in checklists {
-		checklists_string.push_str(&render_checklist(checklist));
+		checklists_string.push_str(&render_checklist(checklist, &tasks));
 	}
 	let page = page.replace("{{checklists}}", &checklists_string);
 
@@ -67,11 +76,24 @@ pub async fn checklists(
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
-fn render_checklist(checklist: Checklist) -> String {
+fn render_checklist(checklist: Checklist, all_tasks: &[Task]) -> String {
 	let out = include_str!("components/tasks/checklist.min.html");
 	let out = out.replace("{{id}}", &checklist.id);
 	let out = out.replace("{{name}}", &checklist.name);
-	let out = out.replace("{{progress}}", &format!("{} tasks", checklist.tasks.len()));
+
+	// Calculate progress
+	let mut done = 0;
+	for task in all_tasks {
+		if task.done && task.checklist == checklist.id {
+			done += 1;
+		}
+	}
+
+	let out = out.replace("{{progress}}", &format!("{done}/{}", checklist.tasks.len()));
+	let out = out.replace(
+		"{{progress-ring}}",
+		&render_progress_ring(20.0, done as f32 / fix_zero(checklist.tasks.len() as f32)),
+	);
 
 	out
 }

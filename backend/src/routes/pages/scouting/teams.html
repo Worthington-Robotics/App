@@ -35,6 +35,14 @@
 		margin-top: 0.7rem;
 	}
 
+	.status {
+		padding: 0.2rem;
+		margin-left: -0.4rem;
+		width: 1rem;
+		height: 1rem;
+		color: var(--bg3);
+	}
+
 	/* Start with all of the rows hidden */
 	tbody>tr {
 		display: none;
@@ -59,6 +67,10 @@
 
 	.N {
 		font-weight: bold;
+	}
+
+	.name-row {
+		justify-content: start;
 	}
 
 	.first {
@@ -129,9 +141,7 @@
 		let cols = row.getElementsByTagName(td);
 		let num = cols[1].innerHTML;
 		let name = cols[2];
-		let nameValue = name.innerHTML;
-		name.dataset.value = nameValue;
-		name.innerHTML = `<a href="/scouting/team/${num}?competition={{competition}}">${nameValue}</a>`;
+		name.innerHTML = `<a class="cont name-row" href="/scouting/team/${num}?competition={{competition}}">${name.innerHTML}</a>`;
 		name.firstChild.classList.add("nolink");
 	}
 

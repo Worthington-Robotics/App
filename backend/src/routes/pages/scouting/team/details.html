@@ -6,6 +6,8 @@
 		<a href="/scouting/teams?competition={{competition}}"><button>Back</button></a>
 		<img src="/assets/icons/calendar.svg" class="details-icon" />
 		{{rookie-year}}
+		<a href="/scouting/team/{{number}}/status" class="cont round status"
+			style="background-color: {{status-color}}">{{status}}</a>
 		<a href="/scouting/team/{{number}}/autos"><button style="background-color: var(--bg2);">Autos</button></a>
 	</div>
 	<h2>Stats</h2>
@@ -93,6 +95,32 @@
 <style>
 	.number {
 		font-family: "Courier New", Courier, monospace;
+	}
+
+	/* I hate CSS */
+	.status {
+		padding: 0.5rem;
+		color: var(--bg3);
+	}
+
+	.status:link {
+		color: var(--bg3);
+		text-decoration: none;
+	}
+
+	.status:visited {
+		color: var(--bg3);
+		text-decoration: none;
+	}
+
+	.status:hover {
+		color: var(--bg3);
+		text-decoration: none;
+	}
+
+	.status:active {
+		color: var(--bg3);
+		text-decoration: none;
 	}
 
 	.stats-tab {

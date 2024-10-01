@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::TeamNumber;
+use super::{status::RobotStatus, TeamNumber};
 
 /// A single match
 #[derive(Serialize, Deserialize, Clone)]
@@ -23,6 +23,9 @@ pub struct MatchStats {
 	/// When the stats were recorded, as a DateTime
 	#[serde(default)]
 	pub record_time: Option<String>,
+	/// Whether this match happened live when it was recorded
+	#[serde(default)]
+	pub recorded_live: bool,
 	/// The auto that the team ran during this match
 	#[serde(default)]
 	pub auto: Option<String>,
@@ -75,8 +78,9 @@ pub struct MatchStats {
 	/// The team's individual cycle timestamps
 	#[serde(default)]
 	pub cycle_times: Vec<f32>,
-	/// Whether the robot was reported as broken
-	pub broken: bool,
+	/// The broken status of the robot
+	#[serde(default)]
+	pub status: RobotStatus,
 	/// Whether or not the team showed up to the match
 	pub showed_up: bool,
 	/// Whether or not the team won the match

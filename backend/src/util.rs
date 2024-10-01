@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{f32::consts::PI, fmt::Display};
 
 use base64::{
 	engine::{GeneralPurpose, GeneralPurposeConfig},
@@ -145,6 +145,21 @@ pub fn vector_splat<T: Clone>(e: T, n: usize) -> Vec<T> {
 	for _ in 0..n {
 		out.push(e.clone());
 	}
+
+	out
+}
+
+/// Renders a progress ring
+pub fn render_progress_ring(size: f32, progress: f32) -> String {
+	let out = include_str!("routes/components/ui/ring.min.html");
+	let radius = size * 0.25;
+	let out = out.replace("{{size}}", &size.to_string());
+	let out = out.replace("{{radius}}", &radius.to_string());
+	let out = out.replace("{{midpoint}}", &(size / 2.0).to_string());
+	let circumference = radius * 2.0 * PI;
+	let out = out.replace("__circumference__", &circumference.to_string());
+	let dash_offset = circumference - progress * circumference;
+	let out = out.replace("__dash-offset__", &dash_offset.to_string());
 
 	out
 }

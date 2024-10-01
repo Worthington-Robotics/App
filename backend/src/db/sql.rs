@@ -19,6 +19,7 @@ use crate::{
 	scouting::{
 		autos::{Auto, AutoPoint},
 		matches::MatchStats,
+		status::{RobotStatus, StatusUpdate},
 		Competition, Team, TeamInfo, TeamNumber,
 	},
 	tasks::{Checklist, Task},
@@ -837,7 +838,6 @@ impl Database for SqlDatabase {
 				let mut out = Vec::with_capacity(rows.len());
 				for row in rows {
 					let id: String = row.try_get("id")?;
-					let team = row.try_get::<i16, _>("team")? as TeamNumber;
 					let auto = read_auto(&id, team, row).context("Failed to read auto")?;
 					out.push(auto);
 				}
@@ -847,6 +847,66 @@ impl Database for SqlDatabase {
 			Err(e) => {
 				error!("Failed to get all autos from database: {e}");
 				Err(anyhow!("Failed to get autos from database"))
+			}
+		}
+	}
+
+	async fn get_team_status(&self, team: TeamNumber) -> anyhow::Result<Vec<StatusUpdate>> {
+		let result = sqlx::query("SELECT * FROM team_status WHERE Team = $1")
+			.bind(team as i32)
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let status = read_status(team, row).context("Failed to read status update")?;
+					out.push(status);
+				}
+
+				Ok(out)
+			}
+			Err(e) => {
+				error!("Failed to get all status updates from database: {e}");
+				Err(anyhow!("Failed to get status updates from database"))
+			}
+		}
+	}
+
+	async fn update_team_status(&mut self, update: StatusUpdate) -> anyhow::Result<()> {
+		sqlx::query(
+				"INSERT INTO team_status (Team, Date, Status, Details, Member) VALUES ($1, $2, $3, $4, $5)",
+			)
+			.bind(update.team as i32)
+			.bind(update.date)
+			.bind(update.status.to_db())
+			.bind(update.details)
+			.bind(update.member)
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new status update in database")?;
+
+		Ok(())
+	}
+
+	async fn get_all_status(&self) -> anyhow::Result<Vec<StatusUpdate>> {
+		let result = sqlx::query("SELECT * FROM team_status")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let team = row.try_get::<i16, _>("team")? as TeamNumber;
+					let status = read_status(team, row).context("Failed to read status update")?;
+					out.push(status);
+				}
+
+				Ok(out)
+			}
+			Err(e) => {
+				error!("Failed to get all status updates from database: {e}");
+				Err(anyhow!("Failed to get status updates from database"))
 			}
 		}
 	}
@@ -887,6 +947,10 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		"CREATE TABLE IF NOT EXISTS autos (Id text PRIMARY KEY, Name text, Team int2, XPoints float4[], YPoints float4[], TimePoints float4[], ShotXPoints float4[], ShotYPoints float4[], ShotTimePoints float4[], Notes int2[])",
 	);
 
+	let status_task = pool.execute(
+		"CREATE TABLE IF NOT EXISTS team_status (Team int2, Date text, Status text, Details text, Member text)",
+	);
+
 	try_join!(
 		members_task,
 		events_task,
@@ -899,6 +963,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		match_stats_task,
 		scouting_assignments_task,
 		autos_task,
+		status_task,
 	)
 	.context("Failed to execute database setup tasks")?;
 
@@ -1094,5 +1159,25 @@ fn read_auto(id: &str, team: TeamNumber, row: PgRow) -> anyhow::Result<Auto> {
 		points,
 		shots: shot_points,
 		notes: notes.into_iter().collect(),
+	})
+}
+
+/// Read a status update from the database
+fn read_status(id: TeamNumber, row: PgRow) -> anyhow::Result<StatusUpdate> {
+	let date: String = row.try_get("date")?;
+	let status: &str = row.try_get("status")?;
+	let Ok(status) = RobotStatus::from_str(status) else {
+		error!("Unknown robot status {status}");
+		return Err(anyhow!("Unknown robot status"));
+	};
+	let details: String = row.try_get("details")?;
+	let member: String = row.try_get("member")?;
+
+	Ok(StatusUpdate {
+		team: id,
+		date,
+		details,
+		status,
+		member,
 	})
 }

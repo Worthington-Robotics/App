@@ -83,6 +83,13 @@ async fn populate_cache(sql: &SqlDatabase) -> anyhow::Result<JSONDatabase> {
 	{
 		cache.create_match_stats(stats).await?;
 	}
+	for status_update in sql
+		.get_all_status()
+		.await
+		.context("Failed to get status updates from database")?
+	{
+		cache.update_team_status(status_update).await?;
+	}
 
 	Ok(cache)
 }
@@ -402,6 +409,29 @@ impl Database for CacheDatabase {
 		team: TeamNumber,
 	) -> anyhow::Result<impl Iterator<Item = crate::scouting::autos::Auto>> {
 		self.cache.get_autos(team).await
+	}
+
+	async fn get_team_status(
+		&self,
+		team: TeamNumber,
+	) -> anyhow::Result<Vec<crate::scouting::status::StatusUpdate>> {
+		self.cache.get_team_status(team).await
+	}
+
+	async fn update_team_status(
+		&mut self,
+		update: crate::scouting::status::StatusUpdate,
+	) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.update_team_status(update.clone()),
+			self.cache.update_team_status(update)
+		)?;
+
+		Ok(())
+	}
+
+	async fn get_all_status(&self) -> anyhow::Result<Vec<crate::scouting::status::StatusUpdate>> {
+		self.cache.get_all_status().await
 	}
 }
 

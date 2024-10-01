@@ -3,7 +3,9 @@ use crate::{
 	attendance::AttendanceEntry,
 	events::Event,
 	member::Member,
-	scouting::{autos::Auto, matches::MatchStats, Team, TeamInfo, TeamNumber},
+	scouting::{
+		autos::Auto, matches::MatchStats, status::StatusUpdate, Team, TeamInfo, TeamNumber,
+	},
 	tasks::{Checklist, Task},
 };
 
@@ -158,4 +160,13 @@ pub trait Database {
 
 	/// Get a list of all autos from a team
 	async fn get_autos(&self, team: TeamNumber) -> anyhow::Result<impl Iterator<Item = Auto>>;
+
+	/// Get the list of status updates for a team
+	async fn get_team_status(&self, team: TeamNumber) -> anyhow::Result<Vec<StatusUpdate>>;
+
+	/// Add a status update to a team
+	async fn update_team_status(&mut self, update: StatusUpdate) -> anyhow::Result<()>;
+
+	/// Get the list of all status updates
+	async fn get_all_status(&self) -> anyhow::Result<Vec<StatusUpdate>>;
 }
