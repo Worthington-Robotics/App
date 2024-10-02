@@ -40,6 +40,18 @@ impl FirstClient {
 		Ok(teams)
 	}
 
+	/// Get the qualification schedule for the given event
+	pub async fn get_match_schedule(
+		&self,
+		season: i32,
+		event: &str,
+	) -> anyhow::Result<Vec<FirstMatch>> {
+		let base_url = format!("https://frc-api.firstinspires.org/v3.0/{season}/schedule/{event}?tournamentLevel=Qualification");
+		let response: MatchScheduleResponse = self.call(&base_url).await?;
+
+		Ok(response.schedule)
+	}
+
 	async fn call<D: DeserializeOwned>(&self, url: &str) -> anyhow::Result<D> {
 		serde_json::from_slice(
 			&self
@@ -72,4 +84,27 @@ struct TeamsAPIResponse {
 	teams: Vec<FirstTeam>,
 	page_total: usize,
 	team_count_total: usize,
+}
+
+/// Response from the match schedule API
+#[derive(Deserialize)]
+struct MatchScheduleResponse {
+	#[serde(rename = "Schedule")]
+	schedule: Vec<FirstMatch>,
+}
+
+/// A single scheduled match
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FirstMatch {
+	pub match_number: u16,
+	pub start_time: String,
+	pub teams: Vec<FirstMatchTeam>,
+}
+
+/// A single team in a match
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FirstMatchTeam {
+	pub team_number: TeamNumber,
 }

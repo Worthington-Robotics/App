@@ -18,7 +18,7 @@ use crate::{
 	member::{Member, MemberGroup, MemberKind, MemberMention},
 	scouting::{
 		autos::{Auto, AutoPoint},
-		matches::MatchStats,
+		matches::{Match, MatchNumber, MatchStats, MatchType},
 		status::{RobotStatus, StatusUpdate},
 		Competition, Team, TeamInfo, TeamNumber,
 	},
@@ -910,6 +910,43 @@ impl Database for SqlDatabase {
 			}
 		}
 	}
+
+	async fn get_matches(&self) -> anyhow::Result<impl Iterator<Item = Match>> {
+		let result = sqlx::query("SELECT * FROM matches")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let m = read_match(row).context("Failed to read match")?;
+					out.push(m);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get all matches from database: {e}");
+				Err(anyhow!("Failed to get matches from database"))
+			}
+		}
+	}
+
+	async fn create_match(&mut self, m: Match) -> anyhow::Result<()> {
+		sqlx::query(
+				"INSERT INTO matches (Number, Type, Date, RedAlliance, BlueAlliance) VALUES ($1, $2, $3, $4, $5)",
+			)
+			.bind(m.num.num as i32)
+			.bind(m.num.ty.to_string())
+			.bind(m.date)
+			.bind(m.red_alliance.into_iter().map(|x| x as i32).collect::<Vec<_>>())
+			.bind(m.blue_alliance.into_iter().map(|x| x as i32).collect::<Vec<_>>())
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new match in database")?;
+
+		Ok(())
+	}
 }
 
 /// Setup the database
@@ -951,6 +988,10 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		"CREATE TABLE IF NOT EXISTS team_status (Team int2, Date text, Status text, Details text, Member text)",
 	);
 
+	let matches_task = pool.execute(
+		"CREATE TABLE IF NOT EXISTS matches (Number int2, Type text, Date text, RedAlliance int2[], BlueAlliance int2[])",
+	);
+
 	try_join!(
 		members_task,
 		events_task,
@@ -964,6 +1005,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		scouting_assignments_task,
 		autos_task,
 		status_task,
+		matches_task,
 	)
 	.context("Failed to execute database setup tasks")?;
 
@@ -1179,5 +1221,30 @@ fn read_status(id: TeamNumber, row: PgRow) -> anyhow::Result<StatusUpdate> {
 		details,
 		status,
 		member,
+	})
+}
+
+/// Read a match from the database
+fn read_match(row: PgRow) -> anyhow::Result<Match> {
+	let num: i32 = row.try_get("number")?;
+	let ty: &str = row.try_get("type")?;
+	let Ok(ty) = MatchType::from_str(ty) else {
+		error!("Unknown match type {ty}");
+		return Err(anyhow!("Unknown match type"));
+	};
+	let date: Option<String> = row.try_get("date")?;
+	let red_alliance: Vec<i32> = row.try_get("redalliance")?;
+	let red_alliance = red_alliance.into_iter().map(|x| x as TeamNumber).collect();
+	let blue_alliance: Vec<i32> = row.try_get("redalliance")?;
+	let blue_alliance = blue_alliance.into_iter().map(|x| x as TeamNumber).collect();
+
+	Ok(Match {
+		num: MatchNumber {
+			num: num as u16,
+			ty,
+		},
+		date,
+		red_alliance,
+		blue_alliance,
 	})
 }

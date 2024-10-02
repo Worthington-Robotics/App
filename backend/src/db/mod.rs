@@ -4,7 +4,10 @@ use crate::{
 	events::Event,
 	member::Member,
 	scouting::{
-		autos::Auto, matches::MatchStats, status::StatusUpdate, Team, TeamInfo, TeamNumber,
+		autos::Auto,
+		matches::{Match, MatchStats},
+		status::StatusUpdate,
+		Team, TeamInfo, TeamNumber,
 	},
 	tasks::{Checklist, Task},
 };
@@ -169,4 +172,10 @@ pub trait Database {
 
 	/// Get the list of all status updates
 	async fn get_all_status(&self) -> anyhow::Result<Vec<StatusUpdate>>;
+
+	/// Get the match schedule
+	async fn get_matches(&self) -> anyhow::Result<impl Iterator<Item = Match>>;
+
+	/// Add a match to the schedule
+	async fn create_match(&mut self, m: Match) -> anyhow::Result<()>;
 }

@@ -1,3 +1,5 @@
+use std::{fmt::Display, str::FromStr};
+
 use serde::{Deserialize, Serialize};
 
 use super::{status::RobotStatus, TeamNumber};
@@ -5,9 +7,64 @@ use super::{status::RobotStatus, TeamNumber};
 /// A single match
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Match {
-	pub id: String,
+	pub num: MatchNumber,
+	#[serde(default)]
+	pub date: Option<String>,
 	pub red_alliance: Vec<TeamNumber>,
 	pub blue_alliance: Vec<TeamNumber>,
+}
+
+/// Number for a match
+#[derive(Serialize, Deserialize, Clone)]
+pub struct MatchNumber {
+	pub ty: MatchType,
+	pub num: u16,
+}
+
+impl Display for MatchNumber {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}{}",
+			match self.ty {
+				MatchType::Qualification => "Q",
+				MatchType::Playoff => "P",
+			},
+			self.num
+		)
+	}
+}
+
+/// Type of a match
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MatchType {
+	Qualification,
+	Playoff,
+}
+
+impl Display for MatchType {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				Self::Qualification => "Qualification",
+				Self::Playoff => "Playoff",
+			}
+		)
+	}
+}
+
+impl FromStr for MatchType {
+	type Err = ();
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"Qualification" | "Q" => Ok(Self::Qualification),
+			"Playoff" | "P" => Ok(Self::Playoff),
+			_ => Err(()),
+		}
+	}
 }
 
 /// Stats for a single team in a match

@@ -1,4 +1,5 @@
-use chrono::Utc;
+use chrono::{DateTime, Datelike, FixedOffset, Utc};
+use itertools::Itertools;
 use rocket::{
 	form::{Form, FromForm},
 	http::Status,
@@ -10,9 +11,11 @@ use crate::{
 	db::Database,
 	routes::{create_page, OptionalSessionID, PageOrRedirect, Scope, SessionID},
 	scouting::{
-		matches::MatchStats,
+		matches::{Match, MatchStats},
 		status::{RobotStatus, StatusUpdate},
+		TeamNumber,
 	},
+	util::render_time,
 	State,
 };
 
@@ -124,4 +127,112 @@ pub async fn match_report_raw(
 	let page = create_page("Raw Match Report", &page, Some(Scope::Scouting));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+#[rocket::get("/scouting/schedule")]
+pub async fn match_schedule(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Match schedule");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	if session_id.get_requesting_member(state).await.is_err() {
+		return Ok(redirect);
+	};
+
+	let page = include_str!("../pages/scouting/schedule.min.html");
+
+	let lock = state.db.lock().await;
+	let matches = lock
+		.get_matches()
+		.await
+		.map_err(|e| {
+			error!("Failed to get matches from database: {e}");
+			Status::InternalServerError
+		})?
+		.sorted_by_key(|x| x.num.num);
+
+	let now = Utc::now();
+
+	let mut matches_string = String::new();
+	let mut last_date: Option<DateTime<FixedOffset>> = None;
+	let mut day_counter = 1;
+	// Whether the upcoming match was already chosen
+	let mut next_chosen = false;
+	for m in matches {
+		// Insert break elements between days
+		if let Some(Ok(date)) = m.date.as_ref().map(|x| DateTime::parse_from_rfc2822(&x)) {
+			if let Some(last_date) = &last_date {
+				if date.day() != last_date.day() {
+					day_counter += 1;
+					matches_string.push_str(&format!(
+						"<div class=\"cont col day-break\">Day {day_counter}</div>"
+					));
+				}
+			}
+			last_date = Some(date);
+		}
+
+		matches_string.push_str(&render_match(m, &now, &mut next_chosen).await);
+	}
+	let page = page.replace("{{matches}}", &matches_string);
+
+	let page = create_page("Match Schedule", &page, Some(Scope::Scouting));
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+async fn render_match(m: Match, now: &DateTime<Utc>, next_chosen: &mut bool) -> String {
+	let out = include_str!("../components/scouting/match.min.html");
+	let out = out.replace("{{number}}", &m.num.num.to_string());
+
+	let is_our_match = m.red_alliance.contains(&4145) || m.blue_alliance.contains(&4145);
+
+	let (date, next_class) =
+		if let Some(Ok(date)) = m.date.map(|x| DateTime::parse_from_rfc2822(&x)) {
+			let next_class = if !*next_chosen && is_our_match && date > *now {
+				*next_chosen = true;
+				"next"
+			} else {
+				""
+			};
+			(render_time(date), next_class)
+		} else {
+			(String::new(), "")
+		};
+	let out = out.replace("{{time}}", &date);
+	let out = out.replace("{{red1}}", &m.red_alliance[0].to_string());
+	let out = out.replace("{{red2}}", &m.red_alliance[1].to_string());
+	let out = out.replace("{{red3}}", &m.red_alliance[2].to_string());
+	let out = out.replace("{{blue1}}", &m.blue_alliance[0].to_string());
+	let out = out.replace("{{blue2}}", &m.blue_alliance[1].to_string());
+	let out = out.replace("{{blue3}}", &m.blue_alliance[2].to_string());
+
+	// Add a class to us to make us stand out
+	let out = out.replace("{{red1-class}}", is_us_class(m.red_alliance[0]));
+	let out = out.replace("{{red2-class}}", is_us_class(m.red_alliance[1]));
+	let out = out.replace("{{red3-class}}", is_us_class(m.red_alliance[2]));
+	let out = out.replace("{{blue1-class}}", is_us_class(m.blue_alliance[0]));
+	let out = out.replace("{{blue2-class}}", is_us_class(m.blue_alliance[1]));
+	let out = out.replace("{{blue3-class}}", is_us_class(m.blue_alliance[2]));
+
+	let ours_class = if is_our_match { "" } else { "not-ours" };
+	let out = out.replace("{{ours-class}}", ours_class);
+	let out = out.replace("{{next-class}}", next_class);
+
+	out
+}
+
+fn is_us_class(team: TeamNumber) -> &'static str {
+	if team == 4145 {
+		"us"
+	} else {
+		""
+	}
 }

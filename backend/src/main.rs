@@ -176,6 +176,7 @@ async fn rocket() -> _ {
 				routes::scouting::matches::create_match_stats,
 				routes::scouting::matches::match_report_main,
 				routes::scouting::matches::match_report_raw,
+				routes::scouting::matches::match_schedule,
 				routes::scouting::matchup::matchup,
 				routes::scouting::autos::autos_page,
 				routes::scouting::autos::create_auto,

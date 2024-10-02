@@ -1,0 +1,123 @@
+{{worbots-header}}
+<h1>Match Schedule</h1>
+<div id="schedule" class="cont col">
+	<div id="filter" class="cont">
+		<button id="our-matches">Our Matches</button>
+		<button id="all-matches" style="background-color: var(--bg2);">All Matches</button>
+	</div>
+	<div class="cont col item-container" id="matches">
+		{{matches}}
+	</div>
+</div>
+<style>
+	#matches {
+		row-gap: 0.6rem;
+	}
+
+	.next {
+		border: 0.2rem solid var(--wbblueacc);
+	}
+
+	.match {
+		width: 23.5rem;
+		padding: 0.72rem;
+	}
+
+	.match-inner {
+		display: grid;
+		grid-template-columns: minmax(0, 0.2fr) minmax(0, 0.2fr) minmax(0, .6fr) minmax(0, 0.2fr);
+		width: 100%;
+	}
+
+	.match-number {
+		font-size: calc(1.7vw * var(--scale));
+		font-family: "Courier New", Courier, monospace;
+	}
+
+	.match-time {
+		color: var(--fg2);
+	}
+
+	.match-section {
+		box-sizing: border-box;
+	}
+
+	.alliances {
+		row-gap: 0.3rem;
+	}
+
+	.alliance {
+		gap: 0.3rem;
+	}
+
+	.red-team,
+	.blue-team {
+		font-size: calc(1.2vw * var(--scale));
+		padding: 0.3rem;
+		width: 2rem;
+		font-weight: bold;
+		cursor: pointer;
+	}
+
+	.red-team {
+		color: var(--wbred);
+	}
+
+	.red-team.us {
+		background-color: var(--wbred);
+	}
+
+	.blue-team {
+		color: var(--wbblueacc);
+	}
+
+	.blue-team.us {
+		background-color: var(--wbblueacc);
+	}
+
+	.us {
+		font-weight: normal;
+		color: black;
+	}
+
+	.view-button {
+		background-color: var(--wbblue);
+		padding: 0.4rem;
+		width: 1.2rem;
+		height: 1.2rem;
+	}
+
+	.day-break {
+		margin: 0.5rem 0px;
+		border-bottom: 0.3rem solid var(--bg4);
+		width: 70%;
+		padding-bottom: 0.4rem;
+		color: var(--fg3);
+		font-weight: bold;
+	}
+
+	/* Start with these hidden */
+	.not-ours {
+		display: none;
+	}
+</style>
+<script>
+	let ourMatches = document.getElementById("our-matches");
+	let allMatches = document.getElementById("all-matches");
+	let notOurs = document.getElementsByClassName("not-ours");
+	ourMatches.addEventListener("click", () => {
+		ourMatches.style.backgroundColor = "";
+		allMatches.style.backgroundColor = "var(--bg2)";
+		for (let e of notOurs) {
+			e.style.display = "none";
+		}
+	});
+	allMatches.addEventListener("click", () => {
+		allMatches.style.backgroundColor = "";
+		ourMatches.style.backgroundColor = "var(--bg2)";
+		for (let e of notOurs) {
+			e.style.display = "flex";
+		}
+	});
+</script>
+{{footer}}

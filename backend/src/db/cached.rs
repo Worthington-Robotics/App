@@ -90,6 +90,13 @@ async fn populate_cache(sql: &SqlDatabase) -> anyhow::Result<JSONDatabase> {
 	{
 		cache.update_team_status(status_update).await?;
 	}
+	for m in sql
+		.get_matches()
+		.await
+		.context("Failed to get matches from database")?
+	{
+		cache.create_match(m).await?;
+	}
 
 	Ok(cache)
 }
@@ -432,6 +439,18 @@ impl Database for CacheDatabase {
 
 	async fn get_all_status(&self) -> anyhow::Result<Vec<crate::scouting::status::StatusUpdate>> {
 		self.cache.get_all_status().await
+	}
+
+	async fn get_matches(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = crate::scouting::matches::Match>> {
+		self.cache.get_matches().await
+	}
+
+	async fn create_match(&mut self, m: crate::scouting::matches::Match) -> anyhow::Result<()> {
+		try_join!(self.sql.create_match(m.clone()), self.cache.create_match(m))?;
+
+		Ok(())
 	}
 }
 

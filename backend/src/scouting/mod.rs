@@ -79,6 +79,17 @@ impl Competition {
 			Self::States => "OSC",
 		}
 	}
+
+	/// Gets the FRC event code of this event
+	pub fn get_code(&self) -> Option<&'static str> {
+		match self {
+			Self::Pittsburgh => Some("PACA"),
+			Self::Buckeye => Some("OHCL"),
+			Self::MiamiValley => Some("OHMV"),
+			Self::Champs => None,
+			Self::States => None,
+		}
+	}
 }
 
 /// Information about a team and their robot, mostly obtained from pit scouting
