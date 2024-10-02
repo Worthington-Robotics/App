@@ -68,22 +68,31 @@
 	var can = document.getElementById("can");
 	var ctx = can.getContext("2d");
 
-	can.addEventListener("mousedown", (e) => {
+	function downEvent(e) {
 		if (!finishedDrawing && startTime == null) {
 			startTime = Date.now() / 1000;
-
 		}
-	});
-	can.addEventListener("mouseup", (e) => {
+	}
+	can.addEventListener("mousedown", downEvent);
+	can.addEventListener("touchstart", downEvent);
+	function upEvent(e) {
 		if (startTime != null) {
 			finishDrawing();
 		}
-	});
-	// The only way to get mouse position is through an event
-	can.addEventListener("mousemove", (e) => {
+	}
+	can.addEventListener("mouseup", upEvent);
+	can.addEventListener("touchend", upEvent);
+	function moveEvent(e) {
 		if (startTime != null) {
 			currentPosition = getPos(e);
 		}
+	}
+	can.addEventListener("mousemove", moveEvent);
+	// The coords are represented a bit different here
+	can.addEventListener("touchmove", (e) => {
+		e.clientX = e.touches[0].clientX;
+		e.clientY = e.touches[0].clientY;
+		moveEvent(e);
 	});
 
 	let timeElement = document.getElementById("auto-time");
