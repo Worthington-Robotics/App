@@ -367,7 +367,7 @@ pub async fn create_event_api(
 
 	let event = event.into_inner();
 
-	let date = match date_from_js(event.date.clone()) {
+	let date = match date_from_js(event.date.clone(), false) {
 		Ok(date) => date,
 		Err(e) => {
 			error!("Failed to parse date {}: {}", event.date, e);
@@ -377,7 +377,7 @@ pub async fn create_event_api(
 
 	let end_date = match event.end_date {
 		Some(end_date) => {
-			let end_date = match date_from_js(end_date) {
+			let end_date = match date_from_js(end_date, false) {
 				Ok(date) => date,
 				Err(e) => {
 					error!("Failed to parse date {}: {}", event.date, e);

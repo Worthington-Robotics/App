@@ -268,7 +268,7 @@ pub async fn import_match_schedule(state: &State, session_id: SessionID<'_>) -> 
 
 	let mut matches = Vec::new();
 	for m in first_matches {
-		let Ok(date) = date_from_js(m.start_time) else {
+		let Ok(date) = date_from_js(m.start_time, true) else {
 			error!("Failed to parse date for match");
 			continue;
 		};

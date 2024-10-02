@@ -20,13 +20,16 @@
 </div>
 <div id="time-edit-popup-container" class="cont" style="display:none">
 	<div id="time-edit-popup" class="cont col round">
-		<h2>Edit Time</h2>
+		<h3>Edit Time</h3>
 		<form id="time-edit-form" class="cont col">
 			<label for="time-value">Time Value</label>
 			<input type="text" id="time-edit-field" name="time-value" />
 			<label for="time-offset">Time Offset</label>
 			<input type="text" id="time-offset" name="time-offset" />
-			<input type="submit" value="Save" />
+			<div class="cont">
+				<button id="time-edit-cancel" style="background-color: var(--bg3)">Cancel</button>
+				<input type="submit" value="Save" />
+			</div>
 		</form>
 	</div>
 </div>
@@ -226,7 +229,11 @@
 		}
 
 		timeEditPopupContainer.style.display = "none";
-	})
+	});
+	document.getElementById("time-edit-cancel").addEventListener("click", (e) => {
+		e.preventDefault();
+		timeEditPopupContainer.style.display = "none";
+	});
 
 	// Event buttons
 	document.getElementById("auto-score").addEventListener("click", () => {
@@ -485,7 +492,7 @@
 
 	#time-edit-popup {
 		background-color: var(--bg2);
-		padding: 1.5rem;
+		padding: 0.3rem 2.5rem 1.5rem;
 	}
 
 	.miss,

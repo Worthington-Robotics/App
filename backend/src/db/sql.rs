@@ -1000,7 +1000,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	);
 
 	let matches_task = pool.execute(
-		"CREATE TABLE IF NOT EXISTS matches (Number int2, Type text, Date text, RedAlliance int2[], BlueAlliance int2[])",
+		"CREATE TABLE IF NOT EXISTS matches (Number int4, Type text, Date text, RedAlliance int2[], BlueAlliance int2[])",
 	);
 
 	try_join!(
@@ -1244,9 +1244,9 @@ fn read_match(row: PgRow) -> anyhow::Result<Match> {
 		return Err(anyhow!("Unknown match type"));
 	};
 	let date: Option<String> = row.try_get("date")?;
-	let red_alliance: Vec<i32> = row.try_get("redalliance")?;
+	let red_alliance: Vec<i16> = row.try_get("redalliance")?;
 	let red_alliance = red_alliance.into_iter().map(|x| x as TeamNumber).collect();
-	let blue_alliance: Vec<i32> = row.try_get("redalliance")?;
+	let blue_alliance: Vec<i16> = row.try_get("bluealliance")?;
 	let blue_alliance = blue_alliance.into_iter().map(|x| x as TeamNumber).collect();
 
 	Ok(Match {

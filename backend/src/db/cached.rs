@@ -488,7 +488,7 @@ impl Fairing for SyncCache {
 			loop {
 				rocket::tokio::time::sleep(Duration::from_secs(120)).await;
 				if let Err(e) = db.lock().await.sync_cache().await {
-					error!("Failed to sync cache: {e}");
+					error!("Failed to sync cache: {e:#}");
 				}
 			}
 		});

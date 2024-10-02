@@ -26,17 +26,20 @@
 
 	.match-inner {
 		display: grid;
-		grid-template-columns: minmax(0, 0.2fr) minmax(0, 0.2fr) minmax(0, .6fr) minmax(0, 0.2fr);
+		grid-template-columns: minmax(0, 0.2fr) minmax(0, 0.2fr) minmax(0, .5fr) minmax(0, 0.2fr);
 		width: 100%;
 	}
 
 	.match-number {
 		font-size: calc(1.7vw * var(--scale));
 		font-family: "Courier New", Courier, monospace;
+		margin-right: 0.8rem;
 	}
 
 	.match-time {
 		color: var(--fg2);
+		text-align: center;
+		margin-right: 0.4rem;
 	}
 
 	.match-section {
@@ -90,8 +93,8 @@
 
 	.day-break {
 		margin: 0.5rem 0px;
-		border-bottom: 0.3rem solid var(--bg4);
-		width: 70%;
+		border-bottom: 0.25rem solid var(--bg4);
+		width: 50%;
 		padding-bottom: 0.4rem;
 		color: var(--fg3);
 		font-weight: bold;
