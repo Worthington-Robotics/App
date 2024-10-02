@@ -1,6 +1,7 @@
-{{worbots-header}}
+{{worbots-header}}{{error}}{{prompt}}
 <h1>Match Schedule</h1>
 <div id="schedule" class="cont col">
+	<button id="import-button">Import Matches</button>
 	<div id="filter" class="cont">
 		<button id="our-matches">Our Matches</button>
 		<button id="all-matches" style="background-color: var(--bg2);">All Matches</button>
@@ -119,5 +120,19 @@
 			e.style.display = "flex";
 		}
 	});
+
+	document.getElementById("import-button").addEventListener("click", () => {
+		showConfirmPrompt("import matches, deleting all existing ones", () => {
+			fetch("/api/import_match_schedule", {
+				method: "POST",
+			}).then((resp) => {
+				if (resp.status == 200) {
+					window.location.reload();
+				} else {
+					setError(resp.statusText);
+				}
+			});
+		});
+	})
 </script>
 {{footer}}

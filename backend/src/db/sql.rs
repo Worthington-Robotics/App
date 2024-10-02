@@ -947,6 +947,17 @@ impl Database for SqlDatabase {
 
 		Ok(())
 	}
+
+	async fn clear_matches(&mut self) -> anyhow::Result<()> {
+		let query = sqlx::query("DELETE FROM matches");
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove matches from database")?;
+
+		Ok(())
+	}
 }
 
 /// Setup the database

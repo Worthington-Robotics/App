@@ -9,13 +9,14 @@ use tracing::{error, span, Level};
 
 use crate::{
 	db::Database,
+	events::get_season,
 	routes::{create_page, OptionalSessionID, PageOrRedirect, Scope, SessionID},
 	scouting::{
-		matches::{Match, MatchStats},
+		matches::{Match, MatchNumber, MatchStats, MatchType},
 		status::{RobotStatus, StatusUpdate},
-		TeamNumber,
+		Competition, TeamNumber,
 	},
-	util::render_time,
+	util::{date_from_js, render_time},
 	State,
 };
 
@@ -235,4 +236,72 @@ fn is_us_class(team: TeamNumber) -> &'static str {
 	} else {
 		""
 	}
+}
+
+#[rocket::post("/api/import_match_schedule")]
+pub async fn import_match_schedule(state: &State, session_id: SessionID<'_>) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Importing match stats");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	let mut lock = state.db.lock().await;
+
+	let Some(event_code) = Competition::Pittsburgh.get_code() else {
+		error!("Event does not have a code");
+		return Ok(());
+	};
+	let first_matches = state
+		.first_client
+		.get_match_schedule(get_season(&Utc::now()) as i32, event_code)
+		.await
+		.map_err(|e| {
+			error!("Failed to get match schedule from FIRST API: {e:#}");
+			Status::InternalServerError
+		})?;
+
+	// Sanity check
+	if first_matches.len() < 30 {
+		error!("Not enough matches");
+		return Err(Status::InternalServerError);
+	}
+
+	let mut matches = Vec::new();
+	for m in first_matches {
+		let Ok(date) = date_from_js(m.start_time) else {
+			error!("Failed to parse date for match");
+			continue;
+		};
+		matches.push(Match {
+			num: MatchNumber {
+				num: m.match_number,
+				ty: MatchType::Qualification,
+			},
+			date: Some(date.to_rfc2822()),
+			red_alliance: vec![
+				m.teams[0].team_number,
+				m.teams[1].team_number,
+				m.teams[2].team_number,
+			],
+			blue_alliance: vec![
+				m.teams[3].team_number,
+				m.teams[4].team_number,
+				m.teams[5].team_number,
+			],
+		});
+	}
+
+	if let Err(e) = lock.clear_matches().await {
+		error!("Failed to clear match schedule in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	for m in matches {
+		if let Err(e) = lock.create_match(m).await {
+			error!("Failed to create match in database: {e}");
+			return Err(Status::InternalServerError);
+		}
+	}
+
+	Ok(())
 }

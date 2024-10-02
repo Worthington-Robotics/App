@@ -452,6 +452,12 @@ impl Database for CacheDatabase {
 
 		Ok(())
 	}
+
+	async fn clear_matches(&mut self) -> anyhow::Result<()> {
+		try_join!(self.sql.clear_matches(), self.cache.clear_matches())?;
+
+		Ok(())
+	}
 }
 
 /// Fairing for periodically syncing the cache

@@ -331,6 +331,12 @@ impl Database for JSONDatabase {
 
 		self.write()
 	}
+
+	async fn clear_matches(&mut self) -> anyhow::Result<()> {
+		self.contents.matches.clear();
+
+		self.write()
+	}
 }
 
 impl JSONDatabase {

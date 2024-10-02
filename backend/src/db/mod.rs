@@ -178,4 +178,7 @@ pub trait Database {
 
 	/// Add a match to the schedule
 	async fn create_match(&mut self, m: Match) -> anyhow::Result<()>;
+
+	/// Remove all matches from the schedule
+	async fn clear_matches(&mut self) -> anyhow::Result<()>;
 }
