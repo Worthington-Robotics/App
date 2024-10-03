@@ -4,6 +4,7 @@ use crate::{
 	events::Event,
 	member::Member,
 	scouting::{
+		assignment::ScoutingAssignment,
 		autos::Auto,
 		matches::{Match, MatchStats},
 		status::StatusUpdate,
@@ -181,4 +182,14 @@ pub trait Database {
 
 	/// Remove all matches from the schedule
 	async fn clear_matches(&mut self) -> anyhow::Result<()>;
+
+	/// Get the scouting assignment for a member
+	async fn get_assignment(&self, member: &str) -> anyhow::Result<Option<ScoutingAssignment>>;
+
+	/// Get all scouting assignments
+	async fn get_all_assignments(&self)
+		-> anyhow::Result<impl Iterator<Item = ScoutingAssignment>>;
+
+	/// Assign scouting to a member
+	async fn create_assignment(&mut self, assignment: ScoutingAssignment) -> anyhow::Result<()>;
 }

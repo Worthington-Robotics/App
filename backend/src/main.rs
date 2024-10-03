@@ -188,6 +188,10 @@ async fn rocket() -> _ {
 				routes::scouting::autos::auto_image,
 				routes::scouting::status::team_status_page,
 				routes::scouting::status::update_status,
+				routes::scouting::assignments::assignments,
+				routes::scouting::assignments::assign_team,
+				routes::scouting::assignments::unassign_team,
+				routes::scouting::assignments::random_assign,
 			],
 		)
 		.mount(

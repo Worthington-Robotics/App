@@ -17,6 +17,7 @@ use crate::{
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{Member, MemberGroup, MemberKind, MemberMention},
 	scouting::{
+		assignment::ScoutingAssignment,
 		autos::{Auto, AutoPoint},
 		matches::{Match, MatchNumber, MatchStats, MatchType},
 		status::{RobotStatus, StatusUpdate},
@@ -958,6 +959,78 @@ impl Database for SqlDatabase {
 
 		Ok(())
 	}
+
+	async fn get_assignment(&self, member: &str) -> anyhow::Result<Option<ScoutingAssignment>> {
+		let mut result = sqlx::query("SELECT * FROM assignments WHERE Member = $1")
+			.bind(member)
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let assignment =
+					read_assignment(member, row).context("Failed to read assignment")?;
+
+				Ok(Some(assignment))
+			}
+			Err(e) => {
+				error!("Failed to get assignment for member {member} from database: {e}");
+				Err(anyhow!("Failed to get assignment from database"))
+			}
+		}
+	}
+
+	async fn get_all_assignments(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = ScoutingAssignment>> {
+		let result = sqlx::query("SELECT * FROM assignments")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let member: String = row.try_get("member")?;
+					let assignment =
+						read_assignment(&member, row).context("Failed to read assignment")?;
+					out.push(assignment);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get tasks from database: {e}");
+				Err(anyhow!("Failed to get tasks from database"))
+			}
+		}
+	}
+
+	async fn create_assignment(&mut self, assignment: ScoutingAssignment) -> anyhow::Result<()> {
+		let query =
+			sqlx::query("DELETE FROM assignments WHERE Member = $1").bind(&assignment.member);
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove existing assignment from database")?;
+
+		sqlx::query("INSERT INTO assignments (Member, Teams) VALUES ($1, $2)")
+			.bind(assignment.member)
+			.bind(
+				assignment
+					.teams
+					.into_iter()
+					.map(|x| x as i32)
+					.collect::<Vec<_>>(),
+			)
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new assignment in database")?;
+
+		Ok(())
+	}
 }
 
 /// Setup the database
@@ -1003,6 +1076,9 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		"CREATE TABLE IF NOT EXISTS matches (Number int4, Type text, Date text, RedAlliance int2[], BlueAlliance int2[])",
 	);
 
+	let assignments_task =
+		pool.execute("CREATE TABLE IF NOT EXISTS assignments (Member text, Teams int2[])");
+
 	try_join!(
 		members_task,
 		events_task,
@@ -1017,6 +1093,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		autos_task,
 		status_task,
 		matches_task,
+		assignments_task,
 	)
 	.context("Failed to execute database setup tasks")?;
 
@@ -1257,5 +1334,16 @@ fn read_match(row: PgRow) -> anyhow::Result<Match> {
 		date,
 		red_alliance,
 		blue_alliance,
+	})
+}
+
+/// Read a scouting assignment from the database
+fn read_assignment(member: &str, row: PgRow) -> anyhow::Result<ScoutingAssignment> {
+	let teams: Vec<i16> = row.try_get("teams")?;
+	let teams = teams.into_iter().map(|x| x as TeamNumber).collect();
+
+	Ok(ScoutingAssignment {
+		member: member.to_string(),
+		teams,
 	})
 }

@@ -1,0 +1,222 @@
+{{worbots-header}}{{error}}{{prompt}}
+<h1>Scouting Assignments</h1>
+<div id="assignments" class="cont col">
+	<div class="cont">
+		<button onclick="history.back()">Back</button>
+		<button id="random-button" style="background-color:var(--bg2)">Auto-Assign</button>
+	</div>
+	<div class="cont col">
+		<h3>Available Teams</h3>
+		<div class="round" id="available-teams">
+			{{available-teams}}
+		</div>
+	</div>
+	<div class="cont col">
+		<h3>Scouts</h3>
+		<div class="cont col" id="members">
+			{{members}}
+		</div>
+	</div>
+	<!-- Drag boxes for scrolling the page -->
+	<div id="top-drag"></div>
+	<div id="bottom-drag"></div>
+</div>
+<style>
+	#available-teams {
+		display: grid;
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		width: 100%;
+		/* Padding so that the box is able to be dragged to when empty */
+		padding: 2rem 0rem;
+	}
+
+	.team {
+		font-size: calc(1.25vw * var(--scale));
+		padding: 0.3rem;
+		width: 2rem;
+		height: 1rem;
+		font-weight: bold;
+		margin: 0.3rem;
+		user-select: none;
+		color: var(--fg2);
+		border: 0.2rem solid var(--fg2);
+	}
+
+	.team.unassigned {
+		color: var(--wbred);
+		border: 0.2rem solid var(--wbred);
+	}
+
+	#members {
+		row-gap: 0.4rem;
+	}
+
+	.member {
+		display: grid;
+		grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
+		width: 90%;
+		padding: 0.1rem;
+		background-color: var(--bg2);
+	}
+
+	.member-name {
+		font-size: calc(1.2vw * var(--scale));
+		text-align: center;
+	}
+
+	.member-teams {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		min-height: 4rem;
+		align-items: center;
+	}
+
+	#top-drag,
+	#bottom-drag {
+		position: fixed;
+		width: 100vw;
+		height: 2.5rem;
+		left: 0px;
+	}
+
+	#top-drag {
+		top: 0px;
+	}
+
+	#bottom-drag {
+		bottom: 4rem;
+	}
+</style>
+<script>
+	// Another minification bug fix
+	let emptyString = "";
+
+	let teams = document.getElementsByClassName("team");
+
+	for (let team of teams) {
+		team.addEventListener("dragstart", (e) => {
+			e.dataTransfer.dropEffect = "move";
+			e.dataTransfer.setData("text/plain", e.target.id);
+		});
+		team.addEventListener("dragend", (e) => {
+		});
+	}
+
+	let memberTeamBoxes = document.getElementsByClassName("member-teams");
+	for (let teamBox of memberTeamBoxes) {
+		teamBox.addEventListener("dragover", (e) => {
+			e.preventDefault();
+			e.target.style.backgroundColor = "var(--bg3)";
+		});
+		teamBox.addEventListener("dragleave", (e) => {
+			e.preventDefault();
+			e.target.style.backgroundColor = emptyString;
+		});
+		teamBox.addEventListener("drop", (e) => {
+			e.preventDefault();
+			e.target.style.backgroundColor = emptyString;
+			if (!e.target.classList.contains("member-teams")) {
+				return;
+			}
+
+			let id = e.dataTransfer.getData("text/plain");
+			let elem = document.getElementById(id);
+
+			// Don't do anything if they dragged it to the same spot
+			if (elem.dataset.member == e.target.dataset.id) {
+				return;
+			}
+
+			// Minifier messes up these constants so we have to define them in variables
+			let status = 200;
+			let method = "POST";
+			fetch(`/api/assign_team/${e.target.dataset.id}/${elem.innerHTML}`, {
+				method: method,
+			}).then((resp) => {
+				if (resp.status != status) {
+					setError(resp.statusText);
+					return;
+				}
+				// Remove from the old member
+				let removePromise = Promise.resolve();
+
+				if (elem.dataset.member != null && elem.dataset.member != "") {
+					removePromise = fetch(`/api/unassign_team/${elem.dataset.member}/${elem.innerHTML}`, {
+						method: method,
+					});
+				}
+				removePromise.then((resp) => {
+					if (resp != undefined && resp.status != status) {
+						setError(resp.statusText);
+						return;
+					}
+
+					elem.classList.remove("unassigned");
+					elem.dataset.member = e.target.dataset.id;
+					e.target.appendChild(elem);
+				});
+			});
+		});
+	}
+
+	// Unassign teams by dropping them back into the available teams box
+	let availableTeamsBox = document.getElementById("available-teams");
+	availableTeamsBox.addEventListener("dragover", (e) => {
+		e.preventDefault();
+		e.target.style.backgroundColor = "var(--bg3)";
+	});
+	availableTeamsBox.addEventListener("dragleave", (e) => {
+		e.preventDefault();
+		e.target.style.backgroundColor = emptyString;
+	});
+	availableTeamsBox.addEventListener("drop", (e) => {
+		e.preventDefault();
+		e.target.style.backgroundColor = emptyString;
+		if (e.target.id != "available-teams") {
+			return;
+		}
+
+		let id = e.dataTransfer.getData("text/plain");
+		let elem = document.getElementById(id);
+
+		// Don't re-unassign a non-assigned team
+		if (elem.dataset.member == null || elem.dataset.member == "") {
+			return;
+		}
+
+		fetch(`/api/unassign_team/${elem.dataset.member}/${elem.innerHTML}`, {
+			method: "POST",
+		}).then((resp) => {
+			if (resp.status != 200) {
+				setError(resp.statusText);
+				return;
+			}
+			elem.classList.add("unassigned");
+			elem.dataset.member = null;
+			e.target.appendChild(elem);
+		});
+	});
+
+	// Automatic scrolling
+	document.getElementById("top-drag").addEventListener("dragover", (e) => {
+		window.scrollBy({ top: -20, behavior: "smooth" });
+	});
+	document.getElementById("bottom-drag").addEventListener("dragover", (e) => {
+		window.scrollBy({ top: 20, behavior: "smooth" });
+	});
+
+	document.getElementById("random-button").addEventListener("click", () => {
+		showConfirmPrompt("clear all assignments and randomly assign", () => {
+			fetch("/api/random_assign_teams", {
+				method: "POST",
+			}).then((resp) => {
+				if (resp.status != 200) {
+					setError(resp.statusText);
+					return;
+				}
+				window.location.reload();
+			});
+		});
+	});
+</script>
+{{footer}}

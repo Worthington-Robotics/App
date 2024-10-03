@@ -1,6 +1,7 @@
 pub mod autos;
 pub mod matches;
 pub mod status;
+pub mod assignment;
 
 use std::{
 	collections::{HashMap, HashSet},
@@ -187,13 +188,6 @@ pub struct TeamStats {
 	pub reliability: f32,
 	/// Total number of matches the team has played
 	pub matches: u16,
-}
-
-/// Scouting assignments for a member
-#[derive(Serialize, Deserialize)]
-pub struct ScoutingAssignments {
-	pub member: String,
-	pub teams: HashSet<TeamNumber>,
 }
 
 /// Calculate stats for a single team. The given set of stats can contain matches from other teams,

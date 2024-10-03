@@ -18,10 +18,11 @@ use crate::{
 	events::Event,
 	member::Member,
 	scouting::{
+		assignment::ScoutingAssignment,
 		autos::Auto,
 		matches::{Match, MatchStats},
 		status::StatusUpdate,
-		ScoutingAssignments, Team, TeamInfo, TeamNumber,
+		Team, TeamInfo, TeamNumber,
 	},
 	tasks::{Checklist, Task},
 };
@@ -337,6 +338,24 @@ impl Database for JSONDatabase {
 
 		self.write()
 	}
+
+	async fn get_assignment(&self, member: &str) -> anyhow::Result<Option<ScoutingAssignment>> {
+		Ok(self.contents.scouting_assignments.get(member).cloned())
+	}
+
+	async fn get_all_assignments(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = ScoutingAssignment>> {
+		Ok(self.contents.scouting_assignments.values().cloned())
+	}
+
+	async fn create_assignment(&mut self, assignment: ScoutingAssignment) -> anyhow::Result<()> {
+		self.contents
+			.scouting_assignments
+			.insert(assignment.member.clone(), assignment);
+
+		self.write()
+	}
 }
 
 impl JSONDatabase {
@@ -376,7 +395,7 @@ struct DatabaseContents {
 	#[serde(default)]
 	team_info: HashMap<TeamNumber, TeamInfo>,
 	#[serde(default)]
-	scouting_assignments: HashMap<String, ScoutingAssignments>,
+	scouting_assignments: HashMap<String, ScoutingAssignment>,
 	#[serde(default)]
 	checklists: HashMap<String, Checklist>,
 	#[serde(default)]

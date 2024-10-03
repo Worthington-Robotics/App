@@ -97,6 +97,13 @@ async fn populate_cache(sql: &SqlDatabase) -> anyhow::Result<JSONDatabase> {
 	{
 		cache.create_match(m).await?;
 	}
+	for assignment in sql
+		.get_all_assignments()
+		.await
+		.context("Failed to get assignments from database")?
+	{
+		cache.create_assignment(assignment).await?;
+	}
 
 	Ok(cache)
 }
@@ -457,6 +464,31 @@ impl Database for CacheDatabase {
 		try_join!(self.sql.clear_matches(), self.cache.clear_matches())?;
 
 		Ok(())
+	}
+
+	async fn get_assignment(
+		&self,
+		assignment: &str,
+	) -> anyhow::Result<Option<crate::scouting::assignment::ScoutingAssignment>> {
+		self.cache.get_assignment(assignment).await
+	}
+
+	async fn create_assignment(
+		&mut self,
+		assignment: crate::scouting::assignment::ScoutingAssignment,
+	) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.create_assignment(assignment.clone()),
+			self.cache.create_assignment(assignment)
+		)?;
+
+		Ok(())
+	}
+
+	async fn get_all_assignments(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = crate::scouting::assignment::ScoutingAssignment>> {
+		self.cache.get_all_assignments().await
 	}
 }
 
