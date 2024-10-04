@@ -74,14 +74,20 @@
 		}
 	}
 	can.addEventListener("mousedown", downEvent);
-	can.addEventListener("touchstart", downEvent);
+	can.addEventListener("touchstart", (e) => {
+		e.preventDefault();
+		downEvent(e);
+	});
 	function upEvent(e) {
 		if (startTime != null) {
 			finishDrawing();
 		}
 	}
 	can.addEventListener("mouseup", upEvent);
-	can.addEventListener("touchend", upEvent);
+	can.addEventListener("touchend", (e) => {
+		e.preventDefault();
+		upEvent(e);
+	});
 	function moveEvent(e) {
 		if (startTime != null) {
 			currentPosition = getPos(e);
@@ -90,6 +96,7 @@
 	can.addEventListener("mousemove", moveEvent);
 	// The coords are represented a bit different here
 	can.addEventListener("touchmove", (e) => {
+		e.preventDefault();
 		e.clientX = e.touches[0].clientX;
 		e.clientY = e.touches[0].clientY;
 		moveEvent(e);
