@@ -15,6 +15,7 @@ use crate::{
 	announcements::Announcement,
 	attendance::AttendanceEntry,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
+	forms::Form,
 	member::{Member, MemberGroup, MemberKind, MemberMention},
 	scouting::{
 		assignment::ScoutingAssignment,
@@ -88,7 +89,7 @@ impl Database for SqlDatabase {
 		self.delete_member(&member.id)
 			.await
 			.context("Failed to delete existing member")?;
-		sqlx::query("INSERT INTO members (Id, Name, Kind, Groups, Password, PasswordSalt, CreationDate, CalendarId) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
+		sqlx::query("INSERT INTO members (Id, Name, Kind, Groups, Password, PasswordSalt, CreationDate, CalendarId, CompletedForms) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)")
 			.bind(member.id)
 			.bind(member.name)
 			.bind(member.kind.to_string())
@@ -103,6 +104,13 @@ impl Database for SqlDatabase {
 			.bind(member.password_salt)
 			.bind(member.creation_date)
 			.bind(member.calendar_id)
+			.bind(
+				member
+					.completed_forms
+					.into_iter()
+					.map(|x| x.to_db())
+					.collect::<Vec<_>>(),
+			)
 			.execute(&self.pool)
 			.await
 			.context("Failed to create new member in database")?;
@@ -1035,7 +1043,7 @@ impl Database for SqlDatabase {
 
 /// Setup the database
 async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
-	let members_task = pool.execute("CREATE TABLE IF NOT EXISTS members (Id text PRIMARY KEY, Name text, Kind text, Groups text[], Password text, PasswordSalt text, CreationDate text, CalendarId text)");
+	let members_task = pool.execute("CREATE TABLE IF NOT EXISTS members (Id text PRIMARY KEY, Name text, Kind text, Groups text[], Password text, PasswordSalt text, CreationDate text, CalendarId text, CompletedForms text[])");
 
 	let events_task = pool.execute("CREATE TABLE IF NOT EXISTS events (Id text PRIMARY KEY, Name text, Date text, EndDate text, Kind text, Urgency text, Visibility text, Invites text[], RSVP text[])");
 
@@ -1120,6 +1128,11 @@ fn read_member(id: &str, row: PgRow) -> anyhow::Result<Member> {
 	let password_salt: Option<String> = row.try_get("passwordsalt")?;
 	let creation_date: &str = row.try_get("creationdate")?;
 	let calendar_id: &str = row.try_get("calendarid")?;
+	let forms: Option<Vec<String>> = row.try_get("completedforms")?;
+	let forms = forms
+		.unwrap_or_default()
+		.into_iter()
+		.filter_map(|x| Form::from_str(&x).ok());
 
 	Ok(Member {
 		id: id.to_string(),
@@ -1130,6 +1143,7 @@ fn read_member(id: &str, row: PgRow) -> anyhow::Result<Member> {
 		password_salt,
 		creation_date: creation_date.to_string(),
 		calendar_id: calendar_id.to_string(),
+		completed_forms: forms.collect(),
 	})
 }
 

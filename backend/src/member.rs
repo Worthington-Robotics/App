@@ -5,7 +5,7 @@ use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-use crate::{auth::Privilege, util::ToDropdown};
+use crate::{auth::Privilege, forms::Form, util::ToDropdown};
 
 /// A member stored in the database and code
 #[derive(Serialize, Deserialize, Clone)]
@@ -29,6 +29,9 @@ pub struct Member {
 	/// This user's calendar ID
 	#[serde(default = "crate::util::generate_id")]
 	pub calendar_id: String,
+	/// Forms that this user has completed
+	#[serde(default)]
+	pub completed_forms: HashSet<Form>,
 }
 
 impl Member {

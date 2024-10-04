@@ -1,9 +1,9 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
 /// Different types of forms
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Form {
 	ConsentRelease,
 	TeamFees,
@@ -25,6 +25,45 @@ impl Form {
 		match self {
 			Self::ConsentRelease | Self::TeamFees => false,
 			_ => true,
+		}
+	}
+
+	pub fn to_db(&self) -> &'static str {
+		match self {
+			Self::ConsentRelease => "ConsentRelease",
+			Self::TeamFees => "TeamFees",
+			Form::ToolDrillPress => "DrillPress",
+			Form::ToolPowerDrill => "PowerDrill",
+			Form::ToolMetalPress => "MetalPress",
+			Form::ToolTableSaw => "TableSaw",
+			Form::ToolHorizontalBandsaw => "HorizontalBandsaw",
+			Form::ToolPowerSander => "PowerSander",
+			Form::ToolMiterSaw => "MiterSaw",
+			Form::ToolWoodBandsaw => "WoodBandsaw",
+			Form::ToolMetalBandsaw => "MetalBandsaw",
+			Form::ToolHandTools => "HandTools",
+		}
+	}
+}
+
+impl FromStr for Form {
+	type Err = ();
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"ConsentRelease" => Ok(Self::ConsentRelease),
+			"TeamFees" => Ok(Self::TeamFees),
+			"DrillPress" => Ok(Self::ToolDrillPress),
+			"PowerDrill" => Ok(Self::ToolPowerDrill),
+			"MetalPress" => Ok(Self::ToolMetalPress),
+			"TableSaw" => Ok(Self::ToolTableSaw),
+			"HorizontalBandsaw" => Ok(Self::ToolHorizontalBandsaw),
+			"PowerSander" => Ok(Self::ToolPowerSander),
+			"MiterSaw" => Ok(Self::ToolMiterSaw),
+			"WoodBandsaw" => Ok(Self::ToolWoodBandsaw),
+			"MetalBandsaw" => Ok(Self::ToolMetalBandsaw),
+			"HandTools" => Ok(Self::ToolHandTools),
+			_ => Err(()),
 		}
 	}
 }

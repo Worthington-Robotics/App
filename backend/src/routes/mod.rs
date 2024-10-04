@@ -29,7 +29,9 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use tracing::{error, event, span, Level};
 
-use crate::db::Database;
+use crate::announcements::count_unread_announcements;
+use crate::db::{Database, DatabaseImpl};
+use crate::forms::Form;
 use crate::member::Member;
 use crate::State;
 
@@ -65,6 +67,8 @@ pub async fn index(
 		return Ok(redirect);
 	};
 
+	let lock = state.db.lock().await;
+
 	let page = create_page(
 		"WorBots 4145",
 		include_str!("pages/index.min.html"),
@@ -77,7 +81,7 @@ pub async fn index(
 		""
 	};
 	let page = page.replace("{{admin-panel}}", admin_panel);
-	let attendance_panel = create_attendance_panel(&member, state.db.lock().await.deref())
+	let attendance_panel = create_attendance_panel(&member, lock.deref())
 		.await
 		.map_err(|e| {
 			error!("Failed to create attendance panel: {e}");
@@ -85,7 +89,54 @@ pub async fn index(
 		})?;
 	let page = page.replace("{{attendance-panel}}", &attendance_panel);
 
+	// Add notices
+	let notices = render_notices(&member, lock.deref()).await;
+	let page = page.replace("{{notices}}", &notices);
+
 	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+async fn render_notices(member: &Member, db: &DatabaseImpl) -> String {
+	let mut notices_str = String::new();
+
+	match count_unread_announcements(&member, db).await {
+		Ok(announcements) => {
+			if announcements > 0 {
+				let word = if announcements == 1 {
+					"announcement"
+				} else {
+					"announcements"
+				};
+
+				notices_str.push_str(&render_notice(&format!(
+					"<a class=nolink href=/inbox>You have {announcements} unread {word}</a>"
+				)));
+			}
+		}
+		Err(e) => {
+			error!("Failed to count unread announcements: {e:#}");
+		}
+	}
+
+	if !member.completed_forms.contains(&Form::ConsentRelease) {
+		notices_str.push_str(&render_notice(
+			"You have not completed your consent-release form",
+		));
+	}
+
+	if !member.completed_forms.contains(&Form::TeamFees) {
+		notices_str.push_str(&render_notice("You have not submitted your team fees"));
+	}
+
+	if notices_str.is_empty() {
+		String::new()
+	} else {
+		format!("<div class=\"cont col round\" id=notices-cont><h3>Notices</h3>{notices_str}</div>")
+	}
+}
+
+fn render_notice(text: &str) -> String {
+	format!("<div class=\"round notice\"><div class=cont><div class=notice-bullet></div></div>{text}</div>")
 }
 
 #[derive(Responder)]
@@ -219,7 +270,10 @@ pub fn create_page(title: &str, body: &str, scope: Option<Scope>) -> String {
 		include_str!("components/util/worbots-header.min.html"),
 	);
 	let out = out.replace("{{error}}", include_str!("components/util/error.min.html"));
-	let out = out.replace("{{prompt}}", include_str!("components/util/prompt.min.html"));
+	let out = out.replace(
+		"{{prompt}}",
+		include_str!("components/util/prompt.min.html"),
+	);
 
 	out
 }

@@ -141,6 +141,7 @@ pub async fn create_member(
 			error!("Password not given when there is no existing member");
 			return Err(Status::Unauthorized);
 		};
+
 		(
 			existing_member.password.clone(),
 			existing_member.password_salt.clone(),
@@ -183,6 +184,7 @@ pub async fn create_member(
 		password_salt: salt.map(|x| x.to_string()),
 		creation_date,
 		calendar_id,
+		completed_forms: HashSet::new(),
 	};
 
 	{
@@ -321,6 +323,7 @@ pub async fn create_member_page(
 			password_salt: None,
 			creation_date: Utc::now().to_rfc2822(),
 			calendar_id: String::new(),
+			completed_forms: HashSet::new(),
 		}
 	};
 

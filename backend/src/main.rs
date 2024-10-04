@@ -235,6 +235,7 @@ async fn setup_db() -> DatabaseImpl {
 		password_salt: None,
 		creation_date: DateTime::UNIX_EPOCH.to_rfc2822(),
 		calendar_id: String::new(),
+		completed_forms: HashSet::new(),
 	};
 	db.create_member(admin_member)
 		.await
