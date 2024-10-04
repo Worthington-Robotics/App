@@ -145,4 +145,10 @@ pub struct MatchStats {
 	pub won: bool,
 	/// Additional notes about the match
 	pub notes: String,
+	/// Team strengths during the match
+	#[serde(default)]
+	pub strengths: String,
+	/// Team weaknesses during the match
+	#[serde(default)]
+	pub weaknesses: String,
 }

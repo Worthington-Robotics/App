@@ -202,7 +202,7 @@ pub async fn team_details(
 		};
 
 		let component = format!(
-			r#"<div class="cont comp-cb"><input type=checkbox {disabled_attr} {checked_attr} data-val={comp} /> {}</div>"#,
+			r#"<div class="cont round comp-cb"><input type=checkbox {disabled_attr} {checked_attr} data-val={comp} /> {}</div>"#,
 			comp.get_abbr()
 		);
 		checkboxes_string.push_str(&component);

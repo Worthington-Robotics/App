@@ -4,6 +4,7 @@ use std::ops::Deref;
 
 use argon2::PasswordHasher;
 use chrono::{DateTime, Utc};
+use chrono_tz::US::Eastern;
 use itertools::Itertools;
 use password_hash::SaltString;
 use rand::{rngs::StdRng, SeedableRng};
@@ -416,7 +417,7 @@ pub async fn member_details(
 	let page = page.replace("{{kind}}", &member.kind.to_string());
 
 	let date = if let Ok(date) = DateTime::parse_from_rfc2822(&member.creation_date) {
-		render_date(date)
+		render_date(date.with_timezone(&Eastern))
 	} else {
 		error!("Failed to parse date");
 		"Invalid date".into()

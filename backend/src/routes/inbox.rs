@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
+use chrono_tz::US::Eastern;
 use itertools::Itertools;
 use rocket::form::{Form, FromForm};
 use rocket::http::Status;
@@ -78,6 +79,7 @@ fn render_announcement(announcement: Announcement, member_id: &str) -> String {
 	let component = include_str!("components/announcement.min.html");
 	let out = component.replace("{{id}}", &announcement.id);
 	let date = DateTime::parse_from_rfc2822(&announcement.date)
+		.map(|x| x.with_timezone(&Eastern))
 		.map(render_date)
 		.unwrap_or("Invalid date".into());
 	let out = out.replace("{{date}}", &date);
@@ -266,7 +268,7 @@ pub async fn announcement_details(
 	let page = include_str!("pages/announcements/details.min.html");
 	let page = page.replace("{{title}}", &announcement.title);
 	let date = DateTime::parse_from_rfc2822(&announcement.date)
-		.map(|x| render_date(x))
+		.map(|x| render_date(x.with_timezone(&Eastern)))
 		.unwrap_or("Invalid Date".into());
 	let page = page.replace("{{date}}", &date);
 
