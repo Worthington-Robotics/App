@@ -1,6 +1,7 @@
 use std::cmp::Reverse;
 use std::collections::HashSet;
 use std::ops::Deref;
+use std::str::FromStr;
 
 use argon2::PasswordHasher;
 use chrono::{DateTime, Utc};
@@ -17,6 +18,7 @@ use tracing::{error, span, Level};
 
 use crate::attendance::get_attendance_stats;
 use crate::events::Event;
+use crate::forms::Form as WorBotsForm;
 use crate::routes::OptionalSessionID;
 use crate::util::ToDropdown;
 use crate::util::{generate_id, render_date};
@@ -452,6 +454,23 @@ pub async fn member_details(
 		&render_missed_events(&total_attendance.absences),
 	);
 
+	// Form checkboxes
+	let mut checkboxes_string = String::new();
+	for form in WorBotsForm::iter() {
+		let checked_attr = if member.completed_forms.contains(&form) {
+			" checked"
+		} else {
+			""
+		};
+
+		let component = format!(
+			r#"<div class="cont round form-cb"><input type=checkbox {checked_attr} data-val={} /> {form}</div>"#,
+			form.to_db(),
+		);
+		checkboxes_string.push_str(&component);
+	}
+	let page = page.replace("{{form-checkboxes}}", &checkboxes_string);
+
 	let page = create_page("Member Details", &page, Some(Scope::Home));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
@@ -497,6 +516,47 @@ pub async fn delete_member(
 
 	if let Err(e) = lock.delete_member(id).await {
 		error!("Failed to delete member {id} in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
+}
+
+#[rocket::post("/api/update_member_form/<id>?<form>")]
+pub async fn update_member_form(
+	state: &State,
+	session_id: SessionID<'_>,
+	id: &str,
+	form: &str,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Updating team competition");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	let Ok(form) = WorBotsForm::from_str(form) else {
+		error!("Invalid form to update");
+		return Err(Status::BadRequest);
+	};
+
+	let mut lock = state.db.lock().await;
+	let Some(mut member) = lock.get_member(id).await.map_err(|e| {
+		error!("Failed to get member from database: {e}");
+		Status::InternalServerError
+	})?
+	else {
+		error!("Member {id} does not exist");
+		return Err(Status::NotFound);
+	};
+
+	if member.completed_forms.contains(&form) {
+		member.completed_forms.remove(&form);
+	} else {
+		member.completed_forms.insert(form);
+	}
+
+	if let Err(e) = lock.create_member(member).await {
+		error!("Failed to update member {id} in database: {e}");
 		return Err(Status::InternalServerError);
 	}
 

@@ -34,7 +34,25 @@
 			{{total-missed}}
 		</div>
 	</div>
+	<div class="cont col">
+		<h3>Forms</h3>
+		<div id="form-checkboxes">
+			{{form-checkboxes}}
+		</div>
+	</div>
 </div>
+<style>
+	#form-checkboxes {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.form-cb {
+		padding: 0.6rem;
+		background-color: var(--bg2);
+		margin: 0.4rem;
+	}
+</style>
 <script>
 	document.getElementById("delete-button").addEventListener("click", () => {
 		showConfirmPrompt("delete this member", () => {
@@ -49,5 +67,22 @@
 			});
 		});
 	});
+
+	function formCb(e) {
+		let form = e.target.dataset.val;
+		fetch(`/api/update_member_form/{{id}}?form=${form}`, {
+			method: "POST",
+		}).then((resp) => {
+			if (resp.status != 200) {
+				setError(resp.statusText);
+				e.target.checked = !e.target.checked;
+			}
+		});
+	}
+
+	for (let elem of document.getElementsByClassName("form-cb")) {
+		let cb = elem.firstChild;
+		cb.addEventListener("change", formCb);
+	}
 </script>
 {{footer}}

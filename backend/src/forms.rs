@@ -1,9 +1,10 @@
 use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
 /// Different types of forms
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, EnumIter)]
 pub enum Form {
 	ConsentRelease,
 	TeamFees,
