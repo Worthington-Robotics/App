@@ -15,7 +15,7 @@ pub struct Match {
 }
 
 /// Number for a match
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct MatchNumber {
 	pub ty: MatchType,
 	pub num: u16,
@@ -74,6 +74,9 @@ pub struct MatchStats {
 	pub team_number: TeamNumber,
 	/// The match where these stats occurred
 	pub match_id: String,
+	/// The match number for these stats
+	#[serde(default)]
+	pub match_number: Option<MatchNumber>,
 	/// The member who recorded these stats
 	#[serde(default)]
 	pub recorder: Option<String>,

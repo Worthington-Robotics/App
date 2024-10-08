@@ -1,4 +1,5 @@
 use chrono::{DateTime, Datelike, FixedOffset, Utc};
+use chrono_tz::US::Eastern;
 use itertools::Itertools;
 use rocket::{
 	form::{Form, FromForm},
@@ -203,7 +204,7 @@ async fn render_match(m: Match, now: &DateTime<Utc>, next_chosen: &mut bool) -> 
 			} else {
 				""
 			};
-			(render_time(date), next_class)
+			(render_time(date.with_timezone(&Eastern)), next_class)
 		} else {
 			(String::new(), "")
 		};

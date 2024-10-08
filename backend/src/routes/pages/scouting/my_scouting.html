@@ -1,0 +1,41 @@
+{{worbots-header}}{{error}}{{prompt}}
+<h1>My Scouting</h1>
+<div id="my-scouting" class="cont col">
+	<div class="cont col">
+		<h3>My Teams</h3>
+		<div id="teams-cont">
+			{{teams}}
+		</div>
+	</div>
+	<div class="cont col">
+		<h3>Report a Match</h3>
+		<div class="cont">
+			<a href="/scouting/report"><button>Main</button></a>
+			<a href="/scouting/report/raw"><button>Fallback</button></a>
+		</div>
+	</div>
+</div>
+<style>
+	#teams-cont {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+
+	.team {
+		border: 0.2rem solid var(--fg2);
+		width: 2rem;
+		height: 1rem;
+		padding: 0.4rem;
+		margin: 0.4rem;
+	}
+
+	.match {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 5fr) minmax(0, 1fr);
+		padding: 0.4rem;
+		background-color: var(--bg2);
+	}
+</style>
+<script>
+</script>
+{{footer}}
