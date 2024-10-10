@@ -1,7 +1,7 @@
+pub mod assignment;
 pub mod autos;
 pub mod matches;
 pub mod status;
-pub mod assignment;
 
 use std::{
 	collections::{HashMap, HashSet},
@@ -11,6 +11,10 @@ use std::{
 };
 
 use autos::{calculate_auto_stats, AutoStats};
+use chrono_tz::{
+	Tz,
+	US::{Central, Eastern},
+};
 use matches::MatchStats;
 use rocket::{
 	fairing::{Fairing, Info, Kind},
@@ -89,6 +93,14 @@ impl Competition {
 			Self::MiamiValley => Some("OHMV"),
 			Self::Champs => None,
 			Self::States => None,
+		}
+	}
+
+	/// Gets the timezone of this event
+	pub fn get_timezone(&self) -> Tz {
+		match self {
+			Self::Champs => Central,
+			_ => Eastern,
 		}
 	}
 }

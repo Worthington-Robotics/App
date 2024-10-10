@@ -5,10 +5,17 @@
 	<div class="cont">
 		<a href="/scouting/assignments"><button>Edit Scout Assignments</button></a>
 	</div>
-	<form class="cont col" method="post" enctype="multipart/form-data">
+	<br />
+	<form class="cont col round" method="post" enctype="multipart/form-data" id="upload-form">
 		<label for="file">Upload scouting data</label>
 		<input name="file" type="file" accept=".json" />
 		<input type="submit" value="Submit" />
 	</form>
 </div>
+<style>
+	#upload-form {
+		background-color: var(--bg2);
+		padding: 1.5rem;
+	}
+</style>
 {{footer}}

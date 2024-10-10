@@ -69,10 +69,31 @@ pub fn render_date<T: TimeZone>(date: DateTime<T>) -> String
 where
 	T::Offset: Display,
 {
-	date.format("%a %B %d, %I:%M %p")
+	let month = get_short_month(date.month());
+	date.format("%a MONTH %d, %I:%M %p")
 		.to_string()
+		.replace("MONTH", month)
 		.replace(":00", "")
 		.replace(" 0", " ")
+}
+
+/// Gets the abbreviated month from a month number
+pub fn get_short_month(month: u32) -> &'static str {
+	match month {
+		1 => "Jan",
+		2 => "Feb",
+		3 => "Mar",
+		4 => "Apr",
+		5 => "May",
+		6 => "Jun",
+		7 => "Jul",
+		8 => "Aug",
+		9 => "Sep",
+		10 => "Oct",
+		11 => "Nov",
+		12 => "Dec",
+		_ => "???",
+	}
 }
 
 /// Render a nice time

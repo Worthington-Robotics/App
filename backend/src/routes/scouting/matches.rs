@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, FixedOffset, Utc};
+use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Utc};
 use chrono_tz::US::Eastern;
 use itertools::Itertools;
 use rocket::{
@@ -144,7 +144,7 @@ pub async fn match_schedule(
 		return Ok(redirect);
 	};
 
-	if session_id.get_requesting_member(state).await.is_err() {
+	let Ok(requesting_member) = session_id.get_requesting_member(state).await else {
 		return Ok(redirect);
 	};
 
@@ -184,6 +184,13 @@ pub async fn match_schedule(
 		matches_string.push_str(&render_match(m, &now, &mut next_chosen).await);
 	}
 	let page = page.replace("{{matches}}", &matches_string);
+
+	let import_style = if requesting_member.is_elevated() {
+		""
+	} else {
+		"display:none"
+	};
+	let page = page.replace("{{import-style}}", import_style);
 
 	let page = create_page("Match Schedule", &page, Some(Scope::Scouting));
 
@@ -248,7 +255,9 @@ pub async fn import_match_schedule(state: &State, session_id: SessionID<'_>) -> 
 
 	let mut lock = state.db.lock().await;
 
-	let Some(event_code) = Competition::Pittsburgh.get_code() else {
+	let current_competition = Competition::Pittsburgh;
+
+	let Some(event_code) = current_competition.get_code() else {
 		error!("Event does not have a code");
 		return Ok(());
 	};
@@ -273,6 +282,16 @@ pub async fn import_match_schedule(state: &State, session_id: SessionID<'_>) -> 
 			error!("Failed to parse date for match");
 			continue;
 		};
+		// Interpret the date as being from the competition timezone
+		let Some(date) = current_competition
+			.get_timezone()
+			.from_local_datetime(&date.naive_utc())
+			.earliest()
+		else {
+			error!("Failed to convert timezone for match date");
+			continue;
+		};
+
 		matches.push(Match {
 			num: MatchNumber {
 				num: m.match_number,

@@ -69,8 +69,13 @@
 		font-weight: bold;
 	}
 
+	.e {
+		text-align: center;
+	}
+
 	.name-row {
-		justify-content: start;
+		display: grid;
+		grid-template-columns: minmax(0, .8fr) minmax(0, 0.2fr);
 	}
 
 	.first {
@@ -141,7 +146,7 @@
 		let cols = row.getElementsByTagName(td);
 		let num = cols[1].innerHTML;
 		let name = cols[2];
-		name.innerHTML = `<a class="cont name-row" href="/scouting/team/${num}?competition={{competition}}">${name.innerHTML}</a>`;
+		name.innerHTML = `<a class="name-row" href="/scouting/team/${num}?competition={{competition}}">${name.innerHTML}</a>`;
 		name.firstChild.classList.add("nolink");
 	}
 

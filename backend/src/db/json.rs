@@ -132,6 +132,7 @@ impl Database for JSONDatabase {
 
 	async fn delete_announcement(&mut self, announcement: &str) -> anyhow::Result<()> {
 		self.contents.announcements.remove(announcement);
+
 		self.write()
 	}
 

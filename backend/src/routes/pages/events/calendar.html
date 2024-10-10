@@ -1,30 +1,31 @@
 {{worbots-header}}
 <h1>Events</h1>
 <div id="calendar" class="cont col">
-	<div class="cont">
-		<select name="filter" id="filter">
-			<option value="upcoming">Upcoming Events</option>
-			<option value="all">All Events</option>
-		</select>
+	<div id="filter" class="cont">
+		<button id="upcoming">Upcoming Events</button>
+		<button id="all" style="background-color: var(--bg2);">All Events</button>
 		{{add-event}}
 	</div>
 	<div id="events-cont" class="cont col item-cont">{{events}}</div>
 </div>
 <script>
-	function changeFilter(e) {
-		let elems = document.getElementsByClassName("not-upcoming");
-		if (e.target.value === "all") {
-			for (let elem of elems) {
-				elem.style.display = "flex";
-			}
-		} else {
-			for (let elem of elems) {
-				elem.style.display = "none";
-			}
+	let upcomingEvents = document.getElementById("upcoming");
+	let allEvents = document.getElementById("all");
+	let notUpcoming = document.getElementsByClassName("not-upcoming");
+	upcomingEvents.addEventListener("click", () => {
+		upcomingEvents.style.backgroundColor = "";
+		allEvents.style.backgroundColor = "var(--bg2)";
+		for (let elem of notUpcoming) {
+			elem.style.display = "none";
 		}
-	}
-
-	document.getElementById("filter").addEventListener("change", changeFilter);
+	});
+	allEvents.addEventListener("click", () => {
+		allEvents.style.backgroundColor = "";
+		upcomingEvents.style.backgroundColor = "var(--bg2)";
+		for (let elem of notUpcoming) {
+			elem.style.display = "";
+		}
+	});
 </script>
 <style>
 	#calendar {
@@ -32,9 +33,16 @@
 		row-gap: 1.4rem;
 	}
 
+	.ev-header {
+		display: grid;
+		grid-template-columns: minmax(0, 0.15fr) minmax(0, 0.6fr) minmax(0, 1.2fr);
+		width: 100%;
+	}
+
 	.ev-date {
 		font-size: calc(1.3vw * var(--scale));
 		color: var(--fg2);
+		text-align: center;
 	}
 
 	.ev-subtext {
@@ -45,6 +53,10 @@
 	.ev-kind,
 	.ev-name {
 		font-weight: bold;
+	}
+
+	.ev-name {
+		text-align: center;
 	}
 
 	.ev-clock {

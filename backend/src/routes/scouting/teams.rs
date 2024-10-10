@@ -115,6 +115,7 @@ async fn render_team(team: Team, stat_client: &StatboticsClient, db: &DatabaseIm
 	let out = include_str!("../components/scouting/team_row.min.html");
 	let out = out.replace("{{number}}", &team.number.to_string());
 	let out = out.replace("{{name}}", &team.sanitized_name());
+	let out = out.replace("{{data-name}}", &format!("\"{}\"", team.sanitized_name()));
 	let epa = stat_client.get_epa(team.number).await.unwrap_or(0.0);
 	let out = out.replace("{{epa}}", &format!("{epa:.2}"));
 

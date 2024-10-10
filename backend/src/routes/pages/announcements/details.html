@@ -1,8 +1,9 @@
-{{worbots-header}}{{error}}
+{{worbots-header}}{{error}}{{prompt}}
 <div class="cont col" id="announce-details">
 	<h1>{{title}}</h1>
 	<div class="cont">
 		<a href="/inbox"><button>Back</button></a>
+		<div id="delete-button">{{delete}}</div>
 	</div>
 	<div class="cont col">
 		<h4>{{date}}</h4>
@@ -14,4 +15,19 @@
 		width: 75%;
 	}
 </style>
+<script>
+	document.getElementById("delete-button").addEventListener("click", () => {
+		showConfirmPrompt("delete this announcement", () => {
+			fetch("/api/delete_announcement/{{id}}", {
+				method: "DELETE",
+			}).then((resp) => {
+				if (resp.status == 200) {
+					window.location.href = "/inbox";
+				} else {
+					setError(resp.statusText);
+				}
+			});
+		});
+	});
+</script>
 {{footer}}

@@ -22,6 +22,12 @@
 		box-sizing: border-box;
 	}
 
+	.ann-header {
+		display: grid;
+		grid-template-columns: minmax(0, 0.5fr) minmax(0, 1.4fr);
+		width: 100%;
+	}
+
 	.ann-date {
 		font-size: calc(1.3vw * var(--scale));
 		color: var(--fg2);
@@ -31,6 +37,7 @@
 	.ann-title {
 		font-size: calc(1.6vw * var(--scale));
 		font-weight: bold;
+		text-align: center;
 	}
 
 	.ann-body {

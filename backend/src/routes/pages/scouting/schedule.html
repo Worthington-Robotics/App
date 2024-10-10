@@ -1,7 +1,6 @@
 {{worbots-header}}{{error}}{{prompt}}
 <h1>Match Schedule</h1>
 <div id="schedule" class="cont col">
-	<button id="import-button">Import Matches</button>
 	<div id="filter" class="cont">
 		<button id="our-matches">Our Matches</button>
 		<button id="all-matches" style="background-color: var(--bg2);">All Matches</button>
@@ -9,6 +8,8 @@
 	<div class="cont col item-container" id="matches">
 		{{matches}}
 	</div>
+	<br />
+	<button id="import-button" style={{import-style}}>Import Matches</button>
 </div>
 <style>
 	#matches {
@@ -32,7 +33,6 @@
 
 	.match-number {
 		font-size: calc(1.7vw * var(--scale));
-		font-family: "Courier New", Courier, monospace;
 		margin-right: 0.8rem;
 	}
 

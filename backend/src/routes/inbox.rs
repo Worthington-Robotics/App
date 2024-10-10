@@ -266,6 +266,7 @@ pub async fn announcement_details(
 	}
 
 	let page = include_str!("pages/announcements/details.min.html");
+	let page = page.replace("{{id}}", &announcement.id);
 	let page = page.replace("{{title}}", &announcement.title);
 	let date = DateTime::parse_from_rfc2822(&announcement.date)
 		.map(|x| render_date(x.with_timezone(&Eastern)))
@@ -278,6 +279,8 @@ pub async fn announcement_details(
 	);
 	let page = page.replace("{{body}}", &body);
 
+	let page = page.replace("{{delete}}", include_str!("components/ui/delete.min.html"));
+
 	let page = create_page("Announcement", &page, Some(Scope::Announcements));
 
 	// Mark the announcement as read
@@ -289,7 +292,6 @@ pub async fn announcement_details(
 		.await
 	{
 		error!("Failed to read announcement: {e}");
-		return Err(Status::InternalServerError);
 	}
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
