@@ -170,6 +170,7 @@ async fn rocket() -> _ {
 				routes::settings::settings,
 				routes::scouting::index,
 				routes::scouting::admin,
+				routes::scouting::download_data,
 				routes::scouting::teams::teams,
 				routes::scouting::teams::team_details,
 				routes::scouting::teams::info::create_team_info,

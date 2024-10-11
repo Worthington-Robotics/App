@@ -11,6 +11,8 @@
 		<input name="file" type="file" accept=".json" />
 		<input type="submit" value="Submit" />
 	</form>
+	<button id="download-data">Download Scouting Data</button>
+	<iframe id="download-iframe" style="display:none;"></iframe>
 </div>
 <style>
 	#upload-form {
@@ -18,4 +20,9 @@
 		padding: 1.5rem;
 	}
 </style>
+<script>
+	document.getElementById("download-data").addEventListener("click", () => {
+		document.getElementById("download-iframe").src = "/api/scouting_data.csv";
+	});
+</script>
 {{footer}}
