@@ -18,6 +18,8 @@
 	--wbblueacc: #3849d9;
 	--wbbluelight: #6570d3;
 	--wbbluebg: #1b246e;
+	--followbg: #86b16e;
+	--follow: #4b8927;
 
 	--scale: 2.7;
 }
@@ -152,6 +154,8 @@ h4 {
 /* Footer */
 
 #footer {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
 	width: 100vw;
 	height: 3.9rem;
 	position: fixed;
@@ -163,22 +167,18 @@ h4 {
 }
 
 .ft-item {
-	width: 20%;
 	height: 100%;
-	display: inline-block;
 	margin: 0px;
 	box-sizing: border-box;
-}
-
-.ft-cont {
-	width: 100%;
-	height: 100%;
-	margin: 0px;
 }
 
 .ft-sel {
 	background-color: var(--wbbluebg);
 	border-top: 0.35rem solid var(--wbblue);
+}
+
+.ft-icon {
+	width: 1.5rem;
 }
 
 .dot {

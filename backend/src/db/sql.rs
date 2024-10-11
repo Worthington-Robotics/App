@@ -656,7 +656,7 @@ impl Database for SqlDatabase {
 			.await
 			.context("Failed to delete existing team")?;
 		sqlx::query(
-			"INSERT INTO teams (Number, Name, RookieYear, Competitions) VALUES ($1, $2, $3, $4)",
+			"INSERT INTO teams (Number, Name, RookieYear, Competitions, Followers) VALUES ($1, $2, $3, $4, $5)",
 		)
 		.bind(team.number as i32)
 		.bind(team.name)
@@ -667,6 +667,7 @@ impl Database for SqlDatabase {
 				.map(|x| x.to_string())
 				.collect::<Vec<_>>(),
 		)
+		.bind(team.followers.into_iter().collect::<Vec<_>>())
 		.execute(&self.pool)
 		.await
 		.context("Failed to create new team in database")?;
@@ -1059,7 +1060,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		.execute("CREATE TABLE IF NOT EXISTS tasks (Id text PRIMARY KEY, Checklist text, Text text, Done bool)");
 
 	let teams_task = pool.execute(
-		"CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text, RookieYear int4, Competitions text[])",
+		"CREATE TABLE IF NOT EXISTS teams (Number int2 PRIMARY KEY, Name text, RookieYear int4, Competitions text[], Followers text[])",
 	);
 
 	let team_info_task =
@@ -1257,11 +1258,15 @@ fn read_team(id: TeamNumber, row: PgRow) -> anyhow::Result<Team> {
 		.into_iter()
 		.filter_map(|x| Competition::from_db(&x));
 
+	let followers: Option<Vec<String>> = row.try_get("followers")?;
+	let followers = followers.unwrap_or_default().into_iter();
+
 	Ok(Team {
 		number: id,
 		name,
 		rookie_year,
 		competitions: competitions.collect(),
+		followers: followers.collect(),
 	})
 }
 

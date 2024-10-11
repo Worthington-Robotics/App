@@ -2,7 +2,7 @@ use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use super::{status::RobotStatus, TeamNumber};
+use super::{status::RobotStatus, Competition, TeamNumber};
 
 /// A single match
 #[derive(Serialize, Deserialize, Clone)]
@@ -86,6 +86,9 @@ pub struct MatchStats {
 	/// Whether this match happened live when it was recorded
 	#[serde(default)]
 	pub recorded_live: bool,
+	/// The competition that this match is associated with
+	#[serde(default)]
+	pub competition: Option<Competition>,
 	/// The auto that the team ran during this match
 	#[serde(default)]
 	pub auto: Option<String>,

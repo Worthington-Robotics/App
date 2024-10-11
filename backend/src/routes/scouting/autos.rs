@@ -29,7 +29,7 @@ use crate::{
 	},
 };
 
-use super::{render_stat_card_float, render_stat_card_optional_float, render_stat_card_pct};
+use super::stats::{render_stat_card_float, render_stat_card_optional_float, render_stat_card_pct};
 
 #[rocket::get("/scouting/team/<team>/autos")]
 pub async fn autos_page(
@@ -264,35 +264,35 @@ pub async fn auto_details(
 
 	let page = page.replace(
 		"{{average-score}}",
-		&render_stat_card_float("Avg", auto_stats.average_notes, true),
+		&render_stat_card_float("Avg", "", auto_stats.average_notes, true, ""),
 	);
 	let page = page.replace(
 		"{{accuracy}}",
-		&render_stat_card_pct("Accuracy", auto_stats.accuracy, true),
+		&render_stat_card_pct("Accuracy", "", auto_stats.accuracy, true, ""),
 	);
 	let page = page.replace(
 		"{{time-per-shot}}",
-		&render_stat_card_optional_float("TPS", auto_stats.time_per_shot, true),
+		&render_stat_card_optional_float("TPS", "", auto_stats.time_per_shot, true, ""),
 	);
 	let page = page.replace(
 		"{{usage-rate}}",
-		&render_stat_card_pct("Usage", auto_stats.usage_rate, true),
+		&render_stat_card_pct("Usage", "", auto_stats.usage_rate, true, ""),
 	);
 	let page = page.replace(
 		"{{duration}}",
-		&render_stat_card_optional_float("Duration", auto_stats.duration, false),
+		&render_stat_card_optional_float("Duration", "", auto_stats.duration, false, ""),
 	);
 	let page = page.replace(
 		"{{time-to-first-shot}}",
-		&render_stat_card_optional_float("TTFS", auto_stats.time_to_first_shot, false),
+		&render_stat_card_optional_float("TTFS", "", auto_stats.time_to_first_shot, false, ""),
 	);
 	let page = page.replace(
 		"{{max-speed}}",
-		&render_stat_card_optional_float("Max Speed", auto_stats.max_speed, false),
+		&render_stat_card_optional_float("Max Speed", "", auto_stats.max_speed, false, ""),
 	);
 	let page = page.replace(
 		"{{distance-travelled}}",
-		&render_stat_card_float("Distance", auto_stats.distance_travelled, false),
+		&render_stat_card_float("Distance", "", auto_stats.distance_travelled, false, ""),
 	);
 
 	let page = create_page("Auto Details", &page, Some(Scope::Scouting));

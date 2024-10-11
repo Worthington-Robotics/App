@@ -11,6 +11,7 @@ use std::{
 };
 
 use autos::{calculate_auto_stats, AutoStats};
+use chrono::{DateTime, Utc};
 use chrono_tz::{
 	Tz,
 	US::{Central, Eastern},
@@ -41,6 +42,8 @@ pub struct Team {
 	pub name: String,
 	pub rookie_year: i32,
 	pub competitions: HashSet<Competition>,
+	#[serde(default)]
+	pub followers: HashSet<String>,
 }
 
 impl Team {
@@ -159,6 +162,41 @@ pub enum DriveTrainType {
 	Tank,
 	Mecanum,
 	Other,
+}
+
+/// Combination of all-time and historical stats for a single team
+#[derive(Default)]
+pub struct CombinedTeamStats {
+	pub historical: Vec<TeamStats>,
+	pub current_competition: TeamStats,
+	pub all_time: TeamStats,
+}
+
+impl CombinedTeamStats {
+	/// Calculate combined team stats. The input matches don't all have to be from this team, but they do have
+	/// to be in date order
+	pub fn calculate(team: TeamNumber, matches: &[MatchStats]) -> Self {
+		let mut historical = Vec::new();
+		for i in 1..matches.len() {
+			historical.push(calculate_team_stats(team, &matches[0..i]));
+		}
+
+		let all_time = calculate_team_stats(team, &matches);
+
+		// TODO: Use actual competition
+		let current_competition: Vec<_> = matches
+			.into_iter()
+			.filter(|x| x.competition.is_some_and(|x| x == Competition::Pittsburgh))
+			.cloned()
+			.collect();
+		let current_competition = calculate_team_stats(team, &current_competition);
+
+		Self {
+			historical,
+			current_competition,
+			all_time,
+		}
+	}
 }
 
 /// Stored and calculated stats for a single team
@@ -333,14 +371,14 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 /// Fairing for periodically updating team stats
 pub struct UpdateStats {
 	db: Arc<Mutex<DatabaseImpl>>,
-	team_stats: Arc<RwLock<HashMap<TeamNumber, TeamStats>>>,
+	team_stats: Arc<RwLock<HashMap<TeamNumber, CombinedTeamStats>>>,
 	auto_stats: Arc<RwLock<HashMap<String, AutoStats>>>,
 }
 
 impl UpdateStats {
 	pub fn new(
 		db: Arc<Mutex<DatabaseImpl>>,
-		team_stats: Arc<RwLock<HashMap<TeamNumber, TeamStats>>>,
+		team_stats: Arc<RwLock<HashMap<TeamNumber, CombinedTeamStats>>>,
 		auto_stats: Arc<RwLock<HashMap<String, AutoStats>>>,
 	) -> Self {
 		Self {
@@ -377,8 +415,19 @@ impl Fairing for UpdateStats {
 							return;
 						}
 					};
+					let mut match_stats: Vec<_> = match_stats.collect();
+					match_stats.sort_by_cached_key(|x| {
+						let Some(record_time) = &x.record_time else {
+							return Utc::now();
+						};
 
-					let match_stats: Vec<_> = match_stats.collect();
+						let Ok(date) = DateTime::parse_from_rfc2822(&record_time) else {
+							return Utc::now();
+						};
+
+						date.to_utc()
+					});
+
 					let teams =
 						match lock.get_teams().await {
 							Ok(teams) => teams,
@@ -392,7 +441,7 @@ impl Fairing for UpdateStats {
 
 					let mut stats = HashMap::with_capacity(teams.len());
 					for team in &teams {
-						let team_stats = calculate_team_stats(*team, &match_stats);
+						let team_stats = CombinedTeamStats::calculate(*team, &match_stats);
 						stats.insert(*team, team_stats);
 					}
 

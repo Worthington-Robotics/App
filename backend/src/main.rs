@@ -22,7 +22,7 @@ use rocket::{
 };
 use rocket_async_compression::CachedCompression;
 use routes::{scouting::populate_teams, Ratelimit};
-use scouting::{autos::AutoStats, TeamNumber, TeamStats, UpdateStats};
+use scouting::{autos::AutoStats, CombinedTeamStats, TeamNumber, UpdateStats};
 
 mod announcements;
 mod api;
@@ -139,6 +139,7 @@ async fn rocket() -> _ {
 				routes::assets::icon_box,
 				routes::assets::icon_eye,
 				routes::assets::icon_star,
+				routes::assets::icon_star_outline,
 				routes::assets::icon_user,
 				routes::assets::icon_calendar,
 				routes::assets::icon_location,
@@ -174,6 +175,8 @@ async fn rocket() -> _ {
 				routes::scouting::teams::create_team_info,
 				routes::scouting::teams::team_info_page,
 				routes::scouting::teams::update_team_competition,
+				routes::scouting::teams::update_team_following,
+				routes::scouting::teams::get_historical_stat,
 				routes::scouting::matches::create_match_stats,
 				routes::scouting::matches::match_report_main,
 				routes::scouting::matches::match_report_raw,
@@ -254,7 +257,7 @@ pub struct AppState {
 	pub req_client: reqwest::Client,
 	pub first_client: FirstClient,
 	pub statbotics_client: StatboticsClient,
-	pub team_stats: Arc<RwLock<HashMap<TeamNumber, TeamStats>>>,
+	pub team_stats: Arc<RwLock<HashMap<TeamNumber, CombinedTeamStats>>>,
 	pub auto_stats: Arc<RwLock<HashMap<String, AutoStats>>>,
 	pub auto_images: Arc<Mutex<HashMap<String, Vec<u8>>>>,
 }

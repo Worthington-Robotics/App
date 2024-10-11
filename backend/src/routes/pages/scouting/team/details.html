@@ -10,10 +10,19 @@
 			style="background-color: {{status-color}}">{{status}}</a>
 	</div>
 	<div class="cont">
+		<button id="follow-button" class="cont round">
+			<img src="/assets/icons/star.svg" id="star" style="display:{{star-display}}" class="follow-icon" />
+			<img src="/assets/icons/star_outline.svg" id="star-outline" style="display:{{outline-display}}"
+				class="follow-icon" />
+		</button>
 		<a href="/scouting/team/{{number}}/autos"><button style="background-color: var(--bg2);">Autos</button></a>
 	</div>
 	<h2>Stats</h2>
 	<div class="cont col" id="stats">
+		<div id="stats-filter" class="cont">
+			<button id="all-time">All Time</button>
+			<button id="current-competition" style="background-color: var(--bg2);">Current Competition</button>
+		</div>
 		<div class="cont" id="stats-tabs">
 			<div class="round stats-tab selected" id="overall-tab" data-section="overall">Overall</div>
 			<div class="round stats-tab" id="auto-tab" data-section="auto">Auto</div>
@@ -180,8 +189,24 @@
 		background-color: var(--bg2);
 		margin: 0.4rem;
 	}
+
+	#follow-button {
+		background-color: var(--followbg);
+		padding: .3rem;
+	}
+
+	.follow-icon {
+		width: 1.5rem;
+	}
+
+	/* Start with competition-only cards hidden */
+	.comp {
+		display: none;
+	}
 </style>
 <script>
+	let teamNumber = __team_number__;
+
 	function compCb(e) {
 		let comp = e.target.dataset.val;
 		fetch(`/api/update_team_competition/{{number}}?competition=${comp}`, {
@@ -220,5 +245,54 @@
 	for (let elem of tabs) {
 		elem.addEventListener("click", (e) => changeTab(elem.dataset.section, e.target));
 	}
+
+	// Stat filter logic
+	let allTime = document.getElementById("all-time");
+	let currentCompetition = document.getElementById("current-competition");
+	let nonCompcards = document.getElementsByClassName("non-comp");
+	let compCards = document.getElementsByClassName("comp");
+	allTime.addEventListener("click", () => {
+		allTime.style.backgroundColor = "";
+		currentCompetition.style.backgroundColor = "var(--bg2)";
+		for (let e of nonCompcards) {
+			e.style.display = "flex";
+		}
+		for (let e of compCards) {
+			e.style.display = "none";
+		}
+	});
+	currentCompetition.addEventListener("click", () => {
+		currentCompetition.style.backgroundColor = "";
+		allTime.style.backgroundColor = "var(--bg2)";
+		for (let e of nonCompcards) {
+			e.style.display = "none";
+		}
+		for (let e of compCards) {
+			e.style.display = "flex";
+		}
+	});
+
+	// Favorite button logic
+	let star = document.getElementById("star");
+	let starOutline = document.getElementById("star-outline");
+	document.getElementById("follow-button").addEventListener("click", () => {
+		fetch(`/api/update_team_following/{{number}}`, {
+			method: "POST",
+		}).then((resp) => {
+			if (resp.status != 200) {
+				setError(resp.statusText);
+				return;
+			}
+
+			if (star.style.display == "") {
+				star.style.display = "none";
+				starOutline.style.display = "";
+			} else {
+				star.style.display = "";
+				starOutline.style.display = "none";
+			}
+		});
+	});
 </script>
+{{stat-popup}}
 {{footer}}

@@ -9,7 +9,7 @@ use tracing::{error, span, Level};
 use crate::{
 	db::Database,
 	routes::OptionalSessionID,
-	scouting::{DriveTrainType, Team, TeamInfo, TeamNumber, TeamStats},
+	scouting::{CombinedTeamStats, DriveTrainType, Team, TeamInfo, TeamNumber},
 	State,
 };
 
@@ -129,11 +129,11 @@ pub async fn matchup(
 fn render_alliance_breakdown(
 	alliance: AllianceColor,
 	teams: &[Option<TeamNumber>],
-	team_stats: &HashMap<TeamNumber, TeamStats>,
+	team_stats: &HashMap<TeamNumber, CombinedTeamStats>,
 	db_teams: &HashMap<TeamNumber, Team>,
 	team_info: &HashMap<TeamNumber, TeamInfo>,
 ) -> String {
-	let default_stats = TeamStats::default();
+	let default_stats = CombinedTeamStats::default();
 	let mut all_stats = Vec::new();
 
 	let mut point_total = 0.0;
@@ -141,7 +141,8 @@ fn render_alliance_breakdown(
 	for team in teams {
 		if let Some(team) = team {
 			let stats = team_stats.get(&team).unwrap_or(&default_stats);
-			point_total += stats.apa;
+			// TODO: Use current competition stats in here eventually
+			point_total += stats.all_time.apa;
 			all_stats.push((*team, stats));
 		}
 	}
@@ -162,8 +163,8 @@ fn render_alliance_breakdown(
 	let mut max = 0.0;
 	let mut max_team = None;
 	for (team, stats) in &all_stats {
-		if stats.apa > max {
-			max = stats.apa;
+		if stats.all_time.apa > max {
+			max = stats.all_time.apa;
 			max_team = Some(team);
 		}
 	}
@@ -179,7 +180,7 @@ fn render_alliance_breakdown(
 	// These tips being added should be ordered so that the most important ones are first and at the top in the breakdown
 	let def_avg = all_stats
 		.iter()
-		.fold(0.0, |acc, x| acc + x.1.defense_average)
+		.fold(0.0, |acc, x| acc + x.1.all_time.defense_average)
 		/ 3.0;
 	if def_avg >= 3.0 {
 		tips_string.push_str(&Tip::StrongDefense.render());
@@ -210,7 +211,7 @@ fn render_alliance_breakdown(
 		tips_string.push_str(&Tip::CantAmp.render());
 	}
 
-	if team_stats.values().any(|x| x.pass_average >= 2.5) {
+	if team_stats.values().any(|x| x.all_time.pass_average >= 2.5) {
 		tips_string.push_str(&Tip::StrongPassing.render());
 	}
 

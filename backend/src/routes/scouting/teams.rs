@@ -1,13 +1,17 @@
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref};
 
 use itertools::Itertools;
 use rocket::{
 	form::Form,
 	http::Status,
-	response::{content::RawHtml, Redirect},
+	response::{
+		content::{RawHtml, RawJson},
+		Redirect,
+	},
 	FromForm,
 };
 use rocket_async_compression::{Compress, Level as CompressionLevel};
+use serde::Serialize;
 use strum::IntoEnumIterator;
 use tracing::{error, span, Level};
 
@@ -16,15 +20,19 @@ use crate::{
 	db::{Database, DatabaseImpl},
 	routes::{OptionalSessionID, SessionID},
 	scouting::{
-		status::RobotStatus, Competition, DriveTrainType, IntakeType, Team, TeamNumber, TeamStats,
+		status::RobotStatus, CombinedTeamStats, Competition, DriveTrainType, IntakeType, Team,
+		TeamNumber,
 	},
 	util::{checkbox_attr, selected_attr},
 	State,
 };
 
 use super::{
-	create_page, render_stat_card, render_stat_card_float, render_stat_card_optional,
-	render_stat_card_optional_bool, render_stat_card_optional_float, render_stat_card_pct,
+	create_page,
+	stats::{
+		render_stat_card_float, render_stat_card_optional, render_stat_card_optional_bool,
+		render_stat_card_optional_float, stat_card_float, stat_card_other, stat_card_pct,
+	},
 	PageOrRedirect, Scope,
 };
 
@@ -176,8 +184,16 @@ pub async fn team_details(
 	let page = include_str!("../pages/scouting/team/details.min.html");
 	let page = page.replace("{{name}}", &team.name);
 	let page = page.replace("{{number}}", &team.number.to_string());
+	let page = page.replace("__team_number__", &team.number.to_string());
 	let page = page.replace("{{rookie-year}}", &team.rookie_year.to_string());
 	let page = page.replace("{{competition}}", competition_str);
+
+	// Follow button
+	let is_following = team.followers.contains(&requesting_member.id);
+	let star_display = if is_following { "" } else { "none" };
+	let star_outline_display = if is_following { "none" } else { "" };
+	let page = page.replace("{{star-display}}", star_display);
+	let page = page.replace("{{outline-display}}", star_outline_display);
 
 	let status_updates = lock.get_team_status(team.number).await.map_err(|e| {
 		error!("Failed to get team status updates from database: {e}");
@@ -221,98 +237,152 @@ pub async fn team_details(
 		.get_epa(id)
 		.await
 		.unwrap_or_default();
-	let page = page.replace("{{epa}}", &render_stat_card_float("EPA", epa, true));
+	let page = page.replace("{{epa}}", &render_stat_card_float("EPA", "", epa, true, ""));
 
-	let default_stats = TeamStats::default();
+	let default_stats = CombinedTeamStats::default();
 	let lock2 = state.team_stats.read().await;
 	let team_stats = lock2.get(&id).unwrap_or(&default_stats);
 	let page = page.replace(
 		"{{apa}}",
-		&render_stat_card_float("APA", team_stats.apa, true),
+		stat_card_float!(team_stats, "APA", apa, "apa", true),
 	);
 	let page = page.replace(
 		"{{win-rate}}",
-		&render_stat_card_pct("Win Rate", team_stats.win_rate, true),
+		stat_card_pct!(team_stats, "Win Rate", win_rate, "win_rate", true),
 	);
 	let page = page.replace(
 		"{{matches}}",
-		&render_stat_card("Matches", team_stats.matches, false),
+		stat_card_other!(team_stats, "Matches", matches, "matches", false),
 	);
 	let page = page.replace(
 		"{{reliability}}",
-		&render_stat_card_pct("Reliability", team_stats.reliability, false),
+		stat_card_pct!(team_stats, "Reliability", reliability, "reliability", false),
 	);
 	let page = page.replace(
 		"{{penalties}}",
-		&render_stat_card("Penalties", team_stats.penalties, false),
+		stat_card_other!(team_stats, "Penalties", penalties, "penalties", false),
 	);
 	let page = page.replace(
 		"{{auto-score}}",
-		&render_stat_card_float("Score", team_stats.auto_score, true),
+		stat_card_float!(team_stats, "Score", auto_score, "auto_score", true),
 	);
 	let page = page.replace(
 		"{{auto-accuracy}}",
-		&render_stat_card_float("Accuracy", team_stats.auto_accuracy, true),
+		stat_card_pct!(team_stats, "Accuracy", auto_accuracy, "auto_accuracy", true),
 	);
 	let page = page.replace(
 		"{{auto-collisions}}",
-		&render_stat_card("Collisions", team_stats.auto_collisions, false),
+		stat_card_other!(
+			team_stats,
+			"Collisions",
+			auto_collisions,
+			"auto_collisions",
+			false
+		),
 	);
 	let page = page.replace(
 		"{{cycle-time}}",
-		&render_stat_card_float("CT", team_stats.cycle_time, true),
+		stat_card_float!(team_stats, "CT", cycle_time, "cycle_time", true),
 	);
 	let page = page.replace(
 		"{{cycle-time-consistency}}",
-		&render_stat_card_pct("CTC", team_stats.cycle_time_consistency, true),
+		stat_card_pct!(
+			team_stats,
+			"CTC",
+			cycle_time_consistency,
+			"cycle_time_consistency",
+			true
+		),
 	);
 	let page = page.replace(
 		"{{speaker-score}}",
-		&render_stat_card_float("Spkr Sco", team_stats.speaker_score, false),
+		stat_card_float!(
+			team_stats,
+			"Spkr Sco",
+			speaker_score,
+			"speaker_score",
+			false
+		),
 	);
 	let page = page.replace(
 		"{{amp-score}}",
-		&render_stat_card_float("Amp Sco", team_stats.amp_score, false),
+		stat_card_float!(team_stats, "Amp Sco", amp_score, "amp_score", false),
 	);
 	let page = page.replace(
 		"{{pass-average}}",
-		&render_stat_card_float("Pass Avg", team_stats.pass_average, false),
+		stat_card_float!(team_stats, "Pass Avg", pass_average, "pass_average", false),
 	);
 	let page = page.replace(
 		"{{speaker-accuracy}}",
-		&render_stat_card_pct("Spkr Acc", team_stats.speaker_accuracy, false),
+		stat_card_pct!(
+			team_stats,
+			"Spkr Acc",
+			speaker_accuracy,
+			"speaker_accuracy",
+			false
+		),
 	);
 	let page = page.replace(
 		"{{amp-accuracy}}",
-		&render_stat_card_pct("Amp Acc", team_stats.amp_accuracy, false),
+		stat_card_pct!(team_stats, "Amp Acc", amp_accuracy, "amp_accuracy", false),
 	);
 	let page = page.replace(
 		"{{amp-rate}}",
-		&render_stat_card_float("Amp Rate", team_stats.amplification_rate, true),
+		stat_card_float!(
+			team_stats,
+			"Amp Rate",
+			amplification_rate,
+			"amplification_rate",
+			true
+		),
 	);
 	let page = page.replace(
 		"{{amp-power}}",
-		&render_stat_card_float("Amp Pwr", team_stats.amplification_power, true),
+		stat_card_float!(
+			team_stats,
+			"Amp Pwr",
+			amplification_power,
+			"amplification_power",
+			true
+		),
 	);
 	let page = page.replace(
 		"{{defense-average}}",
-		&render_stat_card_float("Def Avg", team_stats.defense_average, false),
+		stat_card_float!(
+			team_stats,
+			"Def Avg",
+			defense_average,
+			"defense_average",
+			false
+		),
 	);
 	let page = page.replace(
 		"{{climb-score}}",
-		&render_stat_card_float("Climb Sco", team_stats.climb_score, true),
+		stat_card_float!(team_stats, "Climb Sco", climb_score, "climb_score", true),
 	);
 	let page = page.replace(
 		"{{climb-accuracy}}",
-		&render_stat_card_pct("Climb Acc", team_stats.climb_accuracy, false),
+		stat_card_pct!(
+			team_stats,
+			"Climb Acc",
+			climb_accuracy,
+			"climb_accuracy",
+			false
+		),
 	);
 	let page = page.replace(
 		"{{trap-score}}",
-		&render_stat_card_float("Trap Sco", team_stats.trap_score, true),
+		stat_card_float!(team_stats, "Trap Sco", trap_score, "trap_score", true),
 	);
 	let page = page.replace(
 		"{{trap-accuracy}}",
-		&render_stat_card_pct("Trap Acc", team_stats.trap_accuracy, false),
+		stat_card_pct!(
+			team_stats,
+			"Trap Acc",
+			trap_accuracy,
+			"trap_accuracy",
+			false
+		),
 	);
 
 	// Team info
@@ -327,71 +397,80 @@ pub async fn team_details(
 
 	let page = page.replace(
 		"{{max-speed}}",
-		&render_stat_card_optional_float("Max Speed", team_info.max_speed, true),
+		&render_stat_card_optional_float("Max Speed", "", team_info.max_speed, true, ""),
 	);
 	let page = page.replace(
 		"{{height}}",
-		&render_stat_card_optional_float("Height", team_info.height, true),
+		&render_stat_card_optional_float("Height", "", team_info.height, true, ""),
 	);
 	let page = page.replace(
 		"{{weight}}",
-		&render_stat_card_optional_float("Weight", team_info.weight, true),
+		&render_stat_card_optional_float("Weight", "", team_info.weight, true, ""),
 	);
 	let page = page.replace(
 		"{{length}}",
-		&render_stat_card_optional_float("Length", team_info.length, false),
+		&render_stat_card_optional_float("Length", "", team_info.length, false, ""),
 	);
 	let page = page.replace(
 		"{{width}}",
-		&render_stat_card_optional_float("Width", team_info.width, false),
+		&render_stat_card_optional_float("Width", "", team_info.width, false, ""),
 	);
 	let page = page.replace(
 		"{{can-speaker}}",
-		&render_stat_card_optional_bool("Speaker?", team_info.can_speaker, false),
+		&render_stat_card_optional_bool("Speaker?", "", team_info.can_speaker, false, ""),
 	);
 	let page = page.replace(
 		"{{can-amp}}",
-		&render_stat_card_optional_bool("Amp?", team_info.can_amp, false),
+		&render_stat_card_optional_bool("Amp?", "", team_info.can_amp, false, ""),
 	);
 	let page = page.replace(
 		"{{can-climb}}",
-		&render_stat_card_optional_bool("Climb?", team_info.can_climb, false),
+		&render_stat_card_optional_bool("Climb?", "", team_info.can_climb, false, ""),
 	);
 	let page = page.replace(
 		"{{can-trap}}",
-		&render_stat_card_optional_bool("Trap?", team_info.can_trap, false),
+		&render_stat_card_optional_bool("Trap?", "", team_info.can_trap, false, ""),
 	);
 	let page = page.replace(
 		"{{can-pass}}",
-		&render_stat_card_optional_bool("Pass?", team_info.can_pass, false),
+		&render_stat_card_optional_bool("Pass?", "", team_info.can_pass, false, ""),
 	);
 	let page = page.replace(
 		"{{can-drive-under-stage}}",
-		&render_stat_card_optional_bool("Under Stage?", team_info.can_drive_under_stage, false),
+		&render_stat_card_optional_bool(
+			"Under Stage?",
+			"",
+			team_info.can_drive_under_stage,
+			false,
+			"",
+		),
 	);
 	let page = page.replace(
 		"{{can-ground-intake}}",
-		&render_stat_card_optional_bool("Ground?", team_info.can_ground_intake, false),
+		&render_stat_card_optional_bool("Ground?", "", team_info.can_ground_intake, false, ""),
 	);
 	let page = page.replace(
 		"{{can-source-intake}}",
-		&render_stat_card_optional_bool("Source?", team_info.can_source_intake, false),
+		&render_stat_card_optional_bool("Source?", "", team_info.can_source_intake, false, ""),
 	);
 	let page = page.replace(
 		"{{intake-type}}",
 		&render_stat_card_optional(
 			"Intake",
+			"",
 			team_info.intake_type.map(|x| match x {
 				IntakeType::OverBumper => "OtB",
 				IntakeType::UnderBumper => "UtB",
 			}),
 			false,
+			"",
 		),
 	);
 	let page = page.replace(
 		"{{drivetrain-type}}",
 		&render_stat_card_optional(
 			"Drivetrain",
+			"",
 			team_info.drivetrain_type.map(|x| match x {
 				DriveTrainType::Swerve => "Sw",
 				DriveTrainType::Tank => "Tk",
@@ -399,6 +478,7 @@ pub async fn team_details(
 				DriveTrainType::Other => "Ot",
 			}),
 			false,
+			"",
 		),
 	);
 	let page = page.replace("{{notes}}", &team_info.notes);
@@ -628,4 +708,99 @@ pub async fn update_team_competition(
 	}
 
 	Ok(())
+}
+
+#[rocket::post("/api/update_team_following/<id>")]
+pub async fn update_team_following(
+	state: &State,
+	session_id: SessionID<'_>,
+	id: TeamNumber,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Updating team following");
+	let _enter = span.enter();
+
+	let requesting_member = session_id.get_requesting_member(state).await?;
+
+	let mut lock = state.db.lock().await;
+	let Some(mut team) = lock.get_team(id).await.map_err(|e| {
+		error!("Failed to get team from database: {e}");
+		Status::InternalServerError
+	})?
+	else {
+		error!("Team {id} does not exist");
+		return Err(Status::NotFound);
+	};
+
+	if team.followers.contains(&requesting_member.id) {
+		team.followers.remove(&requesting_member.id);
+	} else {
+		team.followers.insert(requesting_member.id);
+	}
+
+	if let Err(e) = lock.create_team(team).await {
+		error!("Failed to update team {id} in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
+}
+
+/// Get the chartsjs consumable list of historical data points for a stat
+#[rocket::get("/api/get_historical_stat/<team>/<stat>")]
+pub async fn get_historical_stat(
+	state: &State,
+	session_id: SessionID<'_>,
+	team: TeamNumber,
+	stat: &str,
+) -> Result<RawJson<String>, Status> {
+	let span = span!(Level::DEBUG, "Getting historical stat");
+	let _enter = span.enter();
+
+	session_id.get_requesting_member(state).await?;
+
+	let default_stats = CombinedTeamStats::default();
+	let lock = state.team_stats.read().await;
+	let team_stats = lock.get(&team).unwrap_or(&default_stats);
+
+	/* We do this by converting the stats to a HashMap using serde, then looking for the field we want */
+
+	// Ensure that this is a field in the stats
+	let serialized_default =
+		serde_json::to_string(&default_stats.all_time).expect("Failed to serialize default stats");
+	let deserialized_default: HashMap<String, serde_json::Value> =
+		serde_json::from_str(&serialized_default).expect("Failed to deserialize default stats");
+	if !deserialized_default.contains_key(stat) {
+		return Err(Status::NotFound);
+	}
+
+	#[derive(Serialize)]
+	struct Point {
+		r#match: u16,
+		value: f64,
+	}
+
+	let mut out = Vec::new();
+	for (i, m) in team_stats.historical.iter().enumerate() {
+		let serialized = serde_json::to_string(m).expect("Failed to serialize match stats");
+		let deserialized: HashMap<String, serde_json::Value> =
+			serde_json::from_str(&serialized).expect("Failed to deserialize match stats");
+		let value = deserialized
+			.get(stat)
+			.expect("Should have already errored out if the field didn't exist");
+		let Some(value) = value.as_f64() else {
+			continue;
+		};
+
+		out.push(Point {
+			r#match: i as u16,
+			value,
+		});
+	}
+
+	let out = serde_json::to_string(&out).map_err(|e| {
+		error!("Failed to serialize output: {e}");
+		Status::InternalServerError
+	})?;
+
+	Ok(RawJson(out))
 }

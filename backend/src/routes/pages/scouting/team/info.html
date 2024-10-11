@@ -7,27 +7,30 @@
 	<div class="cont">
 		<input type="number" name="max-speed" id="max-speed" class="field" placeholder="0.00" step=any
 			value="{{max-speed}}" />
-		<button id="max-speed-convert">m/s > ft/s</button>
+		<button id="max-speed-convert">m/s</button>
 	</div>
 	<label for="height">Height</label>
 	<div class="cont">
 		<input type="number" name="height" id="height" class="field" placeholder="0.00" step=any value="{{height}}" />
-		<button id="height-convert">m > ft</button>
+		<button id="height-convert-m">m</button>
+		<button id="height-convert-in">in</button>
 	</div>
 	<label for="weight">Weight</label>
 	<div class="cont">
 		<input type="number" name="weight" id="weight" class="field" placeholder="0.00" step=any value="{{weight}}" />
-		<button id="weight-convert">kg > lb</button>
+		<button id="weight-convert">kg</button>
 	</div>
 	<label for="length">Length</label>
 	<div class="cont">
 		<input type="number" name="length" id="length" class="field" placeholder="0.00" step=any value="{{length}}" />
-		<button id="length-convert">m > ft</button>
+		<button id="length-convert-m">m</button>
+		<button id="length-convert-in">in</button>
 	</div>
 	<label for="width">Width</label>
 	<div class="cont">
 		<input type="number" name="width" id="width" class="field" placeholder="0.00" step=any value="{{width}}" />
-		<button id="width-convert">m > ft</button>
+		<button id="width-convert-m">m</button>
+		<button id="width-convert-in">in</button>
 	</div>
 	<h2>Robot Information</h2>
 	<label for="drivetrain-type">Drivetrain Type</label>
@@ -124,25 +127,40 @@
 		let elem = document.getElementById("max-speed");
 		elem.value = elem.value * 3.281;
 	});
-	document.getElementById("height-convert").addEventListener("click", (e) => {
+	document.getElementById("height-convert-m").addEventListener("click", (e) => {
 		e.preventDefault();
 		let elem = document.getElementById("height");
 		elem.value = elem.value * 3.281;
+	});
+	document.getElementById("height-convert-in").addEventListener("click", (e) => {
+		e.preventDefault();
+		let elem = document.getElementById("height");
+		elem.value = elem.value / 12;
 	});
 	document.getElementById("weight-convert").addEventListener("click", (e) => {
 		e.preventDefault();
 		let elem = document.getElementById("weight");
 		elem.value = elem.value * 2.205;
 	});
-	document.getElementById("length-convert").addEventListener("click", (e) => {
+	document.getElementById("length-convert-m").addEventListener("click", (e) => {
 		e.preventDefault();
 		let elem = document.getElementById("length");
 		elem.value = elem.value * 3.281;
 	});
-	document.getElementById("width-convert").addEventListener("click", (e) => {
+	document.getElementById("length-convert-in").addEventListener("click", (e) => {
+		e.preventDefault();
+		let elem = document.getElementById("length");
+		elem.value = elem.value / 12;
+	});
+	document.getElementById("width-convert-m").addEventListener("click", (e) => {
 		e.preventDefault();
 		let elem = document.getElementById("width");
 		elem.value = elem.value * 3.281;
+	});
+	document.getElementById("width-convert-in").addEventListener("click", (e) => {
+		e.preventDefault();
+		let elem = document.getElementById("width");
+		elem.value = elem.value / 12;
 	});
 </script>
 <style>

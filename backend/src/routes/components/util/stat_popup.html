@@ -1,0 +1,119 @@
+<!-- NOTE: With this script you must set the global variable 'teamNumber' to the team number -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"
+	referrerpolicy="no-referrer" async id="chart-script"></script>
+<div id="stat-popup-container" class="cont" style="display:none">
+	<div id="stat-popup" class="cont col round">
+		<h3 id="stat-popup-title"></h3>
+		<div id="stat-popup-graph" class="cont">
+			<div class="cont round" id="stat-popup-graph-cont" style="width: 18rem; position:relative"><canvas
+					id="stat-popup-canvas"></canvas></div>
+		</div>
+		<div class="cont">
+			<button id="stat-popup-close">Close</button>
+		</div>
+	</div>
+</div>
+<script>
+	let chart = undefined;
+
+	document.getElementById("chart-script").addEventListener("load", () => {
+		Chart.defaults.font.family = "Rubik";
+		Chart.defaults.font.size = 12;
+		chart = new Chart(
+			document.getElementById("stat-popup-canvas"),
+			{
+				type: "line",
+				data: {
+					labels: [],
+					datasets: [
+						{
+							label: "Stat per match",
+							data: [],
+							tension: 0.1,
+							borderColor: "#3849d9"
+						}
+					]
+				},
+				options: {
+					devicePixelRatio: 4,
+					responsive: true
+				}
+			}
+		);
+	});
+
+	let popupContainer = document.getElementById("stat-popup-container");
+	let popupTitle = document.getElementById("stat-popup-title");
+
+	document.getElementById("stat-popup-close").addEventListener("click", () => {
+		popupContainer.style.display = "none";
+	});
+
+	let cards = document.getElementsByClassName("card");
+
+	// Cache map of stats to their datasets
+	let dataRepository = {};
+
+	async function cardClick(e) {
+		if (chart == undefined) {
+			return;
+		}
+		let statId = e.target.dataset.id;
+		if (statId == null || statId == undefined || statId == "") {
+			return;
+		}
+
+		popupTitle.innerHTML = e.target.dataset.title;
+
+		// Get the data
+		let data = dataRepository[statId];
+		if (data == undefined) {
+			let response = await fetch(`/api/get_historical_stat/${teamNumber}/${statId}`);
+			if (response.status != 200) {
+				setError("Failed to get data for stat: " + response.statusText);
+				return;
+			}
+
+			let text = await response.text();
+			try {
+				let newData = JSON.parse(text);
+				dataRepository[statId] = newData;
+				data = newData;
+			} catch (e) {
+				setError("Failed to parse data for stat: " + e);
+			}
+		}
+
+		chart.data.labels = data.map(row => row.match);
+		chart.data.datasets[0].data = data.map(row => row.value);
+		chart.update();
+
+		popupContainer.style.display = "";
+	}
+
+	for (let card of cards) {
+		card.addEventListener("click", cardClick);
+	}
+</script>
+<style>
+	#stat-popup-container {
+		position: fixed;
+		left: 0;
+		top: 0;
+		width: 100vw;
+		height: 100vh;
+		z-index: 100;
+		background-color: rgba(0, 0, 0, 0.5);
+	}
+
+	#stat-popup {
+		background-color: var(--bg2);
+		padding: 1.5rem;
+		width: 80%;
+	}
+
+	#stat-popup-graph-cont {
+		padding: 1rem;
+		background-color: var(--bg);
+	}
+</style>

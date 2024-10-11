@@ -265,6 +265,7 @@ pub fn create_page(title: &str, body: &str, scope: Option<Scope>) -> String {
 	}
 	let out = out.replace("{{footer}}", &footer);
 
+	// Extra optional elements that can be included
 	let out = out.replace(
 		"{{worbots-header}}",
 		include_str!("components/util/worbots-header.min.html"),
@@ -273,6 +274,10 @@ pub fn create_page(title: &str, body: &str, scope: Option<Scope>) -> String {
 	let out = out.replace(
 		"{{prompt}}",
 		include_str!("components/util/prompt.min.html"),
+	);
+	let out = out.replace(
+		"{{stat-popup}}",
+		include_str!("components/util/stat_popup.min.html"),
 	);
 
 	out

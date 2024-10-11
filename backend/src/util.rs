@@ -181,6 +181,15 @@ pub fn fix_zero(x: f32) -> f32 {
 	}
 }
 
+/// Changes an empty string to a quoted one
+pub fn fix_empty_string(string: &str) -> &str {
+	if string.is_empty() {
+		"\"\""
+	} else {
+		string
+	}
+}
+
 /// Creates the attribute for a checkbox to say whether it is checked or not based on a boolean
 pub fn checkbox_attr(val: bool) -> &'static str {
 	if val {
