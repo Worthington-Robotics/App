@@ -178,7 +178,7 @@ impl CombinedTeamStats {
 	pub fn calculate(team: TeamNumber, matches: &[MatchStats]) -> Self {
 		let mut historical = Vec::new();
 		for i in 1..matches.len() {
-			historical.push(calculate_team_stats(team, &matches[0..i]));
+			historical.push(calculate_team_stats(team, &matches[i - 1..i]));
 		}
 
 		let all_time = calculate_team_stats(team, &matches);
