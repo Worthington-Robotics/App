@@ -5,6 +5,7 @@ pub mod status;
 
 use std::{
 	collections::{HashMap, HashSet},
+	fmt::Display,
 	ops::DerefMut,
 	sync::Arc,
 	time::Duration,
@@ -144,6 +145,8 @@ pub struct TeamInfo {
 	pub drivetrain_type: Option<DriveTrainType>,
 	/// Additional notes about the robot
 	pub notes: String,
+	/// Completion status of the scouting
+	pub progress: PitScoutingProgress,
 }
 
 /// Different types of intakes
@@ -162,6 +165,41 @@ pub enum DriveTrainType {
 	Tank,
 	Mecanum,
 	Other,
+}
+
+/// Completion status of pit scouting for a team
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum PitScoutingProgress {
+	#[default]
+	NotDone,
+	NeedsRefresh,
+	Finished,
+}
+
+impl Display for PitScoutingProgress {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				Self::NotDone => "Not Done",
+				Self::NeedsRefresh => "Needs Refresh",
+				Self::Finished => "Finished",
+			}
+		)
+	}
+}
+
+impl PitScoutingProgress {
+	/// Get the CSS color for this progress
+	pub fn get_color(&self) -> &'static str {
+		match self {
+			Self::NotDone => "var(--wbred)",
+			Self::NeedsRefresh => "#eb7134",
+			Self::Finished => "#5cd12a",
+		}
+	}
 }
 
 /// Combination of all-time and historical stats for a single team

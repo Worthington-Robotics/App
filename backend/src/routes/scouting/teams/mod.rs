@@ -199,6 +199,7 @@ pub async fn team_details(
 		Status::InternalServerError
 	})?;
 
+	// Status
 	let current_status = RobotStatus::get_from_updates(&status_updates);
 	let page = page.replace("{{status}}", &current_status.to_string());
 	let page = page.replace("{{status-color}}", current_status.get_color());
@@ -481,6 +482,10 @@ pub async fn team_details(
 		),
 	);
 	let page = page.replace("{{notes}}", &team_info.notes);
+
+	// Pit scouting progress
+	let page = page.replace("{{pit-scouting-progress}}", &team_info.progress.to_string());
+	let page = page.replace("{{pit-scouting-color}}", team_info.progress.get_color());
 
 	let page = create_page("Team Details", &page, Some(Scope::Scouting));
 

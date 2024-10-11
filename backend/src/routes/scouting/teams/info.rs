@@ -9,7 +9,7 @@ use tracing::{error, span, Level};
 use crate::{
 	db::Database,
 	routes::{OptionalSessionID, SessionID},
-	scouting::{DriveTrainType, IntakeType, TeamNumber},
+	scouting::{DriveTrainType, IntakeType, PitScoutingProgress, TeamNumber},
 	util::{checkbox_attr, selected_attr},
 	State,
 };
@@ -158,6 +158,16 @@ pub async fn team_info_page(
 				.is_some_and(|x| x == DriveTrainType::Other),
 		),
 	);
+
+	let page = page.replace(
+		"{{needs-refresh-selected}}",
+		selected_attr(team_info.progress == PitScoutingProgress::NeedsRefresh),
+	);
+	let page = page.replace(
+		"{{finished-selected}}",
+		selected_attr(team_info.progress == PitScoutingProgress::Finished),
+	);
+
 	let page = page.replace("{{notes}}", &team_info.notes);
 
 	let page = create_page("Edit Team Info", &page, Some(Scope::Scouting));

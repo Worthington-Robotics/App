@@ -142,7 +142,7 @@ fn render_alliance_breakdown(
 		if let Some(team) = team {
 			let stats = team_stats.get(&team).unwrap_or(&default_stats);
 			// TODO: Use current competition stats in here eventually
-			point_total += stats.all_time.apa;
+			point_total += stats.current_competition.apa;
 			all_stats.push((*team, stats));
 		}
 	}
@@ -163,8 +163,8 @@ fn render_alliance_breakdown(
 	let mut max = 0.0;
 	let mut max_team = None;
 	for (team, stats) in &all_stats {
-		if stats.all_time.apa > max {
-			max = stats.all_time.apa;
+		if stats.current_competition.apa > max {
+			max = stats.current_competition.apa;
 			max_team = Some(team);
 		}
 	}
@@ -180,7 +180,7 @@ fn render_alliance_breakdown(
 	// These tips being added should be ordered so that the most important ones are first and at the top in the breakdown
 	let def_avg = all_stats
 		.iter()
-		.fold(0.0, |acc, x| acc + x.1.all_time.defense_average)
+		.fold(0.0, |acc, x| acc + x.1.current_competition.defense_average)
 		/ 3.0;
 	if def_avg >= 3.0 {
 		tips_string.push_str(&Tip::StrongDefense.render());
@@ -211,7 +211,10 @@ fn render_alliance_breakdown(
 		tips_string.push_str(&Tip::CantAmp.render());
 	}
 
-	if team_stats.values().any(|x| x.all_time.pass_average >= 2.5) {
+	if team_stats
+		.values()
+		.any(|x| x.current_competition.pass_average >= 2.5)
+	{
 		tips_string.push_str(&Tip::StrongPassing.render());
 	}
 

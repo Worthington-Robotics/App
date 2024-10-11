@@ -71,8 +71,14 @@
 			</div>
 		</div>
 	</div>
+	<br />
+	<br />
 	<div class="cont col">
-		<h2>Info</h2>
+		<div class="cont">
+			<h2 style="margin:0px">Info</h2>
+			<div class="cont round pit-scouting-progress" style="color: {{pit-scouting-color}}">
+				{{pit-scouting-progress}}</div>
+		</div>
 		<div class="stats-grid">
 			{{max-speed}}
 			{{height}}
@@ -173,6 +179,12 @@
 	#notes {
 		text-align: center;
 		color: var(--fg2);
+		width: 80%;
+	}
+
+	.pit-scouting-progress {
+		padding: 0.5rem;
+		background-color: var(--bg2);
 	}
 
 	h3 {

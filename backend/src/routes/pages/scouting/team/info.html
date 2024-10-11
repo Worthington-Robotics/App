@@ -66,6 +66,12 @@
 	<label for="can-source-intake">Can Pickup From Source?</label>
 	<input type="checkbox" class="field" name="can-source-intake" id="can-source-intake" {{can-source-intake-checked}} />
 	<h2>Other</h2>
+	<label for="progress">Scouting Progress</label>
+	<select name="progress" id="progress" class="field">
+		<option value="not_done">Not Done</option>
+		<option value="needs_refresh" {{needs-refresh-selected}}>Needs Refresh</option>
+		<option value="finished" {{finished-selected}}>Done</option>
+	</select>
 	<label for="notes">Additional Notes</label>
 	<textarea name="notes" id="notes" class="round border">{{notes}}</textarea>
 
@@ -102,6 +108,7 @@
 			can_source_intake: document.getElementById("can-source-intake").checked,
 			intake_type: intakeType,
 			drivetrain_type: drivetrainType,
+			progress: document.getElementById("progress").value,
 			notes: document.getElementById("notes").value,
 		};
 		const dataReady = encodeURIComponent(JSON.stringify(data));
