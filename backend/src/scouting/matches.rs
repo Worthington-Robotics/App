@@ -35,6 +35,29 @@ impl Display for MatchNumber {
 	}
 }
 
+impl FromStr for MatchNumber {
+	type Err = ();
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		if s.len() < 2 {
+			return Err(());
+		}
+
+		let ty = &s[0..1];
+		let ty = match ty {
+			"Q" => MatchType::Qualification,
+			"P" => MatchType::Playoff,
+			_ => return Err(()),
+		};
+
+		let Ok(num) = (&s[1..]).parse::<u16>() else {
+			return Err(());
+		};
+
+		Ok(Self { ty, num })
+	}
+}
+
 /// Type of a match
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum MatchType {

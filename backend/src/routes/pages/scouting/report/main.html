@@ -38,6 +38,8 @@
 	<h2>Pre-Match</h2>
 	<label for="team-number">Team Number</label>
 	<input type="number" class="field" name="team-number" id="team-number" placeholder="0000" />
+	<label for="match-number">Match Number</label>
+	<input type="text" class="field" name="match-number" id="match-number" placeholder="Q0" />
 	<div class="cont">
 		<input type="checkbox" name="recorded-live" id="recorded-live" class="field" />
 		<label for="recorded-live">Recording Live?</label>
@@ -338,10 +340,35 @@
 			auto = null;
 		}
 
-		// We do lots of conversions to integers with * 1 here
+		let matchNumberString = document.getElementById("match-number").value;
+		let matchNumber = null;
+		if (matchNumberString.length >= 2) {
+			let type = null;
+			if (matchNumberString[0] == "Q") {
+				type = "Qualification";
+			} else if (matchNumberString[0] == "P") {
+				type = "Playoff";
+			}
+			if (type == null) {
+				setError("Invalid match type in match number");
+				return;
+			}
+			let number = matchNumberString.substring(1);
+			if (isNaN(number) || isNaN(parseFloat(number))) {
+				setError("Invalid match number");
+				return;
+			}
+			number = number * 1;
+			matchNumber = {
+				ty: type,
+				num: number,
+			};
+		}
+
 		const data = {
 			team_number: document.getElementById("team-number").value * 1,
 			match_id: "",
+			match_number: matchNumber,
 			recorded_live: document.getElementById("recorded-live").checked,
 			auto_shots: autoShots,
 			auto: auto,

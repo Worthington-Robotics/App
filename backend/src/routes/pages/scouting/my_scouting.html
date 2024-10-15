@@ -2,7 +2,7 @@
 <h1>My Scouting</h1>
 <div id="my-scouting" class="cont col">
 	<div class="cont col">
-		<h3>My Teams</h3>
+		<h3>My Prescouting Teams</h3>
 		<div id="teams-cont">
 			{{teams}}
 		</div>
@@ -20,6 +20,10 @@
 	<div id="popup-container" class="cont" style="display:none">
 		<div id="popup" class="cont col round">
 			<h4 id="popup-number"></h4>
+			<div class="cont">
+				<div id="popup-team-description">Scouting team</div>
+				<a class="cont round nolink team" id="popup-team"></a>
+			</div>
 			<div class="cont">
 				<button id="popup-claim">Claim</button>
 				<button id="popup-cancel">Close</button>
@@ -60,6 +64,15 @@
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
 		width: 100%;
 		pointer-events: none;
+	}
+
+	.match-number {
+		font-size: calc(1.7vw * var(--scale));
+	}
+
+	.match-time {
+		color: var(--fg2);
+		text-align: center;
 	}
 
 	.match-claims {
@@ -107,6 +120,10 @@
 	#popup-cancel {
 		background-color: var(--bg3);
 	}
+
+	#popup-team {
+		margin-left: -0.5rem;
+	}
 </style>
 <script>
 	// Filter logic
@@ -138,17 +155,35 @@
 	// Interaction logic with matches
 	let popupContainer = document.getElementById("popup-container");
 	let popupClaimButton = document.getElementById("popup-claim");
+	let popupTeam = document.getElementById("popup-team");
+	let popupTeamDescription = document.getElementById("popup-team-description");
 
 	let selectedMatch = null;
 	let selectedMatchIsClaimed = null;
 	let selectedMatchElement = null;
+	let selectedMatchTeam = null;
 
 	function clickMatch(e) {
 		selectedMatchIsClaimed = e.target.classList.contains("claimed");
 		selectedMatch = e.target.dataset.num;
 		selectedMatchElement = e.target;
+		if (e.target.dataset.team == "") {
+			selectedMatchTeam = null;
+		} else {
+			selectedMatchTeam = e.target.dataset.team;
+		}
 
-		document.getElementById("popup-number").innerHTML = selectedMatch;
+		document.getElementById("popup-number").innerHTML = `Qualification ${selectedMatch}`;
+		if (selectedMatchTeam == null) {
+			popupTeam.href = "";
+			popupTeam.style.display = "none";
+			popupTeamDescription.style.display = "none";
+		} else {
+			popupTeam.innerHTML = selectedMatchTeam;
+			popupTeam.href = `/scouting/team/${selectedMatchTeam}`;
+			popupTeam.style.display = "";
+			popupTeamDescription.style.display = "";
+		}
 		if (selectedMatchIsClaimed) {
 			popupClaimButton.innerHTML = "Unclaim";
 		} else {

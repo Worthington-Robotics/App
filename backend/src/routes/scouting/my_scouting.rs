@@ -174,11 +174,49 @@ fn render_match(
 	let class = if is_claimed { "claimed" } else { "available" };
 	let out = out.replace("{{class}}", class);
 
-	// let is_done = match_stats.iter().any(|x| {
-	// 	x.match_number.as_ref().is_some_and(|x| x == &m.num)
-	// 		&& assigned_teams.contains(&x.team_number)
-	// });
-	let is_done = false;
+	// Figure out which team the member has claimed
+	let claimed_slot = &[
+		&claims.red_1,
+		&claims.red_2,
+		&claims.red_3,
+		&claims.blue_1,
+		&claims.blue_2,
+		&claims.blue_3,
+	]
+	.into_iter()
+	.position(|x| x.as_ref().is_some_and(|x| x == requesting_member));
+	let claimed_team = match claimed_slot {
+		Some(0) => Some(m.red_alliance[0]),
+		Some(1) => Some(m.red_alliance[1]),
+		Some(2) => Some(m.red_alliance[2]),
+		Some(3) => Some(m.blue_alliance[0]),
+		Some(4) => Some(m.blue_alliance[1]),
+		Some(5) => Some(m.blue_alliance[2]),
+		Some(_) | None => None,
+	};
+
+	let claimed_team_elem = if let Some(claimed_team) = claimed_team {
+		render_team(claimed_team)
+	} else {
+		String::new()
+	};
+	let out = out.replace("{{team}}", &claimed_team_elem);
+
+	let claimed_team_data = if let Some(claimed_team) = claimed_team {
+		claimed_team.to_string()
+	} else {
+		"\"\"".into()
+	};
+	let out = out.replace("{{data-team}}", &claimed_team_data);
+
+	// Check if match stats have been reported for this match and team to let the user know if they are done
+	let is_done = if let Some(claimed_team) = claimed_team {
+		match_stats.iter().any(|x| {
+			x.match_number.as_ref().is_some_and(|x| x == &m.num) && x.team_number == claimed_team
+		})
+	} else {
+		false
+	};
 	let is_done_icon = if is_done {
 		"<img src=/assets/icons/check.svg />"
 	} else {
