@@ -4,9 +4,9 @@ use crate::{
 	events::Event,
 	member::Member,
 	scouting::{
-		assignment::ScoutingAssignment,
+		assignment::{MatchClaims, ScoutingAssignment},
 		autos::Auto,
-		matches::{Match, MatchStats},
+		matches::{Match, MatchNumber, MatchStats},
 		status::StatusUpdate,
 		Team, TeamInfo, TeamNumber,
 	},
@@ -183,13 +183,29 @@ pub trait Database {
 	/// Remove all matches from the schedule
 	async fn clear_matches(&mut self) -> anyhow::Result<()>;
 
-	/// Get the scouting assignment for a member
-	async fn get_assignment(&self, member: &str) -> anyhow::Result<Option<ScoutingAssignment>>;
+	/// Get the prescouting assignment for a member
+	async fn get_prescouting_assignment(
+		&self,
+		member: &str,
+	) -> anyhow::Result<Option<ScoutingAssignment>>;
 
-	/// Get all scouting assignments
-	async fn get_all_assignments(&self)
-		-> anyhow::Result<impl Iterator<Item = ScoutingAssignment>>;
+	/// Get all prescouting assignments
+	async fn get_all_prescouting_assignments(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = ScoutingAssignment>>;
 
-	/// Assign scouting to a member
-	async fn create_assignment(&mut self, assignment: ScoutingAssignment) -> anyhow::Result<()>;
+	/// Assign prescouting to a member
+	async fn create_prescouting_assignment(
+		&mut self,
+		assignment: ScoutingAssignment,
+	) -> anyhow::Result<()>;
+
+	/// Get the claims for a match
+	async fn get_match_claims(&self, m: &MatchNumber) -> anyhow::Result<Option<MatchClaims>>;
+
+	/// Get claims for all matches
+	async fn get_all_match_claims(&self) -> anyhow::Result<impl Iterator<Item = MatchClaims>>;
+
+	/// Create claims for a match
+	async fn create_match_claims(&mut self, claims: MatchClaims) -> anyhow::Result<()>;
 }

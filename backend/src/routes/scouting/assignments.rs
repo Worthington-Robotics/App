@@ -10,7 +10,8 @@ use crate::{
 	member::Member,
 	routes::{OptionalSessionID, SessionID},
 	scouting::{
-		assignment::{assign_scouts, ScoutingAssignment},
+		assignment::{assign_scouts, MatchClaims, ScoutingAssignment},
+		matches::{MatchNumber, MatchType},
 		Competition, TeamNumber,
 	},
 	State,
@@ -47,8 +48,8 @@ pub async fn assignments(
 	let teams = teams.filter(|x| x.competitions.contains(&current_comp));
 	let teams = teams.sorted_by_key(|x| x.number);
 
-	let assignments = lock.get_all_assignments().await.map_err(|e| {
-		error!("Failed to get all scouting assignments from database: {e}");
+	let assignments = lock.get_all_prescouting_assignments().await.map_err(|e| {
+		error!("Failed to get all prescouting assignments from database: {e}");
 		Status::InternalServerError
 	})?;
 	let assignments: Vec<_> = assignments.collect();
@@ -129,7 +130,7 @@ pub async fn assign_team(
 	}
 
 	let mut assignment = lock
-		.get_assignment(member)
+		.get_prescouting_assignment(member)
 		.await
 		.map_err(|e| {
 			error!("Failed to get assignment from database: {e}");
@@ -145,7 +146,7 @@ pub async fn assign_team(
 	}
 	assignment.teams.push(team);
 
-	if let Err(e) = lock.create_assignment(assignment).await {
+	if let Err(e) = lock.create_prescouting_assignment(assignment).await {
 		error!("Failed to update assignment for member {member} in database: {e}");
 		return Err(Status::InternalServerError);
 	}
@@ -173,7 +174,7 @@ pub async fn unassign_team(
 		return Err(Status::NotFound);
 	}
 	let mut assignment = lock
-		.get_assignment(member)
+		.get_prescouting_assignment(member)
 		.await
 		.map_err(|e| {
 			error!("Failed to get assignment from database: {e}");
@@ -189,7 +190,7 @@ pub async fn unassign_team(
 	};
 	assignment.teams.remove(index);
 
-	if let Err(e) = lock.create_assignment(assignment).await {
+	if let Err(e) = lock.create_prescouting_assignment(assignment).await {
 		error!("Failed to update assignment for member {member} in database: {e}");
 		return Err(Status::InternalServerError);
 	}
@@ -225,10 +226,223 @@ pub async fn random_assign(state: &State, session_id: SessionID<'_>) -> Result<(
 
 	let assignments = assign_scouts(&teams, &members);
 	for assignment in assignments {
-		if let Err(e) = lock.create_assignment(assignment).await {
+		if let Err(e) = lock.create_prescouting_assignment(assignment).await {
 			error!("Failed to update assignment in database: {e}");
 			return Err(Status::InternalServerError);
 		}
+	}
+
+	Ok(())
+}
+
+#[rocket::post("/api/claim_match/<match>/<slot>")]
+pub async fn claim_match(
+	state: &State,
+	session_id: SessionID<'_>,
+	r#match: u16,
+	slot: u8,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Claiming match");
+	let _enter = span.enter();
+
+	let m = r#match;
+
+	let requesting_member = session_id.get_requesting_member(state).await?;
+
+	let mut lock = state.db.lock().await;
+
+	let match_number = MatchNumber {
+		num: m,
+		ty: MatchType::Qualification,
+	};
+
+	let mut claims = lock
+		.get_match_claims(&match_number)
+		.await
+		.map_err(|e| {
+			error!("Failed to get match claims from database: {e}");
+			Status::InternalServerError
+		})?
+		.unwrap_or(MatchClaims {
+			m: match_number,
+			..Default::default()
+		});
+
+	// Wow, maybe we should make an iterator
+	if claims
+		.red_1
+		.as_ref()
+		.is_some_and(|x| x == &requesting_member.id)
+		|| claims
+			.red_2
+			.as_ref()
+			.is_some_and(|x| x == &requesting_member.id)
+		|| claims
+			.red_3
+			.as_ref()
+			.is_some_and(|x| x == &requesting_member.id)
+		|| claims
+			.blue_1
+			.as_ref()
+			.is_some_and(|x| x == &requesting_member.id)
+		|| claims
+			.blue_2
+			.as_ref()
+			.is_some_and(|x| x == &requesting_member.id)
+		|| claims
+			.blue_3
+			.as_ref()
+			.is_some_and(|x| x == &requesting_member.id)
+	{
+		return Ok(());
+	}
+
+	let slot = match slot {
+		0 => &mut claims.red_1,
+		1 => &mut claims.red_2,
+		2 => &mut claims.red_3,
+		3 => &mut claims.blue_1,
+		4 => &mut claims.blue_2,
+		5 => &mut claims.blue_3,
+		_ => return Err(Status::BadRequest),
+	};
+
+	*slot = Some(requesting_member.id);
+
+	if let Err(e) = lock.create_match_claims(claims).await {
+		error!("Failed to update claims in database: {e:#}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
+}
+
+#[rocket::post("/api/claim_best/<match>")]
+pub async fn claim_best(
+	state: &State,
+	session_id: SessionID<'_>,
+	r#match: u16,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Claiming best team from match");
+	let _enter = span.enter();
+
+	let m = r#match;
+
+	let lock = state.db.lock().await;
+
+	let match_number = MatchNumber {
+		num: m,
+		ty: MatchType::Qualification,
+	};
+
+	// TODO: Make this actually pick the best team
+
+	let claims = lock
+		.get_match_claims(&match_number)
+		.await
+		.map_err(|e| {
+			error!("Failed to get match claims from database: {e}");
+			Status::InternalServerError
+		})?
+		.unwrap_or(MatchClaims {
+			m: match_number,
+			..Default::default()
+		});
+
+	let slot = &[
+		claims.red_1,
+		claims.red_2,
+		claims.red_3,
+		claims.blue_1,
+		claims.blue_2,
+		claims.blue_3,
+	]
+	.iter()
+	.position(|x| x.is_none());
+
+	// Prevent deadlock since we will now call this other API method
+	std::mem::drop(lock);
+
+	if let Some(slot) = slot {
+		claim_match(state, session_id, m, *slot as u8).await?;
+	}
+
+	Ok(())
+}
+
+#[rocket::post("/api/unclaim_match/<match>")]
+pub async fn unclaim_match(
+	state: &State,
+	session_id: SessionID<'_>,
+	r#match: u16,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Unclaiming match");
+	let _enter = span.enter();
+
+	let m = r#match;
+
+	let requesting_member = session_id.get_requesting_member(state).await?;
+
+	let mut lock = state.db.lock().await;
+
+	let match_number = MatchNumber {
+		num: m,
+		ty: MatchType::Qualification,
+	};
+
+	let mut claims = lock
+		.get_match_claims(&match_number)
+		.await
+		.map_err(|e| {
+			error!("Failed to get match claims from database: {e}");
+			Status::InternalServerError
+		})?
+		.unwrap_or(MatchClaims {
+			m: match_number,
+			..Default::default()
+		});
+
+	if claims
+		.red_1
+		.as_ref()
+		.is_some_and(|x| x == &requesting_member.id)
+	{
+		claims.red_1 = None;
+	} else if claims
+		.red_2
+		.as_ref()
+		.is_some_and(|x| x == &requesting_member.id)
+	{
+		claims.red_2 = None;
+	} else if claims
+		.red_3
+		.as_ref()
+		.is_some_and(|x| x == &requesting_member.id)
+	{
+		claims.red_3 = None;
+	} else if claims
+		.blue_1
+		.as_ref()
+		.is_some_and(|x| x == &requesting_member.id)
+	{
+		claims.blue_1 = None;
+	} else if claims
+		.blue_2
+		.as_ref()
+		.is_some_and(|x| x == &requesting_member.id)
+	{
+		claims.blue_2 = None;
+	} else if claims
+		.blue_3
+		.as_ref()
+		.is_some_and(|x| x == &requesting_member.id)
+	{
+		claims.blue_3 = None;
+	}
+
+	if let Err(e) = lock.create_match_claims(claims).await {
+		error!("Failed to update claims in database: {e}");
+		return Err(Status::InternalServerError);
 	}
 
 	Ok(())

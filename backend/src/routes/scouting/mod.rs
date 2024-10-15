@@ -1,3 +1,4 @@
+/// Prescouting assignments and match claims
 pub mod assignments;
 pub mod autos;
 pub mod matches;

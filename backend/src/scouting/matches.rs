@@ -15,7 +15,7 @@ pub struct Match {
 }
 
 /// Number for a match
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Default)]
 pub struct MatchNumber {
 	pub ty: MatchType,
 	pub num: u16,
@@ -36,8 +36,9 @@ impl Display for MatchNumber {
 }
 
 /// Type of a match
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum MatchType {
+	#[default]
 	Qualification,
 	Playoff,
 }

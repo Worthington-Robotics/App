@@ -1,6 +1,11 @@
-<div class="round match">
-	<div class="cont match-number">{{number}}</div>
-	<div class="cont match-time">{{time}}</div>
-	<div class="match-teams">{{teams}}</div>
-	<div class="done-icon">{{done-icon}}</div>
+<div class="cont round match {{class}}" data-num="{{number}}">
+	<div class="match-inner">
+		<div class="cont match-number">{{number}}</div>
+		<div class="cont match-time">{{time}}</div>
+		<div class="cont match-team"></div>
+		<div class="cont">
+			<div class="match-claims">{{claims}}</div>
+		</div>
+		<div class="done-icon">{{done-icon}}</div>
+	</div>
 </div>

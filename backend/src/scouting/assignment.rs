@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::TeamNumber;
+use super::{matches::MatchNumber, TeamNumber};
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
 pub struct ScoutingAssignment {
@@ -39,4 +39,29 @@ pub fn assign_scouts(teams: &[TeamNumber], members: &[String]) -> Vec<ScoutingAs
 	});
 
 	out
+}
+
+/// Scout claims for a single match
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct MatchClaims {
+	/// The match number
+	pub m: MatchNumber,
+	pub red_1: Option<String>,
+	pub red_2: Option<String>,
+	pub red_3: Option<String>,
+	pub blue_1: Option<String>,
+	pub blue_2: Option<String>,
+	pub blue_3: Option<String>,
+}
+
+impl MatchClaims {
+	/// Checks if this match has been fully claimed
+	pub fn is_full(&self) -> bool {
+		self.red_1.is_some()
+			&& self.red_2.is_some()
+			&& self.red_3.is_some()
+			&& self.blue_1.is_some()
+			&& self.blue_2.is_some()
+			&& self.blue_3.is_some()
+	}
 }

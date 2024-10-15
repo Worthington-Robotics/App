@@ -18,7 +18,7 @@ use crate::{
 	forms::Form,
 	member::{Member, MemberGroup, MemberKind, MemberMention},
 	scouting::{
-		assignment::ScoutingAssignment,
+		assignment::{MatchClaims, ScoutingAssignment},
 		autos::{Auto, AutoPoint},
 		matches::{Match, MatchNumber, MatchStats, MatchType},
 		status::{RobotStatus, StatusUpdate},
@@ -969,8 +969,11 @@ impl Database for SqlDatabase {
 		Ok(())
 	}
 
-	async fn get_assignment(&self, member: &str) -> anyhow::Result<Option<ScoutingAssignment>> {
-		let mut result = sqlx::query("SELECT * FROM assignments WHERE Member = $1")
+	async fn get_prescouting_assignment(
+		&self,
+		member: &str,
+	) -> anyhow::Result<Option<ScoutingAssignment>> {
+		let mut result = sqlx::query("SELECT * FROM prescouting_assignments WHERE Member = $1")
 			.bind(member)
 			.fetch(&self.pool);
 		let row = result.try_next().await;
@@ -991,10 +994,10 @@ impl Database for SqlDatabase {
 		}
 	}
 
-	async fn get_all_assignments(
+	async fn get_all_prescouting_assignments(
 		&self,
 	) -> anyhow::Result<impl Iterator<Item = ScoutingAssignment>> {
-		let result = sqlx::query("SELECT * FROM assignments")
+		let result = sqlx::query("SELECT * FROM prescouting_assignments")
 			.fetch_all(&self.pool)
 			.await;
 		match result {
@@ -1010,22 +1013,27 @@ impl Database for SqlDatabase {
 				Ok(out.into_iter())
 			}
 			Err(e) => {
-				error!("Failed to get tasks from database: {e}");
-				Err(anyhow!("Failed to get tasks from database"))
+				error!("Failed to get prescouting assignments from database: {e}");
+				Err(anyhow!(
+					"Failed to get prescouting assignments from database"
+				))
 			}
 		}
 	}
 
-	async fn create_assignment(&mut self, assignment: ScoutingAssignment) -> anyhow::Result<()> {
-		let query =
-			sqlx::query("DELETE FROM assignments WHERE Member = $1").bind(&assignment.member);
+	async fn create_prescouting_assignment(
+		&mut self,
+		assignment: ScoutingAssignment,
+	) -> anyhow::Result<()> {
+		let query = sqlx::query("DELETE FROM prescouting_assignments WHERE Member = $1")
+			.bind(&assignment.member);
 
 		query
 			.execute(&self.pool)
 			.await
 			.context("Failed to remove existing assignment from database")?;
 
-		sqlx::query("INSERT INTO assignments (Member, Teams) VALUES ($1, $2)")
+		sqlx::query("INSERT INTO prescouting_assignments (Member, Teams) VALUES ($1, $2)")
 			.bind(assignment.member)
 			.bind(
 				assignment
@@ -1037,6 +1045,75 @@ impl Database for SqlDatabase {
 			.execute(&self.pool)
 			.await
 			.context("Failed to create new assignment in database")?;
+
+		Ok(())
+	}
+
+	async fn get_match_claims(&self, m: &MatchNumber) -> anyhow::Result<Option<MatchClaims>> {
+		let mut result = sqlx::query("SELECT * FROM match_claims WHERE Number = $1 AND Type = $2")
+			.bind(m.num as i32)
+			.bind(m.ty.to_string())
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let claims = read_match_claims(row).context("Failed to read claims")?;
+
+				Ok(Some(claims))
+			}
+			Err(e) => {
+				error!("Failed to get claims for match {m} from database: {e}");
+				Err(anyhow!("Failed to get claims from database"))
+			}
+		}
+	}
+
+	async fn get_all_match_claims(&self) -> anyhow::Result<impl Iterator<Item = MatchClaims>> {
+		let result = sqlx::query("SELECT * FROM match_claims")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let claims = read_match_claims(row).context("Failed to read claims")?;
+					out.push(claims);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get match claims from database: {e}");
+				Err(anyhow!("Failed to get match claims from database"))
+			}
+		}
+	}
+
+	async fn create_match_claims(&mut self, claims: MatchClaims) -> anyhow::Result<()> {
+		let query = sqlx::query("DELETE FROM match_claims WHERE Number = $1 AND Type = $2")
+			.bind(claims.m.num as i32)
+			.bind(claims.m.ty.to_string());
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove existing match claims from database")?;
+
+		sqlx::query("INSERT INTO match_claims (Number, Type, Red1, Red2, Red3, Blue1, Blue2, Blue3) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
+			.bind(claims.m.num as i32)
+			.bind(claims.m.ty.to_string())
+			.bind(claims.red_1)
+			.bind(claims.red_2)
+			.bind(claims.red_3)
+			.bind(claims.blue_1)
+			.bind(claims.blue_2)
+			.bind(claims.blue_3)
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new match claims in database")?;
 
 		Ok(())
 	}
@@ -1069,8 +1146,8 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	let match_stats_task =
 		pool.execute("CREATE TABLE IF NOT EXISTS match_stats (Team int2, Data text)");
 
-	let scouting_assignments_task = pool.execute(
-		"CREATE TABLE IF NOT EXISTS scouting_assignments (Member text PRIMARY KEY, Teams int2[])",
+	let prescouting_assignments_task = pool.execute(
+		"CREATE TABLE IF NOT EXISTS prescouting_assignments (Member text PRIMARY KEY, Teams int2[])",
 	);
 
 	let autos_task = pool.execute(
@@ -1085,8 +1162,9 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		"CREATE TABLE IF NOT EXISTS matches (Number int4, Type text, Date text, RedAlliance int2[], BlueAlliance int2[])",
 	);
 
-	let assignments_task =
-		pool.execute("CREATE TABLE IF NOT EXISTS assignments (Member text, Teams int2[])");
+	let match_claims_task = pool.execute(
+		"CREATE TABLE IF NOT EXISTS match_claims (Number int4, Type text, Red1 text, Red2 text, Red3 text, Blue1 text, Blue2 text, Blue3 text)",
+	);
 
 	try_join!(
 		members_task,
@@ -1098,11 +1176,11 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		teams_task,
 		team_info_task,
 		match_stats_task,
-		scouting_assignments_task,
+		prescouting_assignments_task,
 		autos_task,
 		status_task,
 		matches_task,
-		assignments_task,
+		match_claims_task,
 	)
 	.context("Failed to execute database setup tasks")?;
 
@@ -1364,5 +1442,34 @@ fn read_assignment(member: &str, row: PgRow) -> anyhow::Result<ScoutingAssignmen
 	Ok(ScoutingAssignment {
 		member: member.to_string(),
 		teams,
+	})
+}
+
+/// Read match claims from the database
+fn read_match_claims(row: PgRow) -> anyhow::Result<MatchClaims> {
+	let num: i32 = row.try_get("number")?;
+	let ty: &str = row.try_get("type")?;
+	let Ok(ty) = MatchType::from_str(ty) else {
+		error!("Unknown match type {ty}");
+		return Err(anyhow!("Unknown match type"));
+	};
+	let red_1: Option<String> = row.try_get("red1")?;
+	let red_2: Option<String> = row.try_get("red2")?;
+	let red_3: Option<String> = row.try_get("red3")?;
+	let blue_1: Option<String> = row.try_get("blue1")?;
+	let blue_2: Option<String> = row.try_get("blue2")?;
+	let blue_3: Option<String> = row.try_get("blue3")?;
+
+	Ok(MatchClaims {
+		m: MatchNumber {
+			num: num as u16,
+			ty,
+		},
+		red_1,
+		red_2,
+		red_3,
+		blue_1,
+		blue_2,
+		blue_3,
 	})
 }

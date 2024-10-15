@@ -10,7 +10,7 @@ use crate::{
 	db::Database,
 	routes::OptionalSessionID,
 	scouting::{
-		assignment::ScoutingAssignment,
+		assignment::{MatchClaims, ScoutingAssignment},
 		matches::{Match, MatchStats},
 		TeamNumber,
 	},
@@ -42,10 +42,10 @@ pub async fn my_scouting(
 	let lock = state.db.lock().await;
 
 	let assignment = lock
-		.get_assignment(&requesting_member.id)
+		.get_prescouting_assignment(&requesting_member.id)
 		.await
 		.map_err(|e| {
-			error!("Failed to get assignment for member from database: {e}");
+			error!("Failed to get prescouting assignment for member from database: {e}");
 			Status::InternalServerError
 		})?
 		.unwrap_or(ScoutingAssignment {
@@ -69,14 +69,21 @@ pub async fn my_scouting(
 		error!("Failed to get all matches from database: {e}");
 		Status::InternalServerError
 	})?;
-	let matches = matches.filter(|x| {
-		x.red_alliance.iter().any(|x| assignment.teams.contains(x))
-			|| x.blue_alliance.iter().any(|x| assignment.teams.contains(x))
-	});
+
+	let claims = lock.get_all_match_claims().await.map_err(|e| {
+		error!("Failed to get all match claims from database: {e}");
+		Status::InternalServerError
+	})?;
+	let claims: Vec<_> = claims.collect();
 
 	let mut matches_string = String::new();
 	for m in matches {
-		matches_string.push_str(&render_match(m, &match_stats, &assignment.teams));
+		matches_string.push_str(&render_match(
+			m,
+			&claims,
+			&match_stats,
+			&requesting_member.id,
+		));
 	}
 	let page = page.replace("{{matches}}", &matches_string);
 
@@ -85,35 +92,93 @@ pub async fn my_scouting(
 	Ok(PageOrRedirect::Page(RawHtml(page)))
 }
 
-fn render_team(team: TeamNumber) -> String {
-	format!("<div class=\"cont round team\">{team}</div>")
-}
-
-fn render_match(m: Match, match_stats: &[MatchStats], assigned_teams: &[TeamNumber]) -> String {
+fn render_match(
+	m: Match,
+	claims: &[MatchClaims],
+	match_stats: &[MatchStats],
+	requesting_member: &str,
+) -> String {
 	let out = include_str!("../components/scouting/my_match.min.html");
+
+	let default_claims = MatchClaims::default();
+	let claims = claims
+		.iter()
+		.find(|x| x.m == m.num)
+		.unwrap_or(&default_claims);
 
 	let out = out.replace("{{number}}", &m.num.num.to_string());
 
-	let date = if let Some(Ok(date)) = m.date.map(|x| DateTime::parse_from_rfc2822(&x)) {
+	let date = if let Some(Ok(date)) = m.date.as_ref().map(|x| DateTime::parse_from_rfc2822(x)) {
 		render_time(date.with_timezone(&Eastern))
 	} else {
 		String::new()
 	};
 	let out = out.replace("{{time}}", &date);
 
-	let teams = assigned_teams
-		.iter()
-		.filter(|x| m.blue_alliance.contains(x) || m.red_alliance.contains(x));
-	let mut teams_string = String::new();
-	for team in teams {
-		teams_string.push_str(&render_team(*team));
-	}
-	let out = out.replace("{{teams}}", &teams_string);
+	let mut claim_bubbles_str = String::new();
+	claim_bubbles_str.push_str(&render_claim_bubble(
+		claims.red_1.as_deref(),
+		BubbleStyle::Red,
+	));
+	claim_bubbles_str.push_str(&render_claim_bubble(
+		claims.red_2.as_deref(),
+		BubbleStyle::Red,
+	));
+	claim_bubbles_str.push_str(&render_claim_bubble(
+		claims.red_3.as_deref(),
+		BubbleStyle::Red,
+	));
+	claim_bubbles_str.push_str(&render_claim_bubble(
+		claims.blue_1.as_deref(),
+		BubbleStyle::Blue,
+	));
+	claim_bubbles_str.push_str(&render_claim_bubble(
+		claims.blue_2.as_deref(),
+		BubbleStyle::Blue,
+	));
+	claim_bubbles_str.push_str(&render_claim_bubble(
+		claims.blue_3.as_deref(),
+		BubbleStyle::Blue,
+	));
+	let out = out.replace("{{claims}}", &claim_bubbles_str);
 
-	let is_done = match_stats.iter().any(|x| {
-		x.match_number.as_ref().is_some_and(|x| x == &m.num)
-			&& assigned_teams.contains(&x.team_number)
-	});
+	let is_claimed = claims
+		.red_1
+		.as_ref()
+		.is_some_and(|x| x == requesting_member)
+		|| claims
+			.red_2
+			.as_ref()
+			.is_some_and(|x| x == requesting_member)
+		|| claims
+			.red_3
+			.as_ref()
+			.is_some_and(|x| x == requesting_member)
+		|| claims
+			.blue_1
+			.as_ref()
+			.is_some_and(|x| x == requesting_member)
+		|| claims
+			.blue_2
+			.as_ref()
+			.is_some_and(|x| x == requesting_member)
+		|| claims
+			.blue_3
+			.as_ref()
+			.is_some_and(|x| x == requesting_member);
+
+	if !is_claimed && claims.is_full() {
+		return String::new();
+	}
+
+	let class = if is_claimed { "claimed" } else { "available" };
+	let out = out.replace("{{class}}", class);
+
+	// let is_done = match_stats.iter().any(|x| {
+	// 	x.match_number.as_ref().is_some_and(|x| x == &m.num)
+	// 		&& assigned_teams.contains(&x.team_number)
+	// });
+	let is_done = false;
 	let is_done_icon = if is_done {
 		"<img src=/assets/icons/check.svg />"
 	} else {
@@ -122,4 +187,27 @@ fn render_match(m: Match, match_stats: &[MatchStats], assigned_teams: &[TeamNumb
 	let out = out.replace("{{done-icon}}", is_done_icon);
 
 	out
+}
+
+/// Render one of the little team bubbles to show claim status
+fn render_claim_bubble(claim: Option<&str>, style: BubbleStyle) -> String {
+	let class = if claim.is_some() {
+		match style {
+			BubbleStyle::Red => " r",
+			BubbleStyle::Blue => " b",
+		}
+	} else {
+		""
+	};
+	format!("<div class=\"claim{class}\"></div>")
+}
+
+/// Style for one of the team bubbles in a match
+enum BubbleStyle {
+	Red,
+	Blue,
+}
+
+fn render_team(team: TeamNumber) -> String {
+	format!("<div class=\"cont round team\">{team}</div>")
 }

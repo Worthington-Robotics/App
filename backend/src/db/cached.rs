@@ -9,7 +9,7 @@ use rocket::{
 use tracing::error;
 
 use crate::{
-	scouting::TeamNumber,
+	scouting::{matches::MatchNumber, TeamNumber},
 	tasks::{Checklist, Task},
 };
 
@@ -98,11 +98,18 @@ async fn populate_cache(sql: &SqlDatabase) -> anyhow::Result<JSONDatabase> {
 		cache.create_match(m).await?;
 	}
 	for assignment in sql
-		.get_all_assignments()
+		.get_all_prescouting_assignments()
 		.await
-		.context("Failed to get assignments from database")?
+		.context("Failed to get prescouting assignments from database")?
 	{
-		cache.create_assignment(assignment).await?;
+		cache.create_prescouting_assignment(assignment).await?;
+	}
+	for claims in sql
+		.get_all_match_claims()
+		.await
+		.context("Failed to get match claims from database")?
+	{
+		cache.create_match_claims(claims).await?;
 	}
 
 	Ok(cache)
@@ -466,29 +473,54 @@ impl Database for CacheDatabase {
 		Ok(())
 	}
 
-	async fn get_assignment(
+	async fn get_prescouting_assignment(
 		&self,
 		assignment: &str,
 	) -> anyhow::Result<Option<crate::scouting::assignment::ScoutingAssignment>> {
-		self.cache.get_assignment(assignment).await
+		self.cache.get_prescouting_assignment(assignment).await
 	}
 
-	async fn create_assignment(
+	async fn get_all_prescouting_assignments(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = crate::scouting::assignment::ScoutingAssignment>> {
+		self.cache.get_all_prescouting_assignments().await
+	}
+
+	async fn create_prescouting_assignment(
 		&mut self,
 		assignment: crate::scouting::assignment::ScoutingAssignment,
 	) -> anyhow::Result<()> {
 		try_join!(
-			self.sql.create_assignment(assignment.clone()),
-			self.cache.create_assignment(assignment)
+			self.sql.create_prescouting_assignment(assignment.clone()),
+			self.cache.create_prescouting_assignment(assignment)
 		)?;
 
 		Ok(())
 	}
 
-	async fn get_all_assignments(
+	async fn get_match_claims(
 		&self,
-	) -> anyhow::Result<impl Iterator<Item = crate::scouting::assignment::ScoutingAssignment>> {
-		self.cache.get_all_assignments().await
+		m: &MatchNumber,
+	) -> anyhow::Result<Option<crate::scouting::assignment::MatchClaims>> {
+		self.cache.get_match_claims(m).await
+	}
+
+	async fn get_all_match_claims(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = crate::scouting::assignment::MatchClaims>> {
+		self.cache.get_all_match_claims().await
+	}
+
+	async fn create_match_claims(
+		&mut self,
+		claims: crate::scouting::assignment::MatchClaims,
+	) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.create_match_claims(claims.clone()),
+			self.cache.create_match_claims(claims)
+		)?;
+
+		Ok(())
 	}
 }
 

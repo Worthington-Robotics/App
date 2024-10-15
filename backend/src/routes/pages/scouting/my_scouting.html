@@ -8,6 +8,25 @@
 		</div>
 	</div>
 	<div class="cont col">
+		<h3>Matches</h3>
+		<div id="filter" class="cont">
+			<button id="claimed-filter">Claimed</button>
+			<button id="available-filter" style="background-color: var(--bg2);">Available</button>
+		</div>
+		<div class="cont col">
+			{{matches}}
+		</div>
+	</div>
+	<div id="popup-container" class="cont" style="display:none">
+		<div id="popup" class="cont col round">
+			<h4 id="popup-number"></h4>
+			<div class="cont">
+				<button id="popup-claim">Claim</button>
+				<button id="popup-cancel">Close</button>
+			</div>
+		</div>
+	</div>
+	<div class="cont col">
 		<h3>Report a Match</h3>
 		<div class="cont">
 			<a href="/scouting/report"><button>Main</button></a>
@@ -30,12 +49,161 @@
 	}
 
 	.match {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 5fr) minmax(0, 1fr);
-		padding: 0.4rem;
+		width: 90%;
+		padding: 1rem;
 		background-color: var(--bg2);
+		cursor: pointer;
+	}
+
+	.match-inner {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+		width: 100%;
+		pointer-events: none;
+	}
+
+	.match-claims {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.2rem;
+	}
+
+	.claim {
+		width: 0.65rem;
+		height: 0.65rem;
+		border-radius: 50%;
+		background-color: var(--bg4);
+	}
+
+	.claim.r {
+		background-color: var(--wbred);
+	}
+
+	.claim.b {
+		background-color: var(--wbblueacc);
+	}
+
+	/* Start with these hidden */
+	.available {
+		display: none;
+	}
+
+	#popup-container {
+		position: fixed;
+		left: 0;
+		top: 0;
+		width: 100vw;
+		height: 100vh;
+		z-index: 100;
+		background-color: rgba(0, 0, 0, 0.5);
+	}
+
+	#popup {
+		background-color: var(--bg2);
+		padding: 1.5rem;
+		width: 80%;
+	}
+
+	#popup-cancel {
+		background-color: var(--bg3);
 	}
 </style>
 <script>
+	// Filter logic
+	let claimedButton = document.getElementById("claimed-filter");
+	let availableButton = document.getElementById("available-filter");
+	let claimed = document.getElementsByClassName("claimed");
+	let available = document.getElementsByClassName("available");
+	claimedButton.addEventListener("click", () => {
+		claimedButton.style.backgroundColor = "";
+		availableButton.style.backgroundColor = "var(--bg2)";
+		for (let e of available) {
+			e.style.display = "none";
+		}
+		for (let e of claimed) {
+			e.style.display = "flex";
+		}
+	});
+	availableButton.addEventListener("click", () => {
+		availableButton.style.backgroundColor = "";
+		claimedButton.style.backgroundColor = "var(--bg2)";
+		for (let e of claimed) {
+			e.style.display = "none";
+		}
+		for (let e of available) {
+			e.style.display = "flex";
+		}
+	});
+
+	// Interaction logic with matches
+	let popupContainer = document.getElementById("popup-container");
+	let popupClaimButton = document.getElementById("popup-claim");
+
+	let selectedMatch = null;
+	let selectedMatchIsClaimed = null;
+	let selectedMatchElement = null;
+
+	function clickMatch(e) {
+		selectedMatchIsClaimed = e.target.classList.contains("claimed");
+		selectedMatch = e.target.dataset.num;
+		selectedMatchElement = e.target;
+
+		document.getElementById("popup-number").innerHTML = selectedMatch;
+		if (selectedMatchIsClaimed) {
+			popupClaimButton.innerHTML = "Unclaim";
+		} else {
+			popupClaimButton.innerHTML = "Claim";
+		}
+		popupContainer.style.display = "";
+	}
+
+	for (let e of document.getElementsByClassName("match")) {
+		e.addEventListener("click", clickMatch);
+	}
+
+	function closePopup() {
+		popupContainer.style.display = "none";
+		selectedMatch = null;
+		selectedMatchIsClaimed = null;
+	}
+
+	document.getElementById("popup-cancel").addEventListener("click", () => {
+		closePopup();
+	});
+
+	popupClaimButton.addEventListener("click", () => {
+		if (selectedMatch == null) {
+			closePopup();
+			return;
+		}
+
+		let method = "";
+		if (selectedMatchIsClaimed) {
+			method = `/api/unclaim_match/${selectedMatch}`;
+		} else {
+			method = `/api/claim_best/${selectedMatch}`;
+		}
+
+		fetch(method, {
+			method: "POST",
+		}).then((resp) => {
+			if (resp.status == 200) {
+				// Swap the class of the element
+				if (selectedMatchIsClaimed) {
+					selectedMatchElement.classList.remove("claimed");
+					selectedMatchElement.classList.add("available");
+				} else {
+					selectedMatchElement.classList.add("claimed");
+					selectedMatchElement.classList.remove("available");
+				}
+				// No matter whether we are claiming or unclaiming, the match is moving to the other filter so we won't be able to see it
+				selectedMatchElement.style.display = "none";
+				closePopup();
+			} else {
+				setError(resp.statusText);
+			}
+		});
+
+	});
 </script>
 {{footer}}

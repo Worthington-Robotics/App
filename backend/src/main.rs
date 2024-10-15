@@ -197,6 +197,9 @@ async fn rocket() -> _ {
 				routes::scouting::assignments::assign_team,
 				routes::scouting::assignments::unassign_team,
 				routes::scouting::assignments::random_assign,
+				routes::scouting::assignments::claim_match,
+				routes::scouting::assignments::claim_best,
+				routes::scouting::assignments::unclaim_match,
 				routes::scouting::my_scouting::my_scouting,
 			],
 		)
