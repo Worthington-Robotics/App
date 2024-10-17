@@ -433,12 +433,12 @@ pub async fn member_details(
 	let page = page.replace("{{delete}}", include_str!("components/ui/delete.min.html"));
 
 	// Attendance stats
-	let (season_attendance, total_attendance) = get_attendance_stats(&member, lock.deref())
+	let (season_attendance, meeting_attendance) = get_attendance_stats(&member, lock.deref())
 		.await
 		.map_err(|e| {
-		error!("Failed to get attendance stats: {e}");
-		Status::InternalServerError
-	})?;
+			error!("Failed to get attendance stats: {e}");
+			Status::InternalServerError
+		})?;
 	let page = page.replace("{{season-ratio}}", &season_attendance.format_ratio());
 	let page = page.replace("{{season-percentage}}", &season_attendance.format_percent());
 	let page = page.replace("{{season-average}}", &season_attendance.format_average());
@@ -446,12 +446,15 @@ pub async fn member_details(
 		"{{season-missed}}",
 		&render_missed_events(&season_attendance.absences),
 	);
-	let page = page.replace("{{total-ratio}}", &total_attendance.format_ratio());
-	let page = page.replace("{{total-percentage}}", &total_attendance.format_percent());
-	let page = page.replace("{{total-average}}", &total_attendance.format_average());
+	let page = page.replace("{{meetings-ratio}}", &meeting_attendance.format_ratio());
 	let page = page.replace(
-		"{{total-missed}}",
-		&render_missed_events(&total_attendance.absences),
+		"{{meetings-percentage}}",
+		&meeting_attendance.format_percent(),
+	);
+	let page = page.replace("{{meetings-average}}", &meeting_attendance.format_average());
+	let page = page.replace(
+		"{{meetings-missed}}",
+		&render_missed_events(&meeting_attendance.absences),
 	);
 
 	// Form checkboxes

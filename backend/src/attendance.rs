@@ -12,7 +12,7 @@ use tracing::error;
 
 use crate::{
 	db::{Database, DatabaseImpl},
-	events::{format_minutes, get_season, get_upcoming_events, Event},
+	events::{format_minutes, get_season, get_upcoming_events, Event, EventKind},
 	member::Member,
 };
 
@@ -98,13 +98,13 @@ impl AttendanceStats {
 	}
 }
 
-/// Gets attendance stats for a member for this season and all time
+/// Gets attendance stats for a member for this season and meetings this season
 pub async fn get_attendance_stats(
 	member: &Member,
 	db: &impl Database,
 ) -> anyhow::Result<(AttendanceStats, AttendanceStats)> {
 	let mut season = AttendanceStats::default();
-	let mut all_time = AttendanceStats::default();
+	let mut meetings = AttendanceStats::default();
 
 	let now = Utc::now();
 	let current_season = get_season(&now);
@@ -114,12 +114,18 @@ pub async fn get_attendance_stats(
 		.get_attendance(&member.id)
 		.await
 		.context("Failed to get attendances from database")?;
+
 	for event in db.get_events().await?.filter(|x| x.invites_member(member)) {
 		let Ok(date) = DateTime::parse_from_rfc2822(&event.date) else {
 			error!("Failed to parse date for event {}", event.id);
 			continue;
 		};
 		let date = date.with_timezone(&Utc);
+
+		let event_season = get_season(&date);
+		if event_season != current_season {
+			continue;
+		}
 
 		let Ok(end_date) = event.get_end_date() else {
 			error!("Failed to parse end date for event {}", event.id);
@@ -160,31 +166,30 @@ pub async fn get_attendance_stats(
 		// Only count events where the member stayed for either an hour or most of the event
 		let attended_event = attended_percentage >= 0.8 || total_minutes > 60;
 
-		// Add to total stats
-		all_time.total_events += 1;
-		if attended_event {
-			all_time.attended_events += 1;
-		} else {
-			all_time.absences.push(event.clone());
-		}
-		all_time.total_minutes += event_duration;
-		all_time.attended_minutes += total_minutes;
-
 		// Add to season stats
-		let event_season = get_season(&date);
-		if event_season == current_season {
-			season.total_events += 1;
+		season.total_events += 1;
+		if attended_event {
+			season.attended_events += 1;
+		} else {
+			season.absences.push(event.clone());
+		}
+		season.total_minutes += event_duration;
+		season.attended_minutes += total_minutes;
+
+		// Add to meeting stats
+		if event.kind == EventKind::Meeting {
+			meetings.total_events += 1;
 			if attended_event {
-				season.attended_events += 1;
+				meetings.attended_events += 1;
 			} else {
-				season.absences.push(event);
+				meetings.absences.push(event);
 			}
-			season.total_minutes += event_duration;
-			season.attended_minutes += total_minutes;
+			meetings.total_minutes += event_duration;
+			meetings.attended_minutes += total_minutes;
 		}
 	}
 
-	Ok((season, all_time))
+	Ok((season, meetings))
 }
 
 /// Fairing for managing attendance
