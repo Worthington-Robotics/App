@@ -38,7 +38,7 @@ pub async fn inbox(
 
 	let page = include_str!("pages/announcements/inbox.min.html");
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let announcements = lock
 		.get_announcements()
 		.await
@@ -145,7 +145,7 @@ pub async fn create_announcement_api(
 	};
 
 	{
-		let mut lock = state.db.lock().await;
+		let mut lock = state.db.write().await;
 		lock.create_announcement(new_announcement)
 			.await
 			.map_err(|e| {
@@ -181,7 +181,7 @@ pub async fn create_announcement_page(
 		return Ok(redirect);
 	};
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 
 	let page = include_str!("pages/announcements/create_announcement.min.html");
 
@@ -246,7 +246,7 @@ pub async fn announcement_details(
 
 	let announcement = state
 		.db
-		.lock()
+		.read()
 		.await
 		.get_announcement(id)
 		.await
@@ -286,7 +286,7 @@ pub async fn announcement_details(
 	// Mark the announcement as read
 	if let Err(e) = state
 		.db
-		.lock()
+		.write()
 		.await
 		.read_announcement(&announcement.id, &requesting_member.id)
 		.await
@@ -308,7 +308,7 @@ pub async fn delete_announcement(
 
 	session_id.verify_elevated(state).await?;
 
-	if let Err(e) = state.db.lock().await.delete_announcement(id).await {
+	if let Err(e) = state.db.write().await.delete_announcement(id).await {
 		error!("Failed to delete announcement: {e}");
 		return Err(Status::InternalServerError);
 	}

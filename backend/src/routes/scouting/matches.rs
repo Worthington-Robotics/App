@@ -43,7 +43,7 @@ pub async fn create_match_stats(
 	stats.recorder = Some(requesting_member.id.clone());
 	stats.record_time = Some(now.clone());
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	// If the report was posted live, then update robot status. We only add a good status update if the robot wasn't good before
 	if stats.recorded_live {
@@ -150,7 +150,7 @@ pub async fn match_schedule(
 
 	let page = include_str!("../pages/scouting/schedule.min.html");
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let matches = lock
 		.get_matches()
 		.await
@@ -253,7 +253,7 @@ pub async fn import_match_schedule(state: &State, session_id: SessionID<'_>) -> 
 
 	session_id.verify_elevated(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	let global_data = lock.get_global_data().await.map_err(|e| {
 		error!("Failed to get global data from database: {e}");

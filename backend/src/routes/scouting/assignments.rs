@@ -38,7 +38,7 @@ pub async fn assignments(
 
 	let page = include_str!("../pages/scouting/assignments.min.html");
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let global_data = lock.get_global_data().await.map_err(|e| {
 		error!("Failed to get global data from database: {e}");
 		Status::InternalServerError
@@ -128,7 +128,7 @@ pub async fn assign_team(
 
 	session_id.verify_elevated(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 	if !lock.member_exists(member).await.map_err(|e| {
 		error!("Failed to check if member exists: {e}");
 		Status::InternalServerError
@@ -173,7 +173,7 @@ pub async fn unassign_team(
 
 	session_id.verify_elevated(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 	if !lock.member_exists(member).await.map_err(|e| {
 		error!("Failed to check if member exists: {e}");
 		Status::InternalServerError
@@ -212,7 +212,7 @@ pub async fn random_assign(state: &State, session_id: SessionID<'_>) -> Result<(
 
 	session_id.verify_elevated(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	let global_data = lock.get_global_data().await.map_err(|e| {
 		error!("Failed to get global data from database: {e}");
@@ -264,7 +264,7 @@ pub async fn claim_match(
 
 	let requesting_member = session_id.get_requesting_member(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	let match_number = MatchNumber {
 		num: m,
@@ -343,7 +343,7 @@ pub async fn claim_best(
 
 	let m = r#match;
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 
 	let match_number = MatchNumber {
 		num: m,
@@ -398,7 +398,7 @@ pub async fn unclaim_match(
 
 	let requesting_member = session_id.get_requesting_member(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	let match_number = MatchNumber {
 		num: m,

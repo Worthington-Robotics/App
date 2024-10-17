@@ -52,7 +52,7 @@ pub async fn autos_page(
 	let page = include_str!("../pages/scouting/team/autos.min.html");
 	let page = page.replace("{{team-number}}", &team.to_string());
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let autos = lock.get_autos(team).await.map_err(|e| {
 		error!("Failed to get autos from database: {e}");
 		Status::InternalServerError
@@ -192,7 +192,7 @@ pub async fn create_auto(
 		notes: auto.notes_taken.into_iter().collect(),
 	};
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	if let Err(e) = lock.create_auto(auto).await {
 		error!("Failed to create auto in database: {e:#}");
@@ -233,7 +233,7 @@ pub async fn auto_details(
 		return Ok(redirect);
 	};
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let auto = lock
 		.get_auto(id)
 		.await
@@ -312,7 +312,7 @@ pub async fn rename_auto(
 
 	session_id.get_requesting_member(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	let Some(mut auto) = lock.get_auto(auto).await.map_err(|e| {
 		error!("Failed to get auto from database: {e}");
@@ -345,7 +345,7 @@ pub async fn get_autos(
 
 	session_id.get_requesting_member(state).await?;
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 
 	let autos = lock.get_autos(team).await.map_err(|e| {
 		error!("Failed to get autos from database: {e}");
@@ -373,10 +373,10 @@ pub async fn auto_image(
 
 	session_id.get_requesting_member(state).await?;
 
-	let mut lock = state.auto_images.lock().await;
-	let db_lock = state.db.lock().await;
+	let mut images_lock = state.auto_images.lock().await;
+	let db_lock = state.db.read().await;
 	let auto_string = auto.to_string();
-	let image = if let Some(image) = lock.get(auto) {
+	let image = if let Some(image) = images_lock.get(auto) {
 		image.clone()
 	} else {
 		let Some(auto) = db_lock.get_auto(&auto_string).await.map_err(|e| {
@@ -388,7 +388,7 @@ pub async fn auto_image(
 			return Err(Status::NotFound);
 		};
 		let image = render_auto_image(&auto.points);
-		lock.insert(auto_string, image.clone());
+		images_lock.insert(auto_string, image.clone());
 		image
 	};
 

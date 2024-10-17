@@ -20,7 +20,7 @@ use chrono_tz::{
 use matches::MatchStats;
 use rocket::{
 	fairing::{Fairing, Info, Kind},
-	tokio::sync::{Mutex, RwLock},
+	tokio::sync::RwLock,
 	FromFormField, Orbit, Rocket,
 };
 use serde::{Deserialize, Serialize};
@@ -494,14 +494,14 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 
 /// Fairing for periodically updating team stats
 pub struct UpdateStats {
-	db: Arc<Mutex<DatabaseImpl>>,
+	db: Arc<RwLock<DatabaseImpl>>,
 	team_stats: Arc<RwLock<HashMap<TeamNumber, CombinedTeamStats>>>,
 	auto_stats: Arc<RwLock<HashMap<String, AutoStats>>>,
 }
 
 impl UpdateStats {
 	pub fn new(
-		db: Arc<Mutex<DatabaseImpl>>,
+		db: Arc<RwLock<DatabaseImpl>>,
 		team_stats: Arc<RwLock<HashMap<TeamNumber, CombinedTeamStats>>>,
 		auto_stats: Arc<RwLock<HashMap<String, AutoStats>>>,
 	) -> Self {
@@ -529,74 +529,73 @@ impl Fairing for UpdateStats {
 		let stored_auto_stats = self.auto_stats.clone();
 		rocket::tokio::spawn(async move {
 			loop {
-				// In a scope so that locks aren't held while waiting for the next loop
-				{
-					let lock = db.lock().await;
+				let lock = db.read().await;
 
-					let global_data = match lock.get_global_data().await {
-						Ok(global_data) => global_data,
-						Err(e) => {
-							error!("Failed to get global data from database: {e}");
-							return;
-						}
-					};
+				let global_data = match lock.get_global_data().await {
+					Ok(global_data) => global_data,
+					Err(e) => {
+						error!("Failed to get global data from database: {e}");
+						return;
+					}
+				};
 
-					let match_stats = match lock.get_all_match_stats().await {
+				let match_stats =
+					match lock.get_all_match_stats().await {
 						Ok(stats) => stats,
 						Err(e) => {
 							error!("Failed to update stats: Failed to get match stats from database: {e}");
 							return;
 						}
 					};
-					let mut match_stats: Vec<_> = match_stats.collect();
-					match_stats.sort_by_cached_key(|x| {
-						let Some(record_time) = &x.record_time else {
-							return Utc::now();
-						};
+				let mut match_stats: Vec<_> = match_stats.collect();
+				match_stats.sort_by_cached_key(|x| {
+					let Some(record_time) = &x.record_time else {
+						return Utc::now();
+					};
 
-						let Ok(date) = DateTime::parse_from_rfc2822(&record_time) else {
-							return Utc::now();
-						};
+					let Ok(date) = DateTime::parse_from_rfc2822(&record_time) else {
+						return Utc::now();
+					};
 
-						date.to_utc()
-					});
+					date.to_utc()
+				});
 
-					let teams =
-						match lock.get_teams().await {
-							Ok(teams) => teams,
-							Err(e) => {
-								error!("Failed to update stats: Failed to get teams from database: {e}");
-								return;
-							}
-						};
-
-					let teams: Vec<_> = teams.map(|x| x.number).collect();
-
-					let mut stats = HashMap::with_capacity(teams.len());
-					for team in &teams {
-						let team_stats = CombinedTeamStats::calculate(
-							*team,
-							&match_stats,
-							global_data.current_competition,
-						);
-						stats.insert(*team, team_stats);
+				let teams = match lock.get_teams().await {
+					Ok(teams) => teams,
+					Err(e) => {
+						error!("Failed to update stats: Failed to get teams from database: {e}");
+						return;
 					}
+				};
 
-					*stored_stats.write().await = stats;
+				let teams: Vec<_> = teams.map(|x| x.number).collect();
 
-					let mut auto_stats = stored_auto_stats.write().await;
-					for team in teams {
-						let autos = match lock.get_autos(team).await {
-							Ok(autos) => autos,
-							Err(e) => {
-								error!("Failed to update stats: Failed to get autos for team from database: {e}");
-								return;
-							}
-						};
-
-						calculate_auto_stats(team, &match_stats, autos, auto_stats.deref_mut());
-					}
+				let mut stats = HashMap::with_capacity(teams.len());
+				for team in &teams {
+					let team_stats = CombinedTeamStats::calculate(
+						*team,
+						&match_stats,
+						global_data.current_competition,
+					);
+					stats.insert(*team, team_stats);
 				}
+
+				*stored_stats.write().await = stats;
+
+				let mut auto_stats = stored_auto_stats.write().await;
+				for team in teams {
+					let autos = match lock.get_autos(team).await {
+						Ok(autos) => autos,
+						Err(e) => {
+							error!("Failed to update stats: Failed to get autos for team from database: {e}");
+							return;
+						}
+					};
+
+					calculate_auto_stats(team, &match_stats, autos, auto_stats.deref_mut());
+				}
+
+				std::mem::drop(lock);
 
 				rocket::tokio::time::sleep(Duration::from_secs(30)).await;
 			}

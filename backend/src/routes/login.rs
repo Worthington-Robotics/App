@@ -26,7 +26,7 @@ pub async fn authenticate(state: &State, data: Form<AuthForm>) -> Result<String,
 	}
 
 	let member = {
-		let lock = state.db.lock().await;
+		let lock = state.db.read().await;
 		lock.get_member(&data.id).await
 	}
 	.map_err(|e| {

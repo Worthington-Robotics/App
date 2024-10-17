@@ -42,7 +42,7 @@ pub async fn calendar(
 
 	let is_elevated = requesting_member.is_elevated();
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let events = lock
 		.get_events()
 		.await
@@ -162,7 +162,7 @@ pub async fn event_details(
 
 	let is_elevated = requesting_member.is_elevated();
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let event = lock
 		.get_event(id)
 		.await
@@ -235,7 +235,7 @@ pub async fn create_event(
 		return Ok(redirect);
 	};
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let event = if let Some(id) = id {
 		// We are editing an existing event
 		lock.get_event(id)
@@ -405,7 +405,7 @@ pub async fn create_event_api(
 		.map(|x| MemberMention::from_str(&x).unwrap())
 		.collect();
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 	let existing_event = lock.get_event(&event.id).await.map_err(|e| {
 		error!("Failed to get event from database: {e}");
 		Status::InternalServerError
@@ -455,7 +455,7 @@ pub async fn delete_event(
 
 	session_id.verify_elevated(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 	if !lock.event_exists(id).await.map_err(|e| {
 		error!("Failed to get event from database: {e}");
 		Status::InternalServerError
@@ -488,7 +488,7 @@ pub async fn rsvp_event(
 		return Err(Status::BadRequest);
 	};
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	if !lock.member_exists(&session.member).await.map_err(|e| {
 		error!("Failed to get member from database: {e}");
@@ -591,7 +591,7 @@ async fn cal_call(
 	}
 
 	// Get the member from the calendar ID
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let Some(member) = lock.get_calendar(id).await.map_err(|e| {
 		error!("Failed to get member from calendar in database: {e}");
 		Status::InternalServerError

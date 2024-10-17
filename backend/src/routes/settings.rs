@@ -29,7 +29,7 @@ pub async fn settings(
 	};
 
 	let Some(member) = ({
-		let lock = state.db.lock().await;
+		let lock = state.db.read().await;
 		lock.get_member(&requesting_member_id).await.map_err(|e| {
 			error!("Failed to get member from database: {e}");
 			Status::InternalServerError

@@ -50,7 +50,7 @@ pub async fn matchup(
 
 	let team_stats = state.team_stats.read().await;
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 
 	// Collect teams and team info into two separate maps
 	let mut db_teams_red = HashMap::with_capacity(3);

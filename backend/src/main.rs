@@ -92,7 +92,7 @@ async fn rocket() -> _ {
 	let auto_stats = Arc::new(RwLock::new(HashMap::new()));
 
 	let state = AppState {
-		db: Arc::new(Mutex::new(db)),
+		db: Arc::new(RwLock::new(db)),
 		session_manager: Mutex::new(session_manager),
 		password_hash,
 		req_client,
@@ -256,7 +256,7 @@ async fn setup_db() -> DatabaseImpl {
 
 /// Application state for Rocket
 pub struct AppState {
-	pub db: Arc<Mutex<DatabaseImpl>>,
+	pub db: Arc<RwLock<DatabaseImpl>>,
 	pub session_manager: Mutex<SessionManager>,
 	pub password_hash: Option<Argon2<'static>>,
 	pub req_client: reqwest::Client,

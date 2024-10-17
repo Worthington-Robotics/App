@@ -42,7 +42,7 @@ pub async fn team_status_page(
 		return Ok(redirect);
 	};
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let updates = lock.get_team_status(team).await.map_err(|e| {
 		error!("Failed to get team status updates from database: {e}");
 		Status::InternalServerError
@@ -127,7 +127,7 @@ pub async fn update_status(
 		date,
 	};
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	if let Err(e) = lock.update_team_status(update).await {
 		error!("Failed to create status update in database: {e}");

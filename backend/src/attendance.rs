@@ -4,7 +4,7 @@ use anyhow::Context;
 use chrono::{DateTime, Utc};
 use rocket::{
 	fairing::{Fairing, Info, Kind},
-	tokio::sync::Mutex,
+	tokio::sync::RwLock,
 	Orbit, Rocket,
 };
 use serde::{Deserialize, Serialize};
@@ -189,11 +189,11 @@ pub async fn get_attendance_stats(
 
 /// Fairing for managing attendance
 pub struct AttendanceFairing {
-	db: Arc<Mutex<DatabaseImpl>>,
+	db: Arc<RwLock<DatabaseImpl>>,
 }
 
 impl AttendanceFairing {
-	pub fn new(db: Arc<Mutex<DatabaseImpl>>) -> Self {
+	pub fn new(db: Arc<RwLock<DatabaseImpl>>) -> Self {
 		Self { db }
 	}
 }
@@ -213,7 +213,7 @@ impl Fairing for AttendanceFairing {
 		rocket::tokio::task::spawn(async move {
 			loop {
 				rocket::tokio::time::sleep(Duration::from_secs(60)).await;
-				let mut lock = db.lock().await;
+				let mut lock = db.write().await;
 				let now = Utc::now();
 				let members = {
 					let members = lock.get_members().await;

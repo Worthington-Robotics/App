@@ -34,7 +34,7 @@ pub async fn team_info_page(
 		return Ok(redirect);
 	};
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let team_info = lock
 		.get_team_info(team)
 		.await
@@ -192,7 +192,7 @@ pub async fn create_team_info(
 		Status::BadRequest
 	})?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	if let Err(e) = lock.create_team_info(team, info).await {
 		error!("Failed to create team info in database: {e}");

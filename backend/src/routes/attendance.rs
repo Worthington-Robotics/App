@@ -60,7 +60,7 @@ pub async fn attend(event: &str, session_id: SessionID<'_>, state: &State) -> Re
 	let span = span!(Level::DEBUG, "Attend API");
 	let _enter = span.enter();
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	let Some(member) = state
 		.session_manager
@@ -116,7 +116,7 @@ pub async fn unattend(session_id: SessionID<'_>, state: &State) -> Result<(), St
 	let span = span!(Level::DEBUG, "Unattend API");
 	let _enter = span.enter();
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	let Some(member) = state
 		.session_manager

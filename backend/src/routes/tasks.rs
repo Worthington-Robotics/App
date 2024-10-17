@@ -34,7 +34,7 @@ pub async fn checklists(
 
 	let page = include_str!("pages/tasks/checklists.min.html");
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let checklists = lock
 		.get_checklists()
 		.await
@@ -117,7 +117,7 @@ pub async fn create_checklist_page(
 	};
 
 	let checklist = if let Some(id) = id {
-		let lock = state.db.lock().await;
+		let lock = state.db.read().await;
 		// We are editing an existing checklist
 		lock.get_checklist(id)
 			.await
@@ -164,7 +164,7 @@ pub async fn checklist_page(
 		return Ok(redirect);
 	};
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 
 	let checklist = lock
 		.get_checklist(id)
@@ -246,7 +246,7 @@ pub async fn create_checklist(
 
 	session_id.verify_elevated(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	let existing_checklist = lock.get_checklist(&checklist.id).await.map_err(|e| {
 		error!("Failed to get checklist from database: {e}");
@@ -285,7 +285,7 @@ pub async fn create_task(
 
 	session_id.get_requesting_member(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	// Add the task to the checklist
 	let Some(mut checklist) = lock.get_checklist(&task.checklist).await.map_err(|e| {
@@ -342,7 +342,7 @@ pub async fn delete_checklist(
 
 	session_id.get_requesting_member(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	if let Err(e) = lock.delete_checklist(id).await {
 		error!("Failed to delete checklist {id} in database: {e}");
@@ -359,7 +359,7 @@ pub async fn delete_task(state: &State, session_id: SessionID<'_>, id: &str) -> 
 
 	session_id.get_requesting_member(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	let Some(task) = lock.get_task(id).await.map_err(|e| {
 		error!("Failed to get existing task from database: {e}");
@@ -403,7 +403,7 @@ pub async fn update_task(state: &State, session_id: SessionID<'_>, id: &str) -> 
 
 	session_id.get_requesting_member(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	if let Err(e) = lock.update_task(id).await {
 		error!("Failed to update task {id} in database: {e}");

@@ -56,8 +56,9 @@ pub async fn index(
 		return Ok(redirect);
 	};
 
+	let lock = state.db.read().await;
+
 	let Some(member) = ({
-		let lock = state.db.lock().await;
 		lock.get_member(&requesting_member_id).await.map_err(|e| {
 			error!("Failed to get member from database: {e}");
 			Status::InternalServerError
@@ -66,8 +67,6 @@ pub async fn index(
 		error!("Unknown requesting member ID {}", requesting_member_id);
 		return Ok(redirect);
 	};
-
-	let lock = state.db.lock().await;
 
 	let page = create_page(
 		"WorBots 4145",
@@ -198,7 +197,7 @@ fn get_session_id<'r>(request: &'r Request) -> Option<&'r str> {
 }
 
 impl<'r> SessionID<'r> {
-	/// Get the requesting member
+	/// Get the requesting member. This will lock the database mutex
 	pub async fn get_requesting_member(&self, state: &State) -> Result<Member, Status> {
 		let span = span!(Level::DEBUG, "Getting requesting member");
 		let _enter = span.enter();
@@ -213,7 +212,7 @@ impl<'r> SessionID<'r> {
 		})?;
 
 		let requesting_member = {
-			let lock = state.db.lock().await;
+			let lock = state.db.read().await;
 			lock.get_member(&requesting_member_id).await
 		}
 		.map_err(|e| {
@@ -228,7 +227,7 @@ impl<'r> SessionID<'r> {
 		Ok(requesting_member)
 	}
 
-	/// Verify that the session ID is valid and that the requesting member has elevated permissions
+	/// Verify that the session ID is valid and that the requesting member has elevated permissions. This will lock the database mutex
 	pub async fn verify_elevated(&self, state: &State) -> Result<(), Status> {
 		let span = span!(Level::DEBUG, "Verifying session elevated permissions");
 		let _enter = span.enter();

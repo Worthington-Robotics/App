@@ -83,7 +83,7 @@ pub async fn admin(
 
 	let page = include_str!("../pages/scouting/admin.min.html");
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let data = lock.get_global_data().await.map_err(|e| {
 		error!("Failed to get global data from database: {e}");
 		Status::InternalServerError
@@ -160,7 +160,7 @@ pub async fn download_data(
 		return Err(Status::Unauthorized);
 	};
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let match_stats = lock.get_all_match_stats().await.map_err(|e| {
 		error!("Failed to get match stats from database: {e}");
 		Status::InternalServerError
@@ -219,7 +219,7 @@ pub async fn update_settings(
 
 	session_id.verify_elevated(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 
 	let mut current_data = lock.get_global_data().await.map_err(|e| {
 		error!("Failed to get global data from database: {e}");

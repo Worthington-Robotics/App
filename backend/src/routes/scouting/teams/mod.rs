@@ -53,7 +53,7 @@ pub async fn teams(
 		return Ok(Compress(redirect, CompressionLevel::Fastest));
 	};
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 
 	let mut competition = competition.unwrap_or_default().to_string();
 	// If the competition is "current", replace it with whatever the current competition is
@@ -174,7 +174,7 @@ pub async fn team_details(
 		return Ok(redirect);
 	};
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let team = lock
 		.get_team(id)
 		.await
@@ -511,7 +511,7 @@ pub async fn update_team_competition(
 
 	session_id.verify_elevated(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 	let Some(mut team) = lock.get_team(id).await.map_err(|e| {
 		error!("Failed to get team from database: {e}");
 		Status::InternalServerError
@@ -550,7 +550,7 @@ pub async fn update_team_following(
 
 	let requesting_member = session_id.get_requesting_member(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 	let Some(mut team) = lock.get_team(id).await.map_err(|e| {
 		error!("Failed to get team from database: {e}");
 		Status::InternalServerError

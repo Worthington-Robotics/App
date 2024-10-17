@@ -39,7 +39,7 @@ pub async fn my_scouting(
 
 	let page = include_str!("../pages/scouting/my_scouting.min.html");
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 
 	let assignment = lock
 		.get_prescouting_assignment(&requesting_member.id)

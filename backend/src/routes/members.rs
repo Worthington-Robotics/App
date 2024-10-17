@@ -41,7 +41,7 @@ pub async fn get_member(
 	let requesting_member = session_id.get_requesting_member(state).await?;
 
 	let desired_member = {
-		let lock = state.db.lock().await;
+		let lock = state.db.read().await;
 		lock.get_member(id).await
 	}
 	.map_err(|e| {
@@ -107,7 +107,7 @@ pub async fn create_member(
 
 	let existing_member = state
 		.db
-		.lock()
+		.read()
 		.await
 		.get_member(&member.id)
 		.await
@@ -190,7 +190,7 @@ pub async fn create_member(
 	};
 
 	{
-		let mut lock = state.db.lock().await;
+		let mut lock = state.db.write().await;
 		lock.create_member(new_member).await.map_err(|e| {
 			error!("{}", e);
 			Status::InternalServerError
@@ -228,7 +228,7 @@ pub async fn member_list(
 	let mut member_list = String::new();
 	for member in state
 		.db
-		.lock()
+		.read()
 		.await
 		.get_members()
 		.await
@@ -302,7 +302,7 @@ pub async fn create_member_page(
 	};
 
 	let member = if let Some(id) = id {
-		let lock = state.db.lock().await;
+		let lock = state.db.read().await;
 		// We are editing an existing member
 		lock.get_member(id)
 			.await
@@ -403,7 +403,7 @@ pub async fn member_details(
 		return Err(Status::NotFound);
 	};
 
-	let lock = state.db.lock().await;
+	let lock = state.db.read().await;
 	let member = lock
 		.get_member(id)
 		.await
@@ -505,7 +505,7 @@ pub async fn delete_member(
 
 	session_id.verify_elevated(state).await?;
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 	if !lock.member_exists(id).await.map_err(|e| {
 		error!("Failed to get member from database: {e}");
 		Status::InternalServerError
@@ -539,7 +539,7 @@ pub async fn update_member_form(
 		return Err(Status::BadRequest);
 	};
 
-	let mut lock = state.db.lock().await;
+	let mut lock = state.db.write().await;
 	let Some(mut member) = lock.get_member(id).await.map_err(|e| {
 		error!("Failed to get member from database: {e}");
 		Status::InternalServerError
