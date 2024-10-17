@@ -27,7 +27,7 @@ use crate::{
 	tasks::{Checklist, Task},
 };
 
-use super::Database;
+use super::{Database, GlobalData};
 
 pub struct JSONDatabase {
 	contents: DatabaseContents,
@@ -379,6 +379,16 @@ impl Database for JSONDatabase {
 
 		self.write()
 	}
+
+	async fn get_global_data(&self) -> anyhow::Result<GlobalData> {
+		Ok(self.contents.global_data.clone())
+	}
+
+	async fn set_global_data(&mut self, data: GlobalData) -> anyhow::Result<()> {
+		self.contents.global_data = data;
+
+		self.write()
+	}
 }
 
 impl JSONDatabase {
@@ -433,4 +443,6 @@ struct DatabaseContents {
 	matches: Vec<Match>,
 	#[serde(default)]
 	match_claims: HashMap<String, MatchClaims>,
+	#[serde(default)]
+	global_data: GlobalData,
 }

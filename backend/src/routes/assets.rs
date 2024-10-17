@@ -19,20 +19,20 @@ pub fn main_css() -> RawCss<&'static str> {
 
 #[rocket::get("/assets/static16.css")]
 pub fn static_css() -> CacheFor<RawCss<&'static str>> {
-	CacheFor(RawCss(include_str!("../assets/static.min.css")), ONE_DAY)
+	CacheFor(RawCss(include_str!("../assets/static.min.css")), ONE_WEEK)
 }
 
 #[rocket::get("/assets/sortable.min.js")]
 pub fn sortable_js() -> CacheFor<RawJavaScript<&'static str>> {
 	CacheFor(
 		RawJavaScript(include_str!("../assets/sortable.min.js")),
-		ONE_WEEK,
+		ONE_YEAR,
 	)
 }
 
-#[rocket::get("/assets/error.js")]
+#[rocket::get("/assets/error2.js")]
 pub fn error_js() -> CacheFor<RawJavaScript<&'static str>> {
-	CacheFor(RawJavaScript(include_str!("../assets/error.js")), ONE_WEEK)
+	CacheFor(RawJavaScript(include_str!("../assets/error.js")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/prompt.js")]
@@ -105,7 +105,10 @@ pub fn icon_star() -> CacheFor<Svg> {
 
 #[rocket::get("/assets/icons/star_outline.svg")]
 pub fn icon_star_outline() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/star_outline.svg")), ONE_WEEK)
+	CacheFor(
+		Svg(include_bytes!("../assets/icons/star_outline.svg")),
+		ONE_WEEK,
+	)
 }
 
 #[rocket::get("/assets/icons/user.svg")]

@@ -22,13 +22,13 @@ use crate::{
 		autos::{Auto, AutoPoint},
 		matches::{Match, MatchNumber, MatchStats, MatchType},
 		status::{RobotStatus, StatusUpdate},
-		Competition, Team, TeamInfo, TeamNumber,
+		Competition, Division, Team, TeamInfo, TeamNumber,
 	},
 	tasks::{Checklist, Task},
 	util::ToDropdown,
 };
 
-use super::Database;
+use super::{Database, GlobalData};
 
 pub struct SqlDatabase {
 	pool: Pool<Postgres>,
@@ -1117,6 +1117,45 @@ impl Database for SqlDatabase {
 
 		Ok(())
 	}
+
+	async fn get_global_data(&self) -> anyhow::Result<GlobalData> {
+		let mut result = sqlx::query("SELECT * FROM global_data").fetch(&self.pool);
+
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(GlobalData::default());
+				};
+
+				let data = read_global_data(row).context("Failed to read global data")?;
+
+				Ok(data)
+			}
+			Err(e) => {
+				error!("Failed to get global data from database: {e}");
+				Err(anyhow!("Failed to get global data from database"))
+			}
+		}
+	}
+
+	async fn set_global_data(&mut self, data: GlobalData) -> anyhow::Result<()> {
+		let query = sqlx::query("DELETE FROM global_data");
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove existing global data from database")?;
+
+		sqlx::query("INSERT INTO global_data (Competition, Division) VALUES ($1, $2)")
+			.bind(data.current_competition.map(|x| x.to_string()))
+			.bind(data.current_division.map(|x| x.to_string()))
+			.execute(&self.pool)
+			.await
+			.context("Failed to create new global data in database")?;
+
+		Ok(())
+	}
 }
 
 /// Setup the database
@@ -1166,6 +1205,9 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		"CREATE TABLE IF NOT EXISTS match_claims (Number int4, Type text, Red1 text, Red2 text, Red3 text, Blue1 text, Blue2 text, Blue3 text)",
 	);
 
+	let global_data_task =
+		pool.execute("CREATE TABLE IF NOT EXISTS global_data (Competition text, Division text)");
+
 	try_join!(
 		members_task,
 		events_task,
@@ -1181,6 +1223,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 		status_task,
 		matches_task,
 		match_claims_task,
+		global_data_task,
 	)
 	.context("Failed to execute database setup tasks")?;
 
@@ -1471,5 +1514,18 @@ fn read_match_claims(row: PgRow) -> anyhow::Result<MatchClaims> {
 		blue_1,
 		blue_2,
 		blue_3,
+	})
+}
+
+/// Read global data from the database
+fn read_global_data(row: PgRow) -> anyhow::Result<GlobalData> {
+	let competition: Option<String> = row.try_get("competition")?;
+	let competition = competition.and_then(|x| Competition::from_db(&x));
+	let division: Option<String> = row.try_get("division")?;
+	let division = division.and_then(|x| Division::from_db(&x));
+
+	Ok(GlobalData {
+		current_competition: competition,
+		current_division: division,
 	})
 }

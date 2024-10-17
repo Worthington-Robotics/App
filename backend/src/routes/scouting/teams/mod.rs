@@ -44,15 +44,6 @@ pub async fn teams(
 	let span = span!(Level::DEBUG, "Teams");
 	let _enter = span.enter();
 
-	let mut competition = competition.unwrap_or_default();
-	// If the competition is "current", replace it with whatever the current competition is
-	if competition == "Current" {
-		// TODO: Use the actual current competition
-		competition = "Pittsburgh";
-	}
-
-	let parsed_competition = Competition::from_db(competition);
-
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
 	let Some(session_id) = session_id.to_session_id() else {
 		return Ok(Compress(redirect, CompressionLevel::Fastest));
@@ -62,9 +53,25 @@ pub async fn teams(
 		return Ok(Compress(redirect, CompressionLevel::Fastest));
 	};
 
+	let lock = state.db.lock().await;
+
+	let mut competition = competition.unwrap_or_default().to_string();
+	// If the competition is "current", replace it with whatever the current competition is
+	if competition == "Current" {
+		let global_data = lock.get_global_data().await.map_err(|e| {
+			error!("Failed to get global data from database: {e}");
+			Status::InternalServerError
+		})?;
+		competition = global_data
+			.current_competition
+			.unwrap_or(Competition::Pittsburgh)
+			.to_string();
+	}
+
+	let parsed_competition = Competition::from_db(&competition);
+
 	let page = include_str!("../../pages/scouting/teams.min.html");
 
-	let lock = state.db.lock().await;
 	let teams = lock
 		.get_teams()
 		.await
@@ -108,7 +115,7 @@ pub async fn teams(
 	}
 	let page = page.replace("{{comp-options}}", &comps_string);
 
-	let page = page.replace("{{competition}}", competition);
+	let page = page.replace("{{competition}}", &competition);
 
 	let page = create_page("Teams", &page, Some(Scope::Scouting));
 

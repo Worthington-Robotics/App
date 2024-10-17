@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
 	announcements::Announcement,
 	attendance::AttendanceEntry,
@@ -8,7 +10,7 @@ use crate::{
 		autos::Auto,
 		matches::{Match, MatchNumber, MatchStats},
 		status::StatusUpdate,
-		Team, TeamInfo, TeamNumber,
+		Competition, Division, Team, TeamInfo, TeamNumber,
 	},
 	tasks::{Checklist, Task},
 };
@@ -208,4 +210,18 @@ pub trait Database {
 
 	/// Create claims for a match
 	async fn create_match_claims(&mut self, claims: MatchClaims) -> anyhow::Result<()>;
+
+	/// Get global data
+	async fn get_global_data(&self) -> anyhow::Result<GlobalData>;
+
+	/// Set global data
+	async fn set_global_data(&mut self, data: GlobalData) -> anyhow::Result<()>;
+}
+
+/// Global data struct, for persistent values like global configuration
+#[derive(Serialize, Deserialize, Default, Clone)]
+#[serde(default)]
+pub struct GlobalData {
+	pub current_competition: Option<Competition>,
+	pub current_division: Option<Division>,
 }

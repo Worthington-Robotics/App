@@ -14,9 +14,10 @@ use std::{collections::HashSet, io::Cursor};
 use anyhow::Context;
 use chrono::Utc;
 use rocket::{
+	form::Form,
 	http::Status,
 	response::{content::RawHtml, Redirect},
-	Responder,
+	FromForm, Responder,
 };
 use tracing::{error, span, Level};
 
@@ -24,8 +25,9 @@ use crate::{
 	api::first::FirstClient,
 	db::{Database, DatabaseImpl},
 	events::get_season,
-	routes::OptionalSessionID,
-	scouting::{CombinedTeamStats, Team},
+	routes::{OptionalSessionID, SessionID},
+	scouting::{CombinedTeamStats, Competition, Division, Team},
+	util::ToDropdown,
 	State,
 };
 
@@ -80,6 +82,20 @@ pub async fn admin(
 	};
 
 	let page = include_str!("../pages/scouting/admin.min.html");
+
+	let lock = state.db.lock().await;
+	let data = lock.get_global_data().await.map_err(|e| {
+		error!("Failed to get global data from database: {e}");
+		Status::InternalServerError
+	})?;
+
+	let options = Competition::create_options(data.current_competition.as_ref());
+	let options = format!("<option value=none>None</option>{options}");
+	let page = page.replace("{{competition-options}}", &options);
+
+	let options = Division::create_options(data.current_division.as_ref());
+	let options = format!("<option value=none>None</option>{options}");
+	let page = page.replace("{{division-options}}", &options);
 
 	let page = create_page("Scouting Administration", &page, Some(Scope::Scouting));
 
@@ -191,3 +207,56 @@ pub async fn download_data(
 #[derive(Responder)]
 #[response(content_type = "application/download-me")]
 pub struct Downloadable(Vec<u8>);
+
+#[rocket::post("/api/scouting/update_settings", data = "<settings>")]
+pub async fn update_settings(
+	session_id: SessionID<'_>,
+	state: &State,
+	settings: Form<SettingsForm>,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Updating scouting settings");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	let mut lock = state.db.lock().await;
+
+	let mut current_data = lock.get_global_data().await.map_err(|e| {
+		error!("Failed to get global data from database: {e}");
+		Status::InternalServerError
+	})?;
+
+	let competition = if settings.competition == "none" {
+		None
+	} else {
+		Some(Competition::from_db(&settings.competition).ok_or_else(|| {
+			error!("Invalid competition");
+			Status::BadRequest
+		})?)
+	};
+
+	let division = if settings.division == "none" {
+		None
+	} else {
+		Some(Division::from_db(&settings.division).ok_or_else(|| {
+			error!("Invalid division");
+			Status::BadRequest
+		})?)
+	};
+
+	current_data.current_competition = competition;
+	current_data.current_division = division;
+
+	if let Err(e) = lock.set_global_data(current_data).await {
+		error!("Failed to set global data in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
+}
+
+#[derive(FromForm)]
+pub struct SettingsForm {
+	pub competition: String,
+	pub division: String,
+}

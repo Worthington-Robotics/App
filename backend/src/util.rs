@@ -14,6 +14,7 @@ use strum::IntoEnumIterator;
 pub trait ToDropdown {
 	fn to_dropdown(&self) -> &'static str;
 
+	/// Create dropdown options, along with an optional none option
 	fn create_options(selected: Option<&Self>) -> String
 	where
 		Self: Display + IntoEnumIterator + PartialEq,

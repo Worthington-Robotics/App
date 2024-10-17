@@ -1,30 +1,31 @@
-<script src="/assets/error.js" async></script>
+<!-- Error and success messages -->
+<script src="/assets/error2.js" async></script>
 <div id="error-cont" class="cont">
 	<div id="error" class="cont round" style="display: none"></div>
 </div>
+<div id="success-cont" class="cont">
+	<div id="success" class="cont round" style="display: none"></div>
+</div>
 <style>
-	#error-cont {
+	#error-cont,
+	#success-cont {
 		width: 100vw;
 		position: fixed;
 		left: 0px;
 		top: 1.3rem;
 	}
 
-	#error {
+	#error,
+	#success {
 		width: 60%;
-		background-color: var(--wbred);
 		padding: 1.3rem;
 	}
-</style>
-<script>
-	function setError(error) {
-		let text = "Error: " + error;
-		console.error(text);
-		let errorElement = document.getElementById("error");
-		errorElement.style.display = "flex";
-		errorElement.innerHTML = text;
-		setTimeout(() => {
-			errorElement.style.display = "none";
-		}, 3000);
+
+	#error {
+		background-color: var(--wbred);
 	}
-</script>
+
+	#success {
+		background-color: #37b315;
+	}
+</style>

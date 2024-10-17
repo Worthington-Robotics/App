@@ -171,6 +171,7 @@ async fn rocket() -> _ {
 				routes::scouting::index,
 				routes::scouting::admin,
 				routes::scouting::download_data,
+				routes::scouting::update_settings,
 				routes::scouting::teams::teams,
 				routes::scouting::teams::team_details,
 				routes::scouting::teams::info::create_team_info,

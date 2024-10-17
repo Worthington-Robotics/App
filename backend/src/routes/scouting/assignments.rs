@@ -12,7 +12,7 @@ use crate::{
 	scouting::{
 		assignment::{assign_scouts, MatchClaims, ScoutingAssignment},
 		matches::{MatchNumber, MatchType},
-		Competition, TeamNumber,
+		TeamNumber,
 	},
 	State,
 };
@@ -38,15 +38,22 @@ pub async fn assignments(
 
 	let page = include_str!("../pages/scouting/assignments.min.html");
 
-	let current_comp = Competition::Pittsburgh;
-
 	let lock = state.db.lock().await;
-	let teams = lock.get_teams().await.map_err(|e| {
-		error!("Failed to get teams from database: {e}");
+	let global_data = lock.get_global_data().await.map_err(|e| {
+		error!("Failed to get global data from database: {e}");
 		Status::InternalServerError
 	})?;
-	let teams = teams.filter(|x| x.competitions.contains(&current_comp));
-	let teams = teams.sorted_by_key(|x| x.number);
+
+	let teams = if let Some(current_competition) = global_data.current_competition {
+		let teams = lock.get_teams().await.map_err(|e| {
+			error!("Failed to get teams from database: {e}");
+			Status::InternalServerError
+		})?;
+		let teams = teams.filter(|x| x.competitions.contains(&current_competition));
+		teams.sorted_by_key(|x| x.number)
+	} else {
+		Vec::new().into_iter()
+	};
 
 	let assignments = lock.get_all_prescouting_assignments().await.map_err(|e| {
 		error!("Failed to get all prescouting assignments from database: {e}");
@@ -207,13 +214,21 @@ pub async fn random_assign(state: &State, session_id: SessionID<'_>) -> Result<(
 
 	let mut lock = state.db.lock().await;
 
-	let current_comp = Competition::Pittsburgh;
+	let global_data = lock.get_global_data().await.map_err(|e| {
+		error!("Failed to get global data from database: {e}");
+		Status::InternalServerError
+	})?;
+
+	let Some(current_competition) = global_data.current_competition else {
+		error!("No current competition");
+		return Ok(());
+	};
 
 	let teams = lock.get_teams().await.map_err(|e| {
 		error!("Failed to get teams from database: {e}");
 		Status::InternalServerError
 	})?;
-	let teams = teams.filter(|x| x.competitions.contains(&current_comp));
+	let teams = teams.filter(|x| x.competitions.contains(&current_competition));
 	let teams = teams.map(|x| x.number);
 	let teams = teams.sorted();
 	let teams: Vec<_> = teams.collect();

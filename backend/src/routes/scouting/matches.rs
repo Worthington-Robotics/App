@@ -255,12 +255,32 @@ pub async fn import_match_schedule(state: &State, session_id: SessionID<'_>) -> 
 
 	let mut lock = state.db.lock().await;
 
-	let current_competition = Competition::Pittsburgh;
+	let global_data = lock.get_global_data().await.map_err(|e| {
+		error!("Failed to get global data from database: {e}");
+		Status::InternalServerError
+	})?;
 
-	let Some(event_code) = current_competition.get_code() else {
-		error!("Event does not have a code");
+	let Some(current_competition) = global_data.current_competition else {
+		error!("No current competition");
 		return Ok(());
 	};
+
+	let event_code = if current_competition == Competition::Champs {
+		let Some(current_division) = global_data.current_division else {
+			error!("No current division");
+			return Ok(());
+		};
+
+		current_division.get_code()
+	} else {
+		let Some(event_code) = current_competition.get_code() else {
+			error!("Event does not have a code");
+			return Ok(());
+		};
+
+		event_code
+	};
+
 	let first_matches = state
 		.first_client
 		.get_match_schedule(get_season(&Utc::now()) as i32, event_code)

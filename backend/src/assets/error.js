@@ -8,3 +8,12 @@ function setError(error) {
 		errorElement.style.display = "none";
 	}, 3000);
 }
+
+function setSuccess(message) {
+	let successElement = document.getElementById("success");
+	successElement.style.display = "flex";
+	successElement.innerHTML = message;
+	setTimeout(() => {
+		successElement.style.display = "none";
+	}, 3000);
+}

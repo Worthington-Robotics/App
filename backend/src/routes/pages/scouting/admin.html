@@ -1,4 +1,4 @@
-{{worbots-header}}
+{{worbots-header}}{{error}}
 <h1>Scouting Administration</h1>
 <div class="cont col">
 	<button onclick="history.back()">Back</button>
@@ -13,6 +13,24 @@
 	</form>
 	<button id="download-data">Download Scouting Data</button>
 	<iframe id="download-iframe" style="display:none;"></iframe>
+	<div class="cont col">
+		<h3>Settings</h3>
+		<div class="cont">
+			<div class="cont col">
+				<label for="competition">Current Competition</label>
+				<select id="competition" name="competition">
+					{{competition-options}}
+				</select>
+			</div>
+			<div class="cont col">
+				<label for="division">Current Division</label>
+				<select id="division" name="division">
+					{{division-options}}
+				</select>
+			</div>
+		</div>
+		<input type="submit" id="settings-submit" value="Save" />
+	</div>
 </div>
 <style>
 	#upload-form {
@@ -24,5 +42,24 @@
 	document.getElementById("download-data").addEventListener("click", () => {
 		document.getElementById("download-iframe").src = "/api/scouting_data.csv";
 	});
+
+	document.getElementById("settings-submit").addEventListener("click", (e) => {
+		e.preventDefault();
+
+		let competition = document.getElementById("competition").value;
+		let division = document.getElementById("division").value;
+
+		fetch("/api/scouting/update_settings", {
+			method: "POST",
+			body: `competition=${competition}&division=${division}`,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((resp) => {
+			if (resp.status != 200) {
+				setError(resp.statusText);
+			} else {
+				setSuccess("Settings updated");
+			}
+		});
+	})
 </script>
 {{footer}}

@@ -21,7 +21,7 @@ use matches::MatchStats;
 use rocket::{
 	fairing::{Fairing, Info, Kind},
 	tokio::sync::{Mutex, RwLock},
-	Orbit, Rocket,
+	FromFormField, Orbit, Rocket,
 };
 use serde::{Deserialize, Serialize};
 use status::RobotStatus;
@@ -30,7 +30,7 @@ use tracing::error;
 
 use crate::{
 	db::{Database, DatabaseImpl},
-	util::fix_zero,
+	util::{fix_zero, ToDropdown},
 };
 
 /// Type for the number of a team
@@ -56,7 +56,17 @@ impl Team {
 
 /// Competition that the team will attend
 #[derive(
-	Display, EnumIter, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, IntoStaticStr,
+	Display,
+	EnumIter,
+	Copy,
+	Clone,
+	PartialEq,
+	Eq,
+	Hash,
+	Serialize,
+	Deserialize,
+	IntoStaticStr,
+	FromFormField,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum Competition {
@@ -106,6 +116,74 @@ impl Competition {
 			Self::Champs => Central,
 			_ => Eastern,
 		}
+	}
+}
+
+impl ToDropdown for Competition {
+	fn to_dropdown(&self) -> &'static str {
+		self.into()
+	}
+}
+
+/// A FIRST Championship division
+#[derive(
+	Display,
+	EnumIter,
+	Copy,
+	Clone,
+	PartialEq,
+	Eq,
+	Hash,
+	Serialize,
+	Deserialize,
+	IntoStaticStr,
+	FromFormField,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum Division {
+	Hopper,
+	Newton,
+	Galileo,
+	Daly,
+	Archimedes,
+	Curie,
+	Johnson,
+	Milstein,
+}
+
+impl Division {
+	pub fn from_db(val: &str) -> Option<Self> {
+		match val {
+			"Hopper" => Some(Self::Hopper),
+			"Newton" => Some(Self::Newton),
+			"Galileo" => Some(Self::Galileo),
+			"Daly" => Some(Self::Daly),
+			"Archimedes" => Some(Self::Archimedes),
+			"Curie" => Some(Self::Curie),
+			"Johnson" => Some(Self::Johnson),
+			"Milstein" => Some(Self::Milstein),
+			_ => None,
+		}
+	}
+
+	/// Gets the FRC event code of this event
+	pub fn get_code(&self) -> &'static str {
+		match self {
+			Self::Hopper => "HOPPER",
+			Self::Newton => "NEWTON",
+			Self::Galileo => "GALILEO",
+			Self::Daly => "DALY",
+			Self::Archimedes => "ARCHIMEDES",
+			Self::Curie => "CURIE",
+			Self::Johnson => "JOHNSON",
+			Self::Milstein => "MILSTEIN",
+		}
+	}
+}
+
+impl ToDropdown for Division {
+	fn to_dropdown(&self) -> &'static str {
+		self.into()
 	}
 }
 
@@ -213,7 +291,11 @@ pub struct CombinedTeamStats {
 impl CombinedTeamStats {
 	/// Calculate combined team stats. The input matches don't all have to be from this team, but they do have
 	/// to be in date order
-	pub fn calculate(team: TeamNumber, matches: &[MatchStats]) -> Self {
+	pub fn calculate(
+		team: TeamNumber,
+		matches: &[MatchStats],
+		current_competition: Option<Competition>,
+	) -> Self {
 		let mut historical = Vec::new();
 		for i in 1..matches.len() {
 			historical.push(calculate_team_stats(team, &matches[i - 1..i]));
@@ -221,24 +303,28 @@ impl CombinedTeamStats {
 
 		let all_time = calculate_team_stats(team, &matches);
 
-		// TODO: Use actual competition
-		let current_competition: Vec<_> = matches
-			.into_iter()
-			.filter(|x| x.competition.is_some_and(|x| x == Competition::Pittsburgh))
-			.cloned()
-			.collect();
-		let current_competition = calculate_team_stats(team, &current_competition);
+		let current_competition_stats = if let Some(current_competition) = current_competition {
+			let current_competition_matches: Vec<_> = matches
+				.into_iter()
+				.filter(|x| x.competition.is_some_and(|x| x == current_competition))
+				.cloned()
+				.collect();
+
+			calculate_team_stats(team, &current_competition_matches)
+		} else {
+			all_time.clone()
+		};
 
 		Self {
 			historical,
-			current_competition,
+			current_competition: current_competition_stats,
 			all_time,
 		}
 	}
 }
 
 /// Stored and calculated stats for a single team
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct TeamStats {
 	pub number: TeamNumber,
 	pub epa: f32,
@@ -446,6 +532,15 @@ impl Fairing for UpdateStats {
 				// In a scope so that locks aren't held while waiting for the next loop
 				{
 					let lock = db.lock().await;
+
+					let global_data = match lock.get_global_data().await {
+						Ok(global_data) => global_data,
+						Err(e) => {
+							error!("Failed to get global data from database: {e}");
+							return;
+						}
+					};
+
 					let match_stats = match lock.get_all_match_stats().await {
 						Ok(stats) => stats,
 						Err(e) => {
@@ -479,7 +574,11 @@ impl Fairing for UpdateStats {
 
 					let mut stats = HashMap::with_capacity(teams.len());
 					for team in &teams {
-						let team_stats = CombinedTeamStats::calculate(*team, &match_stats);
+						let team_stats = CombinedTeamStats::calculate(
+							*team,
+							&match_stats,
+							global_data.current_competition,
+						);
 						stats.insert(*team, team_stats);
 					}
 

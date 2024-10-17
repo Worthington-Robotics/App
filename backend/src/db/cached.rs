@@ -112,6 +112,8 @@ async fn populate_cache(sql: &SqlDatabase) -> anyhow::Result<JSONDatabase> {
 		cache.create_match_claims(claims).await?;
 	}
 
+	cache.set_global_data(sql.get_global_data().await?).await?;
+
 	Ok(cache)
 }
 
@@ -518,6 +520,19 @@ impl Database for CacheDatabase {
 		try_join!(
 			self.sql.create_match_claims(claims.clone()),
 			self.cache.create_match_claims(claims)
+		)?;
+
+		Ok(())
+	}
+
+	async fn get_global_data(&self) -> anyhow::Result<super::GlobalData> {
+		self.cache.get_global_data().await
+	}
+
+	async fn set_global_data(&mut self, data: super::GlobalData) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.set_global_data(data.clone()),
+			self.cache.set_global_data(data)
 		)?;
 
 		Ok(())
