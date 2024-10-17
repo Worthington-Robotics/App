@@ -211,6 +211,9 @@ pub trait Database {
 	/// Create claims for a match
 	async fn create_match_claims(&mut self, claims: MatchClaims) -> anyhow::Result<()>;
 
+	/// Clear all match claims
+	async fn clear_match_claims(&mut self) -> anyhow::Result<()>;
+
 	/// Get global data
 	async fn get_global_data(&self) -> anyhow::Result<GlobalData>;
 

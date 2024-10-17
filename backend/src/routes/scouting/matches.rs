@@ -185,12 +185,12 @@ pub async fn match_schedule(
 	}
 	let page = page.replace("{{matches}}", &matches_string);
 
-	let import_style = if requesting_member.is_elevated() {
+	let admin_control_style = if requesting_member.is_elevated() {
 		""
 	} else {
 		"display:none"
 	};
-	let page = page.replace("{{import-style}}", import_style);
+	let page = page.replace("{{admin-control-style}}", admin_control_style);
 
 	let page = create_page("Match Schedule", &page, Some(Scope::Scouting));
 
@@ -248,7 +248,7 @@ fn is_us_class(team: TeamNumber) -> &'static str {
 
 #[rocket::post("/api/import_match_schedule")]
 pub async fn import_match_schedule(state: &State, session_id: SessionID<'_>) -> Result<(), Status> {
-	let span = span!(Level::DEBUG, "Importing match stats");
+	let span = span!(Level::DEBUG, "Importing matches");
 	let _enter = span.enter();
 
 	session_id.verify_elevated(state).await?;
@@ -341,6 +341,35 @@ pub async fn import_match_schedule(state: &State, session_id: SessionID<'_>) -> 
 			error!("Failed to create match in database: {e}");
 			return Err(Status::InternalServerError);
 		}
+	}
+
+	// Remove all match claims as they won't be valid anymore
+	if let Err(e) = lock.clear_match_claims().await {
+		error!("Failed to clear all match claims: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
+}
+
+#[rocket::post("/api/clear_match_schedule")]
+pub async fn clear_match_schedule(state: &State, session_id: SessionID<'_>) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Clearing matches");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	let mut lock = state.db.write().await;
+
+	if let Err(e) = lock.clear_matches().await {
+		error!("Failed to clear match schedule in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	// Remove all match claims as they won't be valid anymore
+	if let Err(e) = lock.clear_match_claims().await {
+		error!("Failed to clear all match claims: {e}");
+		return Err(Status::InternalServerError);
 	}
 
 	Ok(())

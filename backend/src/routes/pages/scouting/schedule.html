@@ -9,7 +9,10 @@
 		{{matches}}
 	</div>
 	<br />
-	<button id="import-button" style={{import-style}}>Import Matches</button>
+	<div class="cont" style={{admin-control-style}}>
+		<button id="import-button">Import Matches</button>
+		<button id="clear-button" style="background-color: var(--wbred);">Clear Matches</button>
+	</div>
 </div>
 <style>
 	#matches {
@@ -137,6 +140,20 @@
 				}
 			});
 		});
-	})
+	});
+
+	document.getElementById("clear-button").addEventListener("click", () => {
+		showConfirmPrompt("delete all matches", () => {
+			fetch("/api/clear_match_schedule", {
+				method: "POST",
+			}).then((resp) => {
+				if (resp.status == 200) {
+					window.location.reload();
+				} else {
+					setError(resp.statusText);
+				}
+			});
+		});
+	});
 </script>
 {{footer}}

@@ -380,6 +380,12 @@ impl Database for JSONDatabase {
 		self.write()
 	}
 
+	async fn clear_match_claims(&mut self) -> anyhow::Result<()> {
+		self.contents.match_claims.clear();
+
+		self.write()
+	}
+
 	async fn get_global_data(&self) -> anyhow::Result<GlobalData> {
 		Ok(self.contents.global_data.clone())
 	}

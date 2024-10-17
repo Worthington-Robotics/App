@@ -525,6 +525,15 @@ impl Database for CacheDatabase {
 		Ok(())
 	}
 
+	async fn clear_match_claims(&mut self) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.clear_match_claims(),
+			self.cache.clear_match_claims()
+		)?;
+
+		Ok(())
+	}
+
 	async fn get_global_data(&self) -> anyhow::Result<super::GlobalData> {
 		self.cache.get_global_data().await
 	}

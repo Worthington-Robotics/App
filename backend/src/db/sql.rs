@@ -1118,6 +1118,17 @@ impl Database for SqlDatabase {
 		Ok(())
 	}
 
+	async fn clear_match_claims(&mut self) -> anyhow::Result<()> {
+		let query = sqlx::query("DELETE FROM match_claims");
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove all match claims from database")?;
+
+		Ok(())
+	}
+
 	async fn get_global_data(&self) -> anyhow::Result<GlobalData> {
 		let mut result = sqlx::query("SELECT * FROM global_data").fetch(&self.pool);
 
