@@ -9,9 +9,25 @@
 		{{matches}}
 	</div>
 	<br />
-	<div class="cont" style={{admin-control-style}}>
+	<div id="admin-controls" style={{admin-control-style}}>
 		<button id="import-button">Import Matches</button>
 		<button id="clear-button" style="background-color: var(--wbred);">Clear Matches</button>
+		<button id="upload-button">Upload Matches</button>
+	</div>
+	<div id="upload-popup-container" class="cont" style="display:none">
+		<div id="upload-popup" class="cont col round">
+			<h3>Upload Matches</h3>
+			<p id="upload-explanation">
+				Make sure to check documentation for the correct file format
+			</p>
+			<form class="cont col" id="upload-form">
+				<input type="file" id="upload-file" />
+				<div class="cont">
+					<input type="submit" value="Upload">
+					<button id="upload-popup-close">Close</button>
+				</div>
+			</form>
+		</div>
 	</div>
 </div>
 <style>
@@ -107,6 +123,29 @@
 	.not-ours {
 		display: none;
 	}
+
+	#admin-controls {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		width: 90%;
+		gap: 1rem;
+	}
+
+	#upload-popup-container {
+		position: fixed;
+		left: 0;
+		top: 0;
+		width: 100vw;
+		height: 100vh;
+		z-index: 100;
+		background-color: rgba(0, 0, 0, 0.5);
+	}
+
+	#upload-popup {
+		background-color: var(--bg2);
+		padding: 1.5rem;
+		width: 80%;
+	}
 </style>
 <script>
 	// Filter logic
@@ -154,6 +193,95 @@
 				}
 			});
 		});
+	});
+
+	// Match upload logic
+	let uploadPopupContainer = document.getElementById("upload-popup-container");
+
+	document.getElementById("upload-popup-close").addEventListener("click", (e) => {
+		e.preventDefault();
+		uploadPopupContainer.style.display = "none";
+	});
+
+	document.getElementById("upload-button").addEventListener("click", () => {
+		uploadPopupContainer.style.display = "";
+	});
+
+	document.getElementById("upload-form").addEventListener("submit", (e) => {
+		e.preventDefault();
+
+		let file = document.getElementById("upload-file").files[0];
+		if (file == undefined) {
+			setError("Please select a file");
+			return;
+		}
+
+		let reader = new FileReader();
+		reader.readAsText(file, "UTF-8");
+		reader.onload = (e) => {
+			let contents = e.target.result;
+			if (contents == null) {
+				return;
+			}
+			console.log(contents);
+			// Split by lines, removing carriage returns.
+			// Don't include the first line, as it is just the headers of the TSV
+			let lines = contents.split(/\r?\n/).slice(1);
+
+			if (lines.length == 0) {
+				setError("No matches were found from file");
+				return;
+			}
+
+			let matches = [];
+			for (let line of lines) {
+				let cols = line.split(/\t/);
+				console.log(cols);
+				if (cols.length < 8) {
+					setError("Incorrect number of columns in match");
+					return;
+				}
+
+				// Dates should look like "Sat, 6 Apr 2024 10:33:00". We add in the offset
+				let date = cols[1] + " -0400";
+				let match = {
+					num: {
+						ty: "Qualification",
+						num: cols[0] * 1
+					},
+					date: date,
+					"red_alliance": [
+						cols[2] * 1,
+						cols[3] * 1,
+						cols[4] * 1
+					],
+					"blue_alliance": [
+						cols[5] * 1,
+						cols[6] * 1,
+						cols[7] * 1
+					]
+				};
+				matches.push(match);
+			}
+
+			let matchesJson = JSON.stringify(matches);
+
+			fetch("/api/upload_match_schedule", {
+				method: "POST",
+				body: matchesJson,
+				headers: { "Content-Type": "application/json" },
+			}).then((resp) => {
+				if (resp.status == 200) {
+					uploadPopupContainer.style.display = "none";
+					window.location.reload();
+				} else {
+					setError(resp.statusText);
+				}
+			});
+		};
+		reader.onerror = (e) => {
+			setError("Failed to read uploaded file");
+		};
 	});
 </script>
 {{footer}}

@@ -5,6 +5,7 @@ use rocket::{
 	form::{Form, FromForm},
 	http::Status,
 	response::{content::RawHtml, Redirect},
+	serde::json::Json,
 };
 use tracing::{error, span, Level};
 
@@ -364,6 +365,40 @@ pub async fn clear_match_schedule(state: &State, session_id: SessionID<'_>) -> R
 	if let Err(e) = lock.clear_matches().await {
 		error!("Failed to clear match schedule in database: {e}");
 		return Err(Status::InternalServerError);
+	}
+
+	// Remove all match claims as they won't be valid anymore
+	if let Err(e) = lock.clear_match_claims().await {
+		error!("Failed to clear all match claims: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
+}
+
+#[rocket::post("/api/upload_match_schedule", data = "<matches>")]
+pub async fn upload_match_schedule(
+	state: &State,
+	session_id: SessionID<'_>,
+	matches: Json<Vec<Match>>,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Uploading matches");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	let mut lock = state.db.write().await;
+
+	if let Err(e) = lock.clear_matches().await {
+		error!("Failed to clear match schedule in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	for m in matches.into_inner() {
+		if let Err(e) = lock.create_match(m).await {
+			error!("Failed to create match in database: {e}");
+			return Err(Status::InternalServerError);
+		}
 	}
 
 	// Remove all match claims as they won't be valid anymore
