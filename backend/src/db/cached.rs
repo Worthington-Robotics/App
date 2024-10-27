@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use anyhow::Context;
 use rocket::{
 	fairing::{Fairing, Info, Kind},
-	tokio::{sync::Mutex, try_join},
+	tokio::{sync::RwLock, try_join},
 	Orbit, Rocket,
 };
 use tracing::error;
@@ -550,12 +550,12 @@ impl Database for CacheDatabase {
 
 /// Fairing for periodically syncing the cache
 pub struct SyncCache {
-	db: Arc<Mutex<CacheDatabase>>,
+	db: Arc<RwLock<CacheDatabase>>,
 }
 
 impl SyncCache {
 	#[cfg(feature = "cachedb")]
-	pub fn new(db: Arc<Mutex<CacheDatabase>>) -> Self {
+	pub fn new(db: Arc<RwLock<CacheDatabase>>) -> Self {
 		Self { db }
 	}
 }
@@ -575,7 +575,7 @@ impl Fairing for SyncCache {
 		rocket::tokio::spawn(async move {
 			loop {
 				rocket::tokio::time::sleep(Duration::from_secs(120)).await;
-				if let Err(e) = db.lock().await.sync_cache().await {
+				if let Err(e) = db.write().await.sync_cache().await {
 					error!("Failed to sync cache: {e:#}");
 				}
 			}
