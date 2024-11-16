@@ -594,6 +594,7 @@ impl Fairing for UpdateStats {
 
 					calculate_auto_stats(team, &match_stats, autos, auto_stats.deref_mut());
 				}
+				std::mem::drop(auto_stats);
 
 				std::mem::drop(lock);
 
