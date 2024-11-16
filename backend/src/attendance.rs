@@ -32,6 +32,21 @@ impl AttendanceEntry {
 	}
 }
 
+impl Event {
+	/// Checks if an event is able to be attended
+	pub fn is_attendable(&self, now: &DateTime<Utc>) -> bool {
+		let date = DateTime::parse_from_rfc2822(&self.date);
+		if let Ok(date) = date {
+			let date = date.with_timezone(&Utc);
+			if now > &date {
+				return false;
+			}
+		}
+
+		true
+	}
+}
+
 /// Get all of the events that are able to be attended
 pub fn get_attendable_events<'a>(events: Vec<&'a Event>) -> Vec<&'a Event> {
 	if events.is_empty() {
@@ -40,24 +55,10 @@ pub fn get_attendable_events<'a>(events: Vec<&'a Event>) -> Vec<&'a Event> {
 
 	let events = get_upcoming_events(events);
 
-	/// Threshold for how far in the future events can be before they are considered unattendable, in minutes
-	const TIME_THRESHOLD: i64 = 30;
-
 	let now = Utc::now();
 	events
 		.into_iter()
-		.filter(|x| {
-			let date = DateTime::parse_from_rfc2822(&x.date);
-			if let Ok(date) = date {
-				let date = date.with_timezone(&Utc);
-				let diff = date.timestamp() - now.timestamp();
-				if diff > TIME_THRESHOLD * 60 {
-					return false;
-				}
-			}
-
-			true
-		})
+		.filter(|x| x.is_attendable(&now))
 		.collect()
 }
 
