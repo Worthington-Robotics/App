@@ -23,6 +23,16 @@
 		const id = __id__;
 
 		const name = document.getElementById("name-field").value;
+
+		if (id == "") {
+			setError("Username field cannot be empty");
+			return;
+		}
+		if (name == "") {
+			setError("Name field cannot be empty");
+			return;
+		}
+
 		const kind = document.getElementById("kind-field").value;
 		// The password may not exist due to this member being edited instead
 		let password = null;

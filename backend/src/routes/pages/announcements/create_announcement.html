@@ -19,6 +19,11 @@
 		const title = encodeURIComponent(document.getElementById("title-field").value);
 		const body = encodeURIComponent(document.getElementById("body-field").value);
 
+		if (title == "") {
+			setError("Title field cannot be empty");
+			return;
+		}
+
 		// Iterate over checkboxes
 		let mentions = [];
 		for (let i = 0; ; i++) {

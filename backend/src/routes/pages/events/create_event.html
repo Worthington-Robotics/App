@@ -43,6 +43,11 @@
 		const urgency = document.getElementById("urgency-field").value;
 		const visibility = document.getElementById("visibility-field").value;
 
+		if (name == "") {
+			setError("Name field cannot be empty");
+			return;
+		}
+
 		// Iterate over checkboxes
 		let invites = [];
 		for (let i = 0; ; i++) {

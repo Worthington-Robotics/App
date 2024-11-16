@@ -20,6 +20,11 @@
 		const name = encodeURIComponent(document.getElementById("name-field").value);
 		const pieceCount = document.getElementById("piece-count").value;
 
+		if (name == "") {
+			setError("Name field cannot be empty");
+			return;
+		}
+
 		let requestBody = `name=${name}&team={{team-number}}`;
 
 		// Convert points to correctly scaled meter positions in JSON array format
