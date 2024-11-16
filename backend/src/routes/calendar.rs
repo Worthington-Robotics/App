@@ -182,10 +182,13 @@ pub async fn event_details(
 	let page = page.replace("{{urgency}}", &event.urgency.to_string());
 	let page = page.replace("{{visibility}}", &event.visibility.to_string());
 
+	// Render the event date range
 	let date = if let Ok(date) = DateTime::parse_from_rfc2822(&event.date) {
 		let end_date = event
 			.end_date
 			.and_then(|x| DateTime::parse_from_rfc2822(&x).ok());
+		let date = date.with_timezone(&Eastern);
+		let end_date = end_date.map(|x| x.with_timezone(&Eastern));
 		render_date_range(date, end_date)
 	} else {
 		error!("Failed to parse date");
