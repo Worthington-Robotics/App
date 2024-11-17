@@ -11,7 +11,7 @@ use tracing::error;
 
 use crate::{
 	db::{Database, DatabaseImpl},
-	util::fix_zero,
+	util::{fix_zero, standard_deviation},
 };
 
 use super::{
@@ -97,6 +97,8 @@ pub struct TeamStats {
 	pub cycle_time: f32,
 	/// Consistency of cycle time
 	pub cycle_time_consistency: f32,
+	/// Standard deviation for cycle time
+	pub cycle_time_devation: f32,
 	/// Total number of penalties
 	pub penalties: u8,
 	/// Rate that the team shows up to the match with a working robot (0-1)
@@ -108,6 +110,10 @@ pub struct TeamStats {
 /// Calculate stats for a single team. The given set of stats can contain matches from other teams,
 /// and the correct ones will automatically be filtered through
 pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamStats {
+	if matches.is_empty() {
+		return TeamStats::default();
+	}
+
 	let mut ctx = StatsContext::default();
 	for m in matches {
 		if m.team_number != team {
@@ -122,6 +128,9 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 	if match_count_f32 == 0.0 {
 		match_count_f32 = 1.0;
 	}
+
+	let cycle_time_average = ctx.cycle_time_sum as f32 / match_count_f32;
+	let cycle_time_devation = standard_deviation(&ctx.cycle_times, cycle_time_average);
 
 	TeamStats {
 		number: team,
@@ -144,9 +153,10 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		pass_average: ctx.passes as f32 / match_count_f32,
 		offense_average: (ctx.amp_scores as f32 + ctx.speaker_scores as f32) / match_count_f32,
 		defense_average: ctx.defenses as f32 / match_count_f32,
-		cycle_time: ctx.cycle_time_sum as f32 / match_count_f32,
+		cycle_time: cycle_time_average,
 		cycle_time_consistency: ctx.cycle_time_consistency_sum as f32
 			/ fix_zero(ctx.cycle_time_consistency_count as f32),
+		cycle_time_devation,
 		penalties: ctx.penalties,
 		reliability: (ctx.attendance - ctx.breaks as u16) as f32 / match_count_f32,
 		matches: ctx.total_matches as u16,
@@ -179,6 +189,8 @@ struct StatsContext {
 	cycle_time_consistency_sum: f32,
 	/// Total number of matches where cycle time consistency was added to the sum
 	cycle_time_consistency_count: u16,
+	/// All cycle times
+	cycle_times: Vec<f32>,
 	breaks: u8,
 	/// Total number of times the team showed up for the match
 	attendance: u16,
@@ -221,6 +233,7 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		ctx.cycle_time_consistency_sum += consistency;
 		ctx.cycle_time_consistency_count += 1;
 	}
+	ctx.cycle_times.extend(stats.cycle_times.iter());
 
 	if stats.status != RobotStatus::Good {
 		ctx.breaks += 1;

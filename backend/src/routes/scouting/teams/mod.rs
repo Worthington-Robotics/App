@@ -316,6 +316,16 @@ pub async fn team_details(
 		stat_card_float!(team_stats, "Amp Sco", amp_score, "amp_score", false),
 	);
 	let page = page.replace(
+		"{{cycle-time-deviation}}",
+		stat_card_float!(
+			team_stats,
+			"CTD",
+			cycle_time_devation,
+			"cycle_time_deviation",
+			true
+		),
+	);
+	let page = page.replace(
 		"{{pass-average}}",
 		stat_card_float!(team_stats, "Pass Avg", pass_average, "pass_average", false),
 	);
