@@ -764,6 +764,12 @@ impl Database for SqlDatabase {
 	}
 
 	async fn create_team_info(&mut self, team: TeamNumber, info: TeamInfo) -> anyhow::Result<()> {
+		sqlx::query("DELETE FROM team_info WHERE Team = $1")
+			.bind(team as i32)
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove existing team info from database")?;
+
 		let serialized = serde_json::to_string(&info).context("Failed to serialize team info")?;
 		sqlx::query("INSERT INTO team_info (Team, Data) VALUES ($1, $2)")
 			.bind(team as i32)
