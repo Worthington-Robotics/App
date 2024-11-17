@@ -22,7 +22,7 @@ use rocket::{
 };
 use rocket_async_compression::CachedCompression;
 use routes::{scouting::populate_teams, Ratelimit};
-use scouting::{autos::AutoStats, CombinedTeamStats, TeamNumber, UpdateStats};
+use scouting::{autos::AutoStats, stats::CombinedTeamStats, stats::UpdateStats, TeamNumber};
 
 mod announcements;
 mod api;

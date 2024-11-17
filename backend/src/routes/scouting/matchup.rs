@@ -9,7 +9,7 @@ use tracing::{error, span, Level};
 use crate::{
 	db::Database,
 	routes::OptionalSessionID,
-	scouting::{CombinedTeamStats, DriveTrainType, Team, TeamInfo, TeamNumber},
+	scouting::{stats::CombinedTeamStats, DriveTrainType, Team, TeamInfo, TeamNumber},
 	State,
 };
 

@@ -26,7 +26,7 @@ use crate::{
 	db::{Database, DatabaseImpl},
 	events::get_season,
 	routes::{OptionalSessionID, SessionID},
-	scouting::{CombinedTeamStats, Competition, Division, Team},
+	scouting::{stats::CombinedTeamStats, Competition, Division, Team},
 	util::ToDropdown,
 	State,
 };

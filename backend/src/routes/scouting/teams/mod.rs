@@ -20,8 +20,8 @@ use crate::{
 	db::{Database, DatabaseImpl},
 	routes::{OptionalSessionID, SessionID},
 	scouting::{
-		status::RobotStatus, CombinedTeamStats, Competition, DriveTrainType, IntakeType, Team,
-		TeamNumber,
+		stats::CombinedTeamStats, status::RobotStatus, Competition, DriveTrainType, IntakeType,
+		Team, TeamNumber,
 	},
 	State,
 };
