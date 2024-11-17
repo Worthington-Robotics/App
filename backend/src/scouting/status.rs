@@ -63,7 +63,8 @@ impl StatusUpdate {
 pub enum RobotStatus {
 	#[default]
 	Good,
-	Injured,
+	#[serde(alias = "Injured")]
+	Questionable,
 	Broken,
 }
 
@@ -74,7 +75,7 @@ impl Display for RobotStatus {
 			"{}",
 			match self {
 				Self::Good => "Good",
-				Self::Injured => "Injured",
+				Self::Questionable => "Questionable",
 				Self::Broken => "Broken",
 			}
 		)
@@ -86,7 +87,7 @@ impl FromStr for RobotStatus {
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"Good" => Ok(Self::Good),
-			"Injured" => Ok(Self::Injured),
+			"Injured" | "Questionable" => Ok(Self::Questionable),
 			"Broken" => Ok(Self::Broken),
 			_ => Err(()),
 		}
@@ -98,7 +99,7 @@ impl RobotStatus {
 	pub fn get_abbr(&self) -> &'static str {
 		match self {
 			Self::Good => "G",
-			Self::Injured => "I",
+			Self::Questionable => "Q",
 			Self::Broken => "B",
 		}
 	}
@@ -107,7 +108,7 @@ impl RobotStatus {
 	pub fn get_color(&self) -> &'static str {
 		match self {
 			Self::Good => "#5cd12a",
-			Self::Injured => "#eb7134",
+			Self::Questionable => "#eb7134",
 			Self::Broken => "var(--wbred)",
 		}
 	}
@@ -115,7 +116,7 @@ impl RobotStatus {
 	pub fn to_db(&self) -> &'static str {
 		match self {
 			Self::Good => "Good",
-			Self::Injured => "Injured",
+			Self::Questionable => "Questionable",
 			Self::Broken => "Broken",
 		}
 	}
