@@ -138,6 +138,30 @@ fn render_notice(text: &str) -> String {
 	format!("<div class=\"round notice\"><div class=cont><div class=notice-bullet></div></div>{text}</div>")
 }
 
+#[rocket::get("/admin")]
+pub async fn admin(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Admin Page");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	if session_id.verify_elevated(state).await.is_err() {
+		return Ok(redirect);
+	}
+
+	let page = include_str!("pages/admin.min.html");
+	let page = create_page("Administration", page, Some(Scope::Home));
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
 #[derive(Responder)]
 pub enum PageOrRedirect {
 	Page(RawHtml<String>),

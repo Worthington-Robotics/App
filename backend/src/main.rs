@@ -114,6 +114,7 @@ async fn rocket() -> _ {
 			"/",
 			routes![
 				routes::index,
+				routes::admin,
 				routes::members::get_member,
 				routes::members::create_member,
 				routes::members::member_list,
