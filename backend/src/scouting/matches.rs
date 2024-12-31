@@ -2,6 +2,8 @@ use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
+use crate::db::DatabaseImpl;
+
 use super::{status::RobotStatus, Competition, TeamNumber};
 
 /// A single match
@@ -181,4 +183,12 @@ pub struct MatchStats {
 	/// Team weaknesses during the match
 	#[serde(default)]
 	pub weaknesses: String,
+}
+
+/// Count how many matches a member has scouted
+pub fn count_matches_scouted(member: &str, matches: &[MatchStats]) -> usize {
+	matches
+		.iter()
+		.filter(|x| x.recorder.as_ref().is_some_and(|x| x == member))
+		.count()
 }

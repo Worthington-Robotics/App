@@ -1,10 +1,17 @@
 {{worbots-header}}{{error}}{{prompt}}
 <h1>My Scouting</h1>
 <div id="my-scouting" class="cont col">
+	<div class="cont col" style="width:70%">
+		<h3>{{completed-matches}}/15 Complete</h3>
+		<div class="round progress-bar-cont">
+			<div class="round progress-bar" style="width:{{progress-width}}%"></div>
+		</div>
+	</div>
 	<div class="cont col">
-		<h3>My Prescouting Teams</h3>
-		<div id="teams-cont">
-			{{teams}}
+		<h3>Report a Match</h3>
+		<div class="cont">
+			<a href="/scouting/report"><button>Main</button></a>
+			<a href="/scouting/report/raw"><button style="background-color: var(--bg2);">Fallback</button></a>
 		</div>
 	</div>
 	<div class="cont col">
@@ -31,10 +38,9 @@
 		</div>
 	</div>
 	<div class="cont col">
-		<h3>Report a Match</h3>
-		<div class="cont">
-			<a href="/scouting/report"><button>Main</button></a>
-			<a href="/scouting/report/raw"><button style="background-color: var(--bg2);">Fallback</button></a>
+		<h3>My Prescouting Teams</h3>
+		<div id="teams-cont">
+			{{teams}}
 		</div>
 	</div>
 </div>
@@ -123,6 +129,16 @@
 
 	#popup-team {
 		margin-left: -0.5rem;
+	}
+
+	.progress-bar-cont {
+		width: 90%;
+		background-color: var(--bg2);
+	}
+
+	.progress-bar {
+		height: 1rem;
+		background-color: var(--wbblue);
 	}
 </style>
 <script>

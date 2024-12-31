@@ -11,7 +11,7 @@ use crate::{
 	routes::OptionalSessionID,
 	scouting::{
 		assignment::{MatchClaims, ScoutingAssignment},
-		matches::{Match, MatchStats},
+		matches::{count_matches_scouted, Match, MatchStats},
 		TeamNumber,
 	},
 	util::render_time,
@@ -41,6 +41,7 @@ pub async fn my_scouting(
 
 	let lock = state.db.read().await;
 
+	// Assignments
 	let assignment = lock
 		.get_prescouting_assignment(&requesting_member.id)
 		.await
@@ -86,6 +87,21 @@ pub async fn my_scouting(
 		));
 	}
 	let page = page.replace("{{matches}}", &matches_string);
+
+	// Scouting progress
+	let match_stats = lock.get_all_match_stats().await.map_err(|e| {
+		error!("Failed to get match stats from database: {e}");
+		Status::InternalServerError
+	})?;
+	let match_stats: Vec<_> = match_stats.collect();
+
+	let matches_scouted = count_matches_scouted(&requesting_member.id, &match_stats);
+	let completion_amount = matches_scouted as f32 / 15.0;
+	let page = page.replace("{{completed-matches}}", &matches_scouted.to_string());
+	let page = page.replace(
+		"{{progress-width}}",
+		&format!("{:.0}", completion_amount * 100.0),
+	);
 
 	let page = create_page("My Scouting", &page, Some(Scope::Scouting));
 
