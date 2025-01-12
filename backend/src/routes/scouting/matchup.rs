@@ -207,8 +207,8 @@ fn render_alliance_breakdown(
 	}
 
 	// If it isn't filled out, assume that they can amp
-	if team_info.values().all(|x| !x.can_amp.unwrap_or(true)) {
-		tips_string.push_str(&Tip::CantAmp.render());
+	if team_info.values().all(|x| !x.can_processor.unwrap_or(true)) {
+		tips_string.push_str(&Tip::CantProcess.render());
 	}
 
 	if team_stats
@@ -234,7 +234,7 @@ enum Tip {
 	MecanumBot(TeamNumber),
 	HighSpeed(TeamNumber),
 	StrongDefense,
-	CantAmp,
+	CantProcess,
 	StrongPassing,
 }
 
@@ -246,7 +246,7 @@ impl Tip {
 			Self::MecanumBot(team) => format!("Mechanum Bot:<br />{team}"),
 			Self::HighSpeed(team) => format!("High Speed:<br />{team}"),
 			Self::StrongDefense => "Strong Defense".into(),
-			Self::CantAmp => "Can't Amp".into(),
+			Self::CantProcess => "Can't Process".into(),
 			Self::StrongPassing => "Strong Passing".into(),
 		};
 

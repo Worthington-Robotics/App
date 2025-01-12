@@ -176,7 +176,7 @@ impl ToDropdown for Division {
 pub struct TeamInfo {
 	/// The max speed of the robot, in feet per second
 	pub max_speed: Option<f32>,
-	/// The height of the robot, in feet
+	/// The height of the robot, in feet, when fully extended
 	pub height: Option<f32>,
 	/// The weight of the robot, in pounds
 	pub weight: Option<f32>,
@@ -184,26 +184,31 @@ pub struct TeamInfo {
 	pub length: Option<f32>,
 	/// The width of the robot, from left to right, in feet
 	pub width: Option<f32>,
-	/// Whether or not the robot can shoot in the speaker
-	pub can_speaker: Option<bool>,
-	/// Whether or not the robot can shoot in the amp
-	pub can_amp: Option<bool>,
-	/// Whether or not the robot can climb
-	pub can_climb: Option<bool>,
-	/// Whether or not the robot can shoot in the trap
-	pub can_trap: Option<bool>,
-	/// Whether or not the robot can pass notes
-	pub can_pass: Option<bool>,
-	/// Whether or not the robot can drive under the stage
-	pub can_drive_under_stage: Option<bool>,
-	/// Whether or not the robot can pick up from the ground
-	pub can_ground_intake: Option<bool>,
-	/// Whether or not the robot can pick up from the source
-	pub can_source_intake: Option<bool>,
-	/// The intake type of the robot
-	pub intake_type: Option<IntakeType>,
 	/// The drivetrain type of the robot
 	pub drivetrain_type: Option<DriveTrainType>,
+	pub can_pickup_algae: Option<bool>,
+	pub can_pickup_coral: Option<bool>,
+	pub can_hold_both: Option<bool>,
+	pub can_ground_intake: Option<bool>,
+	pub can_slide_intake: Option<bool>,
+	pub can_reef: Option<bool>,
+	pub can_processor: Option<bool>,
+	pub can_net: Option<bool>,
+	pub reef_level: Option<ReefLevel>,
+	pub climb_ability: Option<ClimbAbility>,
+	pub preferred_piece: Option<GamePiece>,
+	pub cycle_time: Option<f32>,
+	pub climb_time: Option<f32>,
+	pub align_score: Option<bool>,
+	pub align_intake: Option<bool>,
+	pub auto_crosses_line: Option<bool>,
+	pub auto_scores_front: Option<bool>,
+	pub auto_scores_back: Option<bool>,
+	pub auto_scores_side: Option<bool>,
+	pub auto_algae: Option<u8>,
+	pub auto_coral: Option<u8>,
+	pub uses_pathplanner: Option<bool>,
+	pub two_can_networks: Option<bool>,
 	/// Additional notes about the robot
 	pub notes: String,
 	/// Completion status of the scouting
@@ -226,6 +231,33 @@ pub enum DriveTrainType {
 	Tank,
 	Mecanum,
 	Other,
+}
+
+/// Different climbing capabilities
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ClimbAbility {
+	None,
+	Shallow,
+	Deep,
+}
+
+/// Level for the reef
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ReefLevel {
+	L1,
+	L2,
+	L3,
+	L4,
+}
+
+/// Game pieces
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum GamePiece {
+	Coral,
+	Algae,
 }
 
 /// Completion status of pit scouting for a team

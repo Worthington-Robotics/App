@@ -20,8 +20,7 @@ use crate::{
 	db::{Database, DatabaseImpl},
 	routes::{OptionalSessionID, SessionID},
 	scouting::{
-		stats::CombinedTeamStats, status::RobotStatus, Competition, DriveTrainType, IntakeType,
-		Team, TeamNumber,
+		stats::CombinedTeamStats, status::RobotStatus, ClimbAbility, Competition, DriveTrainType, GamePiece, ReefLevel, Team, TeamNumber
 	},
 	State,
 };
@@ -433,57 +432,6 @@ pub async fn team_details(
 		&render_stat_card_optional_float("Width", "", team_info.width, false, ""),
 	);
 	let page = page.replace(
-		"{{can-speaker}}",
-		&render_stat_card_optional_bool("Speaker?", "", team_info.can_speaker, false, ""),
-	);
-	let page = page.replace(
-		"{{can-amp}}",
-		&render_stat_card_optional_bool("Amp?", "", team_info.can_amp, false, ""),
-	);
-	let page = page.replace(
-		"{{can-climb}}",
-		&render_stat_card_optional_bool("Climb?", "", team_info.can_climb, false, ""),
-	);
-	let page = page.replace(
-		"{{can-trap}}",
-		&render_stat_card_optional_bool("Trap?", "", team_info.can_trap, false, ""),
-	);
-	let page = page.replace(
-		"{{can-pass}}",
-		&render_stat_card_optional_bool("Pass?", "", team_info.can_pass, false, ""),
-	);
-	let page = page.replace(
-		"{{can-drive-under-stage}}",
-		&render_stat_card_optional_bool(
-			"Under Stage?",
-			"",
-			team_info.can_drive_under_stage,
-			false,
-			"",
-		),
-	);
-	let page = page.replace(
-		"{{can-ground-intake}}",
-		&render_stat_card_optional_bool("Ground?", "", team_info.can_ground_intake, false, ""),
-	);
-	let page = page.replace(
-		"{{can-source-intake}}",
-		&render_stat_card_optional_bool("Source?", "", team_info.can_source_intake, false, ""),
-	);
-	let page = page.replace(
-		"{{intake-type}}",
-		&render_stat_card_optional(
-			"Intake",
-			"",
-			team_info.intake_type.map(|x| match x {
-				IntakeType::OverBumper => "OtB",
-				IntakeType::UnderBumper => "UtB",
-			}),
-			false,
-			"",
-		),
-	);
-	let page = page.replace(
 		"{{drivetrain-type}}",
 		&render_stat_card_optional(
 			"Drivetrain",
@@ -498,6 +446,141 @@ pub async fn team_details(
 			"",
 		),
 	);
+	let page = page.replace(
+		"{{can-pickup-algae}}",
+		&render_stat_card_optional_bool("Algae Int?", "", team_info.can_pickup_algae, false, ""),
+	);
+	let page = page.replace(
+		"{{can-pickup-coral}}",
+		&render_stat_card_optional_bool("Coral Int?", "", team_info.can_pickup_coral, false, ""),
+	);
+	let page = page.replace(
+		"{{can-hold-both}}",
+		&render_stat_card_optional_bool("Hold Both?", "", team_info.can_hold_both, false, ""),
+	);
+	let page = page.replace(
+		"{{can-ground-intake}}",
+		&render_stat_card_optional_bool("Ground Int?", "", team_info.can_ground_intake, false, ""),
+	);
+	let page = page.replace(
+		"{{can-slide-intake}}",
+		&render_stat_card_optional_bool("Slide Int?", "", team_info.can_slide_intake, false, ""),
+	);
+	let page = page.replace(
+		"{{can-reef}}",
+		&render_stat_card_optional_bool("Reef?", "", team_info.can_reef, false, ""),
+	);
+	let page = page.replace(
+		"{{can-processor}}",
+		&render_stat_card_optional_bool("Processor?", "", team_info.can_processor, false, ""),
+	);
+	let page = page.replace(
+		"{{can-net}}",
+		&render_stat_card_optional_bool("Net?", "", team_info.can_net, false, ""),
+	);
+	let page = page.replace(
+		"{{reef-level}}",
+		&render_stat_card_optional(
+			"Reef Lvl",
+			"",
+			team_info.reef_level.map(|x| match x {
+				ReefLevel::L1 => "L1",
+				ReefLevel::L2 => "L2",
+				ReefLevel::L3 => "L3",
+				ReefLevel::L4 => "L4",
+			}),
+			true,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{climb-ability}}",
+		&render_stat_card_optional(
+			"Climb",
+			"",
+			team_info.climb_ability.map(|x| match x {
+				ClimbAbility::None => "X",
+				ClimbAbility::Shallow => "S",
+				ClimbAbility::Deep => "D",
+			}),
+			true,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{preferred-piece}}",
+		&render_stat_card_optional(
+			"Fave",
+			"",
+			team_info.preferred_piece.map(|x| match x {
+				GamePiece::Algae => "Al",
+				GamePiece::Coral => "Co",
+			}),
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{pit-cycle-time}}",
+		&render_stat_card_optional_float("CT", "", team_info.cycle_time, false, ""),
+	);
+	let page = page.replace(
+		"{{climb-time}}",
+		&render_stat_card_optional_float("Clmb Time", "", team_info.climb_time, false, ""),
+	);
+	let page = page.replace(
+		"{{align-score}}",
+		&render_stat_card_optional_bool("Score Align?", "", team_info.align_score, false, ""),
+	);
+	let page = page.replace(
+		"{{align-intake}}",
+		&render_stat_card_optional_bool("Intk Align?", "", team_info.align_intake, false, ""),
+	);
+	let page = page.replace(
+		"{{auto-crosses-line}}",
+		&render_stat_card_optional_bool("Auto Cross?", "", team_info.auto_crosses_line, false, ""),
+	);
+	let page = page.replace(
+		"{{auto-scores-front}}",
+		&render_stat_card_optional_bool("Auto Front?", "", team_info.auto_scores_front, false, ""),
+	);
+	let page = page.replace(
+		"{{auto-scores-back}}",
+		&render_stat_card_optional_bool("Auto Back?", "", team_info.auto_scores_back, false, ""),
+	);
+	let page = page.replace(
+		"{{auto-scores-side}}",
+		&render_stat_card_optional_bool("Auto Side?", "", team_info.auto_scores_side, false, ""),
+	);
+	let page = page.replace(
+		"{{auto-algae}}",
+		&render_stat_card_optional(
+			"Auto Alg",
+			"",
+			team_info.auto_algae.map(|x| x.to_string()),
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{auto-coral}}",
+		&render_stat_card_optional(
+			"Auto Cor",
+			"",
+			team_info.auto_coral.map(|x| x.to_string()),
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{uses-pathplanner}}",
+		&render_stat_card_optional_bool("PP?", "", team_info.uses_pathplanner, false, ""),
+	);
+	let page = page.replace(
+		"{{two-can-networks}}",
+		&render_stat_card_optional_bool("2CAN?", "", team_info.two_can_networks, false, ""),
+	);
+
 	let page = page.replace("{{notes}}", &team_info.notes);
 
 	// Pit scouting progress

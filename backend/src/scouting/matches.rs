@@ -2,8 +2,6 @@ use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use crate::db::DatabaseImpl;
-
 use super::{status::RobotStatus, Competition, TeamNumber};
 
 /// A single match

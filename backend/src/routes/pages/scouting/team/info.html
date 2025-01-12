@@ -32,7 +32,6 @@
 		<button id="width-convert-m">m</button>
 		<button id="width-convert-in">in</button>
 	</div>
-	<h2>Robot Information</h2>
 	<label for="drivetrain-type">Drivetrain Type</label>
 	<select name="drivetrain-type" id="drivetrain-type" class="field">
 		<option value="none">Unknown</option>
@@ -41,31 +40,76 @@
 		<option value="mecanum" {{mecanum-selected}}>Mecanum</option>
 		<option value="other" {{drive-other-selected}}>Other</option>
 	</select>
-	<label for="intake-type">Intake Type</label>
-	<select name="intake-type" id="intake-type" class="field">
-		<option value="none">Unknown</option>
-		<option value="under_bumper" {{under-bumper-selected}}>Under the Bumper</option>
-		<option value="over_bumper" {{over-bumper-selected}}>Over the Bumper</option>
-	</select>
 	<h2>Capabilities</h2>
-	<label for="can-speaker">Can Speaker?</label>
-	<input type="checkbox" class="field" name="can-speaker" id="can-speaker" {{can-speaker-checked}} />
-	<label for="can-amp">Can Amp?</label>
-	<input type="checkbox" class="field" name="can-amp" id="can-amp" {{can-amp-checked}} />
-	<label for="can-climb">Can Climb?</label>
-	<input type="checkbox" class="field" name="can-climb" id="can-climb" {{can-climb-checked}} />
-	<label for="can-trap">Can Trap?</label>
-	<input type="checkbox" class="field" name="can-trap" id="can-trap" {{can-trap-checked}} />
-	<label for="can-pass">Can Pass?</label>
-	<input type="checkbox" class="field" name="can-pass" id="can-pass" {{can-pass-checked}} />
-	<label for="can-drive-under-stage">Can Drive Under Stage?</label>
-	<input type="checkbox" class="field" name="can-drive-under-stage" id="can-drive-under-stage"
-		{{can-drive-under-stage-checked}} />
-	<label for="can-ground-intake">Can Pickup From Ground?</label>
+	<label for="can-pickup-algae">Can Pickup Algae?</label>
+	<input type="checkbox" class="field" name="can-pickup-algae" id="can-pickup-algae" {{can-pickup-algae-checked}} />
+	<label for="can-pickup-coral">Can Pickup Coral?</label>
+	<input type="checkbox" class="field" name="can-pickup-coral" id="can-pickup-coral" {{can-pickup-coral-checked}} />
+	<label for="can-hold-both">Can Hold Both at Once?</label>
+	<input type="checkbox" class="field" name="can-hold-both" id="can-hold-both" {{can-hold-both-checked}} />
+	<label for="can-ground-intake">Can Ground Intake?</label>
 	<input type="checkbox" class="field" name="can-ground-intake" id="can-ground-intake" {{can-ground-intake-checked}} />
-	<label for="can-source-intake">Can Pickup From Source?</label>
-	<input type="checkbox" class="field" name="can-source-intake" id="can-source-intake" {{can-source-intake-checked}} />
+	<label for="can-slide-intake">Can Slide Intake?</label>
+	<input type="checkbox" class="field" name="can-slide-intake" id="can-slide-intake" {{can-slide-intake-checked}} />
+	<label for="can-reef">Can Score on Reef?</label>
+	<input type="checkbox" class="field" name="can-reef" id="can-reef" {{can-reef-checked}} />
+	<label for="can-processor">Can Score in Processor?</label>
+	<input type="checkbox" class="field" name="can-processor" id="can-processor" {{can-processor-checked}} />
+	<label for="can-net">Can Score in Net?</label>
+	<input type="checkbox" class="field" name="can-net" id="can-net" {{can-net-checked}} />
+
+	<label for="reef-level">Reef Level</label>
+	<select name="reef-level" id="reef-level" class="field">
+		<option value="unknown">Unknown</option>
+		<option value="l1" {{reef-l1-selected}}>L1</option>
+		<option value="l2" {{reef-l2-selected}}>L2</option>
+		<option value="l3" {{reef-l3-selected}}>L3</option>
+		<option value="l4" {{reef-l4-selected}}>L4</option>
+	</select>
+	<label for="climb-ability">Climb Ability</label>
+	<select name="climb-ability" id="climb-ability" class="field">
+		<option value="unknown">Unknown</option>
+		<option value="none" {{climb-none-selected}}>None</option>
+		<option value="shallow" {{climb-shallow-selected}}>Shallow</option>
+		<option value="deep" {{climb-deep-selected}}>Deep</option>
+	</select>
+	<label for="preferred-piece">Preferred Game Piece</label>
+	<select name="preferred-piece" id="preferred-piece" class="field">
+		<option value="unknown">Unknown</option>
+		<option value="coral" {{piece-coral-selected}}>Coral</option>
+		<option value="algae" {{piece-algae-selected}}>Algae</option>
+	</select>
+	<h2>Teleop</h2>
+	<label for="cycle-time">Cycle Time</label>
+	<input type="number" name="cycle-time" id="cycle-time" class="field" placeholder="0.00" step=any
+		value="{{cycle-time}}" />
+	<label for="cycle-time">Climb Time</label>
+	<input type="number" name="climb-time" id="climb-time" class="field" placeholder="0.00" step=any
+		value="{{cycle-time}}" />
+	<label for="align-score">Can Score Align?</label>
+	<input type="checkbox" class="field" name="align-score" id="align-score" {{align-score-checked}} />
+	<label for="align-intake">Can Intake Align?</label>
+	<input type="checkbox" class="field" name="align-intake" id="align-intake" {{align-intake-checked}} />
+	<h2>Auto</h2>
+	<label for="auto-crosses-line">Crosses Line?</label>
+	<input type="checkbox" class="field" name="auto-crosses-line" id="auto-crosses-line" {{auto-crosses-line-checked}} />
+	<label for="auto-scores-front">Scores on Front of Reef?</label>
+	<input type="checkbox" class="field" name="auto-scores-front" id="auto-scores-front" {{auto-scores-front-checked}} />
+	<label for="auto-scores-back">Scores on Back of Reef?</label>
+	<input type="checkbox" class="field" name="auto-scores-back" id="auto-scores-back" {{auto-scores-back-checked}} />
+	<label for="auto-scores-side">Scores on Side of Reef?</label>
+	<input type="checkbox" class="field" name="auto-scores-side" id="auto-scores-side" {{auto-scores-side-checked}} />
+	<label for="auto-algae">Avergae Algae Scored</label>
+	<input type="number" name="auto-algae" id="auto-algae" class="field" placeholder="0" step=any
+		value="{{auto-algae}}" />
+	<label for="auto-coral">Average Coral Scored</label>
+	<input type="number" name="auto-coral" id="auto-coral" class="field" placeholder="0" step=any
+		value="{{auto-coral}}" />
 	<h2>Other</h2>
+	<label for="uses-pathplanner">Uses PathPlanner?</label>
+	<input type="checkbox" class="field" name="uses-pathplanner" id="uses-pathplanner" {{uses-pathplanner-checked}} />
+	<label for="two-can-networks">Has Two CAN Networks?</label>
+	<input type="checkbox" class="field" name="two-can-networks" id="two-can-networks" {{two-can-networks-checked}} />
 	<label for="progress">Scouting Progress</label>
 	<select name="progress" id="progress" class="field">
 		<option value="not_done">Not Done</option>
@@ -86,9 +130,19 @@
 			drivetrainType = null;
 		}
 
-		let intakeType = document.getElementById("intake-type").value;
-		if (intakeType == "none") {
-			intakeType = null;
+		let reefLevel = document.getElementById("reef-level").value;
+		if (reefLevel == "unknown") {
+			reefLevel = null;
+		}
+
+		let climbAbility = document.getElementById("climb-ability").value;
+		if (climbAbility == "unknown") {
+			climbAbility = null;
+		}
+
+		let preferredPiece = document.getElementById("preferred-piece").value;
+		if (preferredPiece == "unknown") {
+			preferredPiece = null;
 		}
 
 		// We do lots of conversions to numbers with * 1 here
@@ -98,16 +152,30 @@
 			weight: document.getElementById("weight").value * 1,
 			length: document.getElementById("length").value * 1,
 			width: document.getElementById("width").value * 1,
-			can_speaker: document.getElementById("can-speaker").checked,
-			can_amp: document.getElementById("can-amp").checked,
-			can_climb: document.getElementById("can-climb").checked,
-			can_trap: document.getElementById("can-trap").checked,
-			can_pass: document.getElementById("can-pass").checked,
-			can_drive_under_stage: document.getElementById("can-drive-under-stage").checked,
-			can_ground_intake: document.getElementById("can-ground-intake").checked,
-			can_source_intake: document.getElementById("can-source-intake").checked,
-			intake_type: intakeType,
 			drivetrain_type: drivetrainType,
+			can_pickup_algae: document.getElementById("can-pickup-algae").checked,
+			can_pickup_coral: document.getElementById("can-pickup-coral").checked,
+			can_hold_both: document.getElementById("can-hold-both").checked,
+			can_ground_intake: document.getElementById("can-ground-intake").checked,
+			can_slide_intake: document.getElementById("can-slide-intake").checked,
+			can_reef: document.getElementById("can-reef").checked,
+			can_processor: document.getElementById("can-processor").checked,
+			can_net: document.getElementById("can-net").checked,
+			reef_level: reefLevel,
+			climb_ability: climbAbility,
+			preferred_piece: preferredPiece,
+			cycle_time: document.getElementById("cycle-time").value * 1,
+			climb_time: document.getElementById("climb-time").value * 1,
+			align_score: document.getElementById("align-score").checked,
+			align_intake: document.getElementById("align-intake").checked,
+			auto_crosses_line: document.getElementById("auto-crosses-line").checked,
+			auto_scores_front: document.getElementById("auto-scores-front").checked,
+			auto_scores_back: document.getElementById("auto-scores-back").checked,
+			auto_scores_side: document.getElementById("auto-scores-side").checked,
+			auto_algae: document.getElementById("auto-algae").value * 1,
+			auto_coral: document.getElementById("auto-coral").value * 1,
+			uses_pathplanner: document.getElementById("uses-pathplanner").checked,
+			two_can_networks: document.getElementById("two-can-networks").checked,
 			progress: document.getElementById("progress").value,
 			notes: document.getElementById("notes").value,
 		};

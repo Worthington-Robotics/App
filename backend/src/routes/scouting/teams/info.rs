@@ -9,7 +9,9 @@ use tracing::{error, span, Level};
 use crate::{
 	db::Database,
 	routes::{OptionalSessionID, SessionID},
-	scouting::{DriveTrainType, IntakeType, PitScoutingProgress, TeamNumber},
+	scouting::{
+		ClimbAbility, DriveTrainType, GamePiece, PitScoutingProgress, ReefLevel, TeamNumber,
+	},
 	util::{checkbox_attr, selected_attr},
 	State,
 };
@@ -70,63 +72,6 @@ pub async fn team_info_page(
 		&team_info.width.map(|x| x.to_string()).unwrap_or_default(),
 	);
 	let page = page.replace(
-		"{{can-speaker-checked}}",
-		&team_info.can_speaker.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-amp-checked}}",
-		&team_info.can_amp.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-climb-checked}}",
-		&team_info.can_climb.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-trap-checked}}",
-		&team_info.can_trap.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-pass-checked}}",
-		&team_info.can_pass.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-drive-under-stage-checked}}",
-		&team_info
-			.can_drive_under_stage
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-ground-intake-checked}}",
-		&team_info
-			.can_ground_intake
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-source-intake-checked}}",
-		&team_info
-			.can_source_intake
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{under-bumper-selected}}",
-		selected_attr(
-			team_info
-				.intake_type
-				.is_some_and(|x| x == IntakeType::UnderBumper),
-		),
-	);
-	let page = page.replace(
-		"{{over-bumper-selected}}",
-		selected_attr(
-			team_info
-				.intake_type
-				.is_some_and(|x| x == IntakeType::OverBumper),
-		),
-	);
-	let page = page.replace(
 		"{{swerve-selected}}",
 		selected_attr(
 			team_info
@@ -157,6 +102,193 @@ pub async fn team_info_page(
 				.drivetrain_type
 				.is_some_and(|x| x == DriveTrainType::Other),
 		),
+	);
+	let page = page.replace(
+		"{{can-pickup-algae-checked}}",
+		&team_info
+			.can_pickup_algae
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-pickup-coral-checked}}",
+		&team_info
+			.can_pickup_coral
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-hold-both-checked}}",
+		&team_info
+			.can_hold_both
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-ground-intake-checked}}",
+		&team_info
+			.can_ground_intake
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-slide-intake-checked}}",
+		&team_info
+			.can_slide_intake
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-reef-checked}}",
+		&team_info.can_reef.map(checkbox_attr).unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-processor-checked}}",
+		&team_info
+			.can_processor
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-net-checked}}",
+		&team_info.can_net.map(checkbox_attr).unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{reef-l1-selected}}",
+		selected_attr(team_info.reef_level.is_some_and(|x| x == ReefLevel::L1)),
+	);
+	let page = page.replace(
+		"{{reef-l2-selected}}",
+		selected_attr(team_info.reef_level.is_some_and(|x| x == ReefLevel::L2)),
+	);
+	let page = page.replace(
+		"{{reef-l3-selected}}",
+		selected_attr(team_info.reef_level.is_some_and(|x| x == ReefLevel::L3)),
+	);
+	let page = page.replace(
+		"{{reef-l4-selected}}",
+		selected_attr(team_info.reef_level.is_some_and(|x| x == ReefLevel::L4)),
+	);
+	let page = page.replace(
+		"{{climb-none-selected}}",
+		selected_attr(
+			team_info
+				.climb_ability
+				.is_some_and(|x| x == ClimbAbility::None),
+		),
+	);
+	let page = page.replace(
+		"{{climb-shallow-selected}}",
+		selected_attr(
+			team_info
+				.climb_ability
+				.is_some_and(|x| x == ClimbAbility::Shallow),
+		),
+	);
+	let page = page.replace(
+		"{{climb-deep-selected}}",
+		selected_attr(
+			team_info
+				.climb_ability
+				.is_some_and(|x| x == ClimbAbility::Deep),
+		),
+	);
+	let page = page.replace(
+		"{{piece-coral-selected}}",
+		selected_attr(
+			team_info
+				.preferred_piece
+				.is_some_and(|x| x == GamePiece::Coral),
+		),
+	);
+	let page = page.replace(
+		"{{piece-algae-selected}}",
+		selected_attr(
+			team_info
+				.preferred_piece
+				.is_some_and(|x| x == GamePiece::Algae),
+		),
+	);
+	let page = page.replace(
+		"{{cycle-time}}",
+		&team_info
+			.cycle_time
+			.map(|x| x.to_string())
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{climb-time}}",
+		&team_info
+			.climb_time
+			.map(|x| x.to_string())
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{align-score-checked}}",
+		&team_info.align_score.map(checkbox_attr).unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{align-intake-checked}}",
+		&team_info
+			.align_intake
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{auto-crosses-line-checked}}",
+		&team_info
+			.auto_crosses_line
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{auto-scores-front-checked}}",
+		&team_info
+			.auto_scores_front
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{auto-scores-back-checked}}",
+		&team_info
+			.auto_scores_back
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{auto-scores-side-checked}}",
+		&team_info
+			.auto_scores_side
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{auto-algae}}",
+		&team_info
+			.auto_algae
+			.map(|x| x.to_string())
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{auto-coral}}",
+		&team_info
+			.auto_coral
+			.map(|x| x.to_string())
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{uses-pathplanner-checked}}",
+		&team_info
+			.uses_pathplanner
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{two-can-networks-checked}}",
+		&team_info
+			.two_can_networks
+			.map(checkbox_attr)
+			.unwrap_or_default(),
 	);
 
 	let page = page.replace(
