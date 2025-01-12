@@ -191,6 +191,16 @@ pub fn fix_empty_string(string: &str) -> &str {
 	}
 }
 
+/// Escapes quotes in a string with backslashes
+pub fn escape_quotes(string: &str) -> String {
+	string.replace("\"", "\\\"")
+}
+
+/// Escapes quotes and <> signs in a string with backslashes
+pub fn escape_html(string: &str) -> String {
+	escape_quotes(&string.replace("<", "\\<").replace(">", "\\>"))
+}
+
 /// Creates the attribute for a checkbox to say whether it is checked or not based on a boolean
 pub fn checkbox_attr(val: bool) -> &'static str {
 	if val {

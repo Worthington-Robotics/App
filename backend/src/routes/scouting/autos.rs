@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Cursor, ops::Deref};
+use std::{collections::HashMap, ops::Deref};
 
 use itertools::Itertools;
 use rocket::{
@@ -9,27 +9,23 @@ use rocket::{
 		Redirect,
 	},
 };
-use svg::node::element::{path::Data as PathData, Path};
 use tracing::{error, span, Level};
 
+use crate::scouting::{
+	autos::{Auto, AutoStats},
+	TeamNumber,
+};
 use crate::{
 	db::Database,
-	routes::{
-		assets::{SvgDynamic, ONE_DAY},
-		create_page, OptionalSessionID, PageOrRedirect, Scope, SessionID,
-	},
+	routes::{create_page, OptionalSessionID, PageOrRedirect, Scope, SessionID},
 	util::generate_id,
 	State,
 };
-use crate::{
-	routes::assets::CacheFor,
-	scouting::{
-		autos::{Auto, AutoPoint, AutoStats},
-		TeamNumber,
-	},
-};
 
-use super::stats::{render_stat_card_float, render_stat_card_optional_float, render_stat_card_pct};
+use super::stats::{
+	render_stat_card_float, render_stat_card_optional_bool, render_stat_card_pct, STAT_ALGAE,
+	STAT_CORAL,
+};
 
 #[rocket::get("/scouting/team/<team>/autos")]
 pub async fn autos_page(
@@ -62,8 +58,10 @@ pub async fn autos_page(
 	let mut auto_map = HashMap::with_capacity(autos.size_hint().0);
 
 	for auto in autos {
-		let piece_count = auto.shots.len();
-		auto_map.entry(piece_count).or_insert(Vec::new()).push(auto);
+		auto_map
+			.entry(auto.coral + auto.algae)
+			.or_insert(Vec::new())
+			.push(auto);
 	}
 
 	let auto_stats = state.auto_stats.read().await;
@@ -91,7 +89,7 @@ pub async fn autos_page(
 
 /// Create a section of autos with the same number of game pieces
 fn render_auto_section(
-	piece_count: usize,
+	piece_count: u8,
 	autos: &[Auto],
 	auto_stats: &HashMap<String, AutoStats>,
 ) -> String {
@@ -120,8 +118,9 @@ fn render_auto(auto: &Auto, stats: &AutoStats) -> String {
 	let out = include_str!("../components/scouting/autos/auto.min.html");
 	let out = out.replace("{{id}}", &auto.id);
 	let out = out.replace("{{name}}", &auto.name);
-	let out = out.replace("{{average-score}}", &format!("{:.2}", stats.average_notes));
-	let out = out.replace("{{accuracy}}", &format!("{:.0}%", stats.accuracy * 100.0));
+	let out = out.replace("{{average-score}}", &format!("{:.2}", stats.point_value));
+	let out = out.replace("{{coral}}", &format!("{:.2}", stats.average_coral));
+	let out = out.replace("{{algae}}", &format!("{:.2}", stats.average_algae));
 
 	out
 }
@@ -165,31 +164,15 @@ pub async fn create_auto(
 
 	session_id.get_requesting_member(state).await?;
 
-	let Ok(x_points) = serde_json::from_str::<Vec<_>>(&auto.x_points) else {
-		error!("Failed to decode x points");
-		return Err(Status::BadRequest);
-	};
-	let Ok(y_points) = serde_json::from_str::<Vec<_>>(&auto.y_points) else {
-		error!("Failed to decode y points");
-		return Err(Status::BadRequest);
-	};
-	let Ok(time_points) = serde_json::from_str::<Vec<_>>(&auto.time_points) else {
-		error!("Failed to decode time points");
-		return Err(Status::BadRequest);
-	};
-
 	let id = generate_id();
 	let auto = Auto {
 		id,
 		name: auto.name,
 		team: auto.team,
-		points: AutoPoint::list_from_fields(&x_points, &y_points, &time_points),
-		shots: AutoPoint::list_from_fields(
-			&auto.shot_x_points,
-			&auto.shot_y_points,
-			&auto.shot_time_points,
-		),
-		notes: auto.notes_taken.into_iter().collect(),
+		coral: auto.coral,
+		algae: auto.algae,
+		agitates: auto.agitates,
+		starting_position: auto.starting_position,
 	};
 
 	let mut lock = state.db.write().await;
@@ -206,13 +189,10 @@ pub async fn create_auto(
 pub struct AutoForm {
 	name: String,
 	team: TeamNumber,
-	x_points: String,
-	y_points: String,
-	time_points: String,
-	shot_x_points: Vec<f32>,
-	shot_y_points: Vec<f32>,
-	shot_time_points: Vec<f32>,
-	notes_taken: Vec<u8>,
+	coral: u8,
+	algae: u8,
+	agitates: bool,
+	starting_position: f32,
 }
 
 #[rocket::get("/scouting/auto/<id>")]
@@ -249,50 +229,65 @@ pub async fn auto_details(
 	let page = include_str!("../pages/scouting/team/auto_details.min.html");
 	let page = page.replace("{{id}}", &auto.id);
 	let page = page.replace("{{name}}", &auto.name);
-	let page = page.replace("{{piece-count}}", &auto.shots.len().to_string());
+	let page = page.replace("{{coral}}", &auto.coral.to_string());
+	let page = page.replace("{{algae}}", &auto.algae.to_string());
 
 	// Create stats
-
 	let default_stats = AutoStats::default();
 	let lock2 = state.auto_stats.read().await;
 	let auto_stats = lock2.get(id).unwrap_or(&default_stats);
 
 	let page = page.replace(
-		"{{starting-position}}",
-		&auto_stats.starting_position.to_string(),
-	);
-
-	let page = page.replace(
-		"{{average-score}}",
-		&render_stat_card_float("Avg", "", auto_stats.average_notes, true, ""),
+		"{{point-value}}",
+		&render_stat_card_float("Avg Points", "", auto_stats.point_value, true, ""),
 	);
 	let page = page.replace(
-		"{{accuracy}}",
-		&render_stat_card_pct("Accuracy", "", auto_stats.accuracy, true, ""),
+		"{{average-coral}}",
+		&render_stat_card_float(
+			&format!("{STAT_CORAL} Avg"),
+			"",
+			auto_stats.average_coral,
+			true,
+			"",
+		),
 	);
 	let page = page.replace(
-		"{{time-per-shot}}",
-		&render_stat_card_optional_float("TPS", "", auto_stats.time_per_shot, true, ""),
+		"{{average-algae}}",
+		&render_stat_card_float(
+			&format!("{STAT_ALGAE} Avg"),
+			"",
+			auto_stats.average_algae,
+			true,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{coral-accuracy}}",
+		&render_stat_card_pct(
+			&format!("{STAT_CORAL} Acc"),
+			"",
+			auto_stats.coral_accuracy,
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{algae-accuracy}}",
+		&render_stat_card_pct(
+			&format!("{STAT_ALGAE} Avg"),
+			"",
+			auto_stats.algae_accuracy,
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{agitates}}",
+		&render_stat_card_optional_bool("Agitates?", "", Some(auto.agitates), false, ""),
 	);
 	let page = page.replace(
 		"{{usage-rate}}",
 		&render_stat_card_pct("Usage", "", auto_stats.usage_rate, true, ""),
-	);
-	let page = page.replace(
-		"{{duration}}",
-		&render_stat_card_optional_float("Duration", "", auto_stats.duration, false, ""),
-	);
-	let page = page.replace(
-		"{{time-to-first-shot}}",
-		&render_stat_card_optional_float("TTFS", "", auto_stats.time_to_first_shot, false, ""),
-	);
-	let page = page.replace(
-		"{{max-speed}}",
-		&render_stat_card_optional_float("Max Speed", "", auto_stats.max_speed, false, ""),
-	);
-	let page = page.replace(
-		"{{distance-travelled}}",
-		&render_stat_card_float("Distance", "", auto_stats.distance_travelled, false, ""),
 	);
 
 	let page = create_page("Auto Details", &page, Some(Scope::Scouting));
@@ -360,83 +355,4 @@ pub async fn get_autos(
 	})?;
 
 	Ok(RawJson(autos))
-}
-
-#[rocket::get("/scouting/auto/<auto>/image.svg")]
-pub async fn auto_image(
-	state: &State,
-	session_id: SessionID<'_>,
-	auto: &str,
-) -> Result<CacheFor<SvgDynamic>, Status> {
-	let span = span!(Level::DEBUG, "Getting auto image");
-	let _enter = span.enter();
-
-	session_id.get_requesting_member(state).await?;
-
-	let mut images_lock = state.auto_images.lock().await;
-	let db_lock = state.db.read().await;
-	let auto_string = auto.to_string();
-	let image = if let Some(image) = images_lock.get(auto) {
-		image.clone()
-	} else {
-		let Some(auto) = db_lock.get_auto(&auto_string).await.map_err(|e| {
-			error!("Failed to get auto from database: {e}");
-			Status::InternalServerError
-		})?
-		else {
-			error!("Auto does not exist");
-			return Err(Status::NotFound);
-		};
-		let image = render_auto_image(&auto.points);
-		images_lock.insert(auto_string, image.clone());
-		image
-	};
-
-	Ok(CacheFor(SvgDynamic(image), ONE_DAY))
-}
-
-/// Renders an auto as an SVG image
-pub fn render_auto_image(points: &[AutoPoint]) -> Vec<u8> {
-	let field_width = 10.719054;
-	let field_height = 8.21;
-
-	let path = if let Some(first) = points.first() {
-		let mut point_data = PathData::new();
-		point_data = point_data.move_to((svg_coord(first.x), svg_coord(field_height - first.y)));
-
-		for point in points {
-			point_data =
-				point_data.line_to((svg_coord(point.x), svg_coord(field_height - point.y)));
-		}
-
-		Some(
-			Path::new()
-				.set("fill", "none")
-				.set("stroke", "white")
-				.set("stroke-width", 0.2)
-				.set("stroke-linejoin", "round")
-				.set("d", point_data),
-		)
-	} else {
-		None
-	};
-
-	let mut document = svg::Document::new().set(
-		"viewBox",
-		(0, 0, svg_coord(field_width), svg_coord(field_height)),
-	);
-
-	if let Some(path) = path {
-		document = document.add(path);
-	}
-
-	let mut out = Cursor::new(Vec::new());
-	svg::write(&mut out, &document).expect("Should have no errors writing to a string");
-
-	out.into_inner()
-}
-
-/// Convert an auto coordinate to an SVG coordinate
-fn svg_coord(val: f32) -> f32 {
-	val
 }

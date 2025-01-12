@@ -1,7 +1,7 @@
 // Macros for rendering stat cards that include breakdowns
 
 macro_rules! stat_card {
-	($f: path, $team_stats:expr, $title: literal, $stat: ident, $stat_id: literal, $important: literal) => {
+	($f: path, $team_stats:expr, $title: expr, $stat: ident, $stat_id: literal, $important: literal) => {
 		&{
 			let all_time = $f(
 				$title,
@@ -24,7 +24,7 @@ macro_rules! stat_card {
 }
 
 macro_rules! stat_card_float {
-	($team_stats: expr, $title: literal, $stat: ident, $stat_id: literal, $important: literal) => {
+	($team_stats: expr, $title: expr, $stat: ident, $stat_id: literal, $important: literal) => {
 		crate::routes::scouting::stats::stat_card!(
 			crate::routes::scouting::stats::render_stat_card_float,
 			$team_stats,
@@ -37,7 +37,7 @@ macro_rules! stat_card_float {
 }
 
 macro_rules! stat_card_pct {
-	($team_stats: expr, $title: literal, $stat: ident, $stat_id: literal, $important: literal) => {
+	($team_stats: expr, $title: expr, $stat: ident, $stat_id: literal, $important: literal) => {
 		crate::routes::scouting::stats::stat_card!(
 			crate::routes::scouting::stats::render_stat_card_pct,
 			$team_stats,
@@ -50,7 +50,7 @@ macro_rules! stat_card_pct {
 }
 
 macro_rules! stat_card_other {
-	($team_stats: expr, $title: literal, $stat: ident, $stat_id: literal, $important: literal) => {
+	($team_stats: expr, $title: expr, $stat: ident, $stat_id: literal, $important: literal) => {
 		crate::routes::scouting::stats::stat_card!(
 			crate::routes::scouting::stats::render_stat_card,
 			$team_stats,
@@ -62,7 +62,7 @@ macro_rules! stat_card_other {
 	};
 }
 
-use crate::util::fix_empty_string;
+use crate::util::{escape_html, fix_empty_string};
 pub(crate) use {stat_card, stat_card_float, stat_card_other, stat_card_pct};
 
 // Functions for rendering stat cards
@@ -78,7 +78,11 @@ pub fn render_stat_card(
 	let out = out.replace("{{stat}}", &stat.to_string());
 	let out = out.replace("{{id}}", fix_empty_string(id));
 	let out = out.replace("{{title}}", title);
-	let out = out.replace("{{data-title}}", &format!("\"{title}\""));
+	let fixed_title = title
+		.replace(STAT_ALGAE, "Algae")
+		.replace(STAT_CORAL, "Coral");
+	let fixed_title = format!("\"{}\"", escape_html(&fixed_title));
+	let out = out.replace("{{data-title}}", &fixed_title);
 
 	let stat_class = if strong { "strong" } else { "" };
 	let out = out.replace("{{stat-class}}", stat_class);
@@ -143,3 +147,10 @@ pub fn render_stat_card_optional_float(
 		render_stat_card(title, id, "?", strong, class)
 	}
 }
+
+/// Icon for coral in stat cards
+pub static STAT_CORAL: &str =
+	"<img src=\"/assets/icons/coral.svg\" style=\"width:0.75rem;margin-right:-0.5rem\" />";
+/// Icon for algae in stat cards
+pub static STAT_ALGAE: &str =
+	"<img src=\"/assets/icons/algae.svg\" style=\"width:1.2rem;margin-right:-0.5rem\" />";

@@ -19,7 +19,7 @@ use crate::{
 	member::{Member, MemberGroup, MemberKind, MemberMention},
 	scouting::{
 		assignment::{MatchClaims, ScoutingAssignment},
-		autos::{Auto, AutoPoint},
+		autos::Auto,
 		matches::{Match, MatchNumber, MatchStats, MatchType},
 		status::{RobotStatus, StatusUpdate},
 		Competition, Division, Team, TeamInfo, TeamNumber,
@@ -809,23 +809,16 @@ impl Database for SqlDatabase {
 			.await
 			.context("Failed to delete existing auto")?;
 
-		let (x_points, y_points, time_points) = AutoPoint::list_to_fields(&auto.points);
-		let (shot_x_points, shot_y_points, shot_time_points) =
-			AutoPoint::list_to_fields(&auto.shots);
-
 		sqlx::query(
-			"INSERT INTO autos (Id, Name, Team, XPoints, YPoints, TimePoints, ShotXPoints, ShotYPoints, ShotTimePoints, Notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+			"INSERT INTO autos (Id, Name, Team, Coral, Algae, Agitates, StartingPosition) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 		)
 		.bind(auto.id)
 		.bind(auto.name)
 		.bind(auto.team as i32)
-		.bind(x_points)
-		.bind(y_points)
-		.bind(time_points)
-		.bind(shot_x_points)
-		.bind(shot_y_points)
-		.bind(shot_time_points)
-		.bind(auto.notes.into_iter().map(|x| x as i32).collect::<Vec<_>>())
+		.bind(auto.coral as i32)
+		.bind(auto.algae as i32)
+		.bind(auto.agitates)
+		.bind(auto.starting_position)
 		.execute(&self.pool)
 		.await
 		.context("Failed to create new auto in database")?;
@@ -1207,7 +1200,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	);
 
 	let autos_task = pool.execute(
-		"CREATE TABLE IF NOT EXISTS autos (Id text PRIMARY KEY, Name text, Team int2, XPoints float4[], YPoints float4[], TimePoints float4[], ShotXPoints float4[], ShotYPoints float4[], ShotTimePoints float4[], Notes int2[])",
+		"CREATE TABLE IF NOT EXISTS autos (Id text PRIMARY KEY, Name text, Team int2, Coral int2, Algae int2, Agitates bool, StartingPosition float4)",
 	);
 
 	let status_task = pool.execute(
@@ -1427,25 +1420,19 @@ fn read_team_info(row: PgRow) -> anyhow::Result<TeamInfo> {
 /// Read an auto from the database
 fn read_auto(id: &str, team: TeamNumber, row: PgRow) -> anyhow::Result<Auto> {
 	let name: String = row.try_get("name")?;
-	let x_points: Vec<f32> = row.try_get("xpoints")?;
-	let y_points: Vec<f32> = row.try_get("ypoints")?;
-	let time_points: Vec<f32> = row.try_get("timepoints")?;
-	let shot_x_points: Vec<f32> = row.try_get("shotxpoints")?;
-	let shot_y_points: Vec<f32> = row.try_get("shotypoints")?;
-	let shot_time_points: Vec<f32> = row.try_get("shottimepoints")?;
-	let notes: Vec<u8> = row.try_get("notes")?;
-
-	let points = AutoPoint::list_from_fields(&x_points, &y_points, &time_points);
-	let shot_points =
-		AutoPoint::list_from_fields(&shot_x_points, &shot_y_points, &shot_time_points);
+	let coral: i32 = row.try_get("coral")?;
+	let algae: i32 = row.try_get("algae")?;
+	let agitates: bool = row.try_get("agitates")?;
+	let starting_position: f32 = row.try_get("startingposition")?;
 
 	Ok(Auto {
 		id: id.to_string(),
 		name,
 		team,
-		points,
-		shots: shot_points,
-		notes: notes.into_iter().collect(),
+		coral: coral as u8,
+		algae: algae as u8,
+		agitates,
+		starting_position,
 	})
 }
 

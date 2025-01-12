@@ -10,7 +10,8 @@ use crate::{
 	db::Database,
 	routes::{OptionalSessionID, SessionID},
 	scouting::{
-		ClimbAbility, DriveTrainType, GamePiece, PitScoutingProgress, ReefLevel, TeamNumber,
+		game::ClimbAbility, game::GamePiece, game::ReefLevel, DriveTrainType, PitScoutingProgress,
+		TeamNumber,
 	},
 	util::{checkbox_attr, selected_attr},
 	State,

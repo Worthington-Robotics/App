@@ -211,13 +211,6 @@ fn render_alliance_breakdown(
 		tips_string.push_str(&Tip::CantProcess.render());
 	}
 
-	if team_stats
-		.values()
-		.any(|x| x.current_competition.pass_average >= 2.5)
-	{
-		tips_string.push_str(&Tip::StrongPassing.render());
-	}
-
 	let out = out.replace("{{tips}}", &tips_string);
 
 	out
@@ -235,7 +228,6 @@ enum Tip {
 	HighSpeed(TeamNumber),
 	StrongDefense,
 	CantProcess,
-	StrongPassing,
 }
 
 impl Tip {
@@ -247,7 +239,6 @@ impl Tip {
 			Self::HighSpeed(team) => format!("High Speed:<br />{team}"),
 			Self::StrongDefense => "Strong Defense".into(),
 			Self::CantProcess => "Can't Process".into(),
-			Self::StrongPassing => "Strong Passing".into(),
 		};
 
 		format!("<div class=\"cont round tip\">{title}</div>")

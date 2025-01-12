@@ -1,7 +1,10 @@
 pub mod assignment;
 pub mod autos;
+/// Utilities for the game, such as point calculations
+pub mod game;
 pub mod matches;
 pub mod stats;
+/// Robot broken status tracking
 pub mod status;
 
 use std::{collections::HashSet, fmt::Display};
@@ -10,6 +13,7 @@ use chrono_tz::{
 	Tz,
 	US::{Central, Eastern},
 };
+use game::{ClimbAbility, GamePiece, ReefLevel};
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, IntoStaticStr};
@@ -231,33 +235,6 @@ pub enum DriveTrainType {
 	Tank,
 	Mecanum,
 	Other,
-}
-
-/// Different climbing capabilities
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum ClimbAbility {
-	None,
-	Shallow,
-	Deep,
-}
-
-/// Level for the reef
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum ReefLevel {
-	L1,
-	L2,
-	L3,
-	L4,
-}
-
-/// Game pieces
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum GamePiece {
-	Coral,
-	Algae,
 }
 
 /// Completion status of pit scouting for a team

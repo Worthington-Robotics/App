@@ -3,13 +3,12 @@
 <form id="auto-form" class="cont col">
 	<button onclick="history.back()">Back</button>
 	<input type="text" name="name" id="name-field" class="field" placeholder="Enter auto name..." />
-	<label for="piece-count">Piece Count</label>
-	<input type="number" class="field" name="piece-count" id="piece-count" />
-	<canvas id="can" class="round" width="400" height="300"></canvas>
-	<div class="cont">
-		<div id="auto-time">0.0</div>
-		<button id="clear-canvas">Clear</button>
-	</div>
+	<label for="coral">Coral</label>
+	<input type="number" class="field" name="coral" id="coral" />
+	<label for="algae">Algae</label>
+	<input type="number" class="field" name="algae" id="algae" />
+	<label for="agitates">Agitates Algae?</label>
+	<input type="checkbox" class="field" name="agitates" id="agitates" />
 
 	<input type="submit" id="submit" value="Save" />
 </form>
@@ -18,31 +17,18 @@
 		event.preventDefault();
 
 		const name = encodeURIComponent(document.getElementById("name-field").value);
-		const pieceCount = document.getElementById("piece-count").value;
+		const coral = document.getElementById("coral").value * 1;
+		const algae = document.getElementById("algae").value * 1;
+		const agitates = document.getElementById("agitates").checked;
 
 		if (name == "") {
 			setError("Name field cannot be empty");
 			return;
 		}
 
-		let requestBody = `name=${name}&team={{team-number}}`;
-
-		// Convert points to correctly scaled meter positions in JSON array format
-		for (let i = 0; i < xPoints.length; i++) {
-			// First convert to scalar position on the canvas, then multiply by the length in that direction
-			xPoints[i] = xPoints[i] / can.width * 10.719054;
-			// The y starts from the bottom on the real field so we need to flip it
-			yPoints[i] = (can.height - yPoints[i]) / can.height * 8.21;
-		}
-		let xPointsEncoded = JSON.stringify(xPoints);
-		let yPointsEncoded = JSON.stringify(yPoints);
-		let timePointsEncoded = JSON.stringify(timePoints);
-		requestBody += `&x_points=${xPointsEncoded}&y_points=${yPointsEncoded}&time_points=${timePointsEncoded}`;
-
-		for (let i = 0; i < pieceCount; i++) {
-			requestBody += "&shot_x_points=0.0";
-			requestBody += "&shot_y_points=0.0";
-			requestBody += "&shot_time_points=0.0";
+		let requestBody = `name=${name}&team={{team-number}}&coral=${coral}&algae=${algae}&starting_position=0.0`;
+		if (agitates) {
+			requestBody += "&agitates";
 		}
 
 		fetch("/api/create_auto", {
@@ -59,140 +45,10 @@
 	}
 
 	document.getElementById("auto-form").addEventListener("submit", onSubmit);
-
-	// Code for managing the drawable canvas
-	var xPoints = [];
-	var yPoints = [];
-	var timePoints = [];
-	var finishedDrawing = false;
-	// Start time for the drawing, null if it isn't running
-	var startTime = null;
-	// Current mouse position as an x, y tuple
-	var currentPosition = [];
-
-	var can = document.getElementById("can");
-	var ctx = can.getContext("2d");
-
-	function downEvent(e) {
-		if (!finishedDrawing && startTime == null) {
-			startTime = Date.now() / 1000;
-		}
-	}
-	can.addEventListener("mousedown", downEvent);
-	can.addEventListener("touchstart", (e) => {
-		e.preventDefault();
-		downEvent(e);
-	});
-	function upEvent(e) {
-		if (startTime != null) {
-			finishDrawing();
-		}
-	}
-	can.addEventListener("mouseup", upEvent);
-	can.addEventListener("touchend", (e) => {
-		e.preventDefault();
-		upEvent(e);
-	});
-	function moveEvent(e) {
-		if (startTime != null) {
-			currentPosition = getPos(e);
-		}
-	}
-	can.addEventListener("mousemove", moveEvent);
-	// The coords are represented a bit different here
-	can.addEventListener("touchmove", (e) => {
-		e.preventDefault();
-		e.clientX = e.touches[0].clientX;
-		e.clientY = e.touches[0].clientY;
-		moveEvent(e);
-	});
-
-	let timeElement = document.getElementById("auto-time");
-
-	// Periodically add the current mouse position into the list of points
-	setInterval(() => {
-		if (startTime == null) {
-			return;
-		}
-		let elapsed = Date.now() / 1000 - startTime;
-
-		let x = currentPosition[0];
-		let y = currentPosition[1];
-		// Check that the positions are defined and within the bounds of the canvas
-		if (x != undefined && y != undefined) {
-			if (x >= 0 && x <= can.width && y >= 0 && y <= can.height) {
-				xPoints.push(x);
-				yPoints.push(y);
-				timePoints.push(elapsed);
-			}
-		}
-
-		timeElement.innerHTML = elapsed.toFixed(1);
-
-		// Automatically end when the auto period is over
-		if (elapsed > 15) {
-			console.log("Auto finish");
-			finishDrawing();
-		}
-	}, 0.75);
-
-	// Gets the canvas position from a mouse event
-	function getPos(e) {
-		// Apply the scale factor based on the ratio between the canvas size and the css size
-		let rect = can.getBoundingClientRect();
-		return [
-			(e.clientX - rect.left) / (rect.right - rect.left) * can.width,
-			(e.clientY - rect.top) / (rect.bottom - rect.top) * can.height,
-		];
-	}
-
-	// Run when the drawing is finished either manually or automatically
-	function finishDrawing() {
-		startTime = null;
-		finishedDrawing = true;
-		drawPath();
-	}
-
-	// Draw the base auto path out from the list of points
-	function drawPath() {
-		ctx.beginPath();
-		ctx.strokeStyle = "white";
-		for (let i = 0; i < xPoints.length; i++) {
-			let x = xPoints[i];
-			let y = yPoints[i];
-
-			ctx.lineTo(x, y);
-			ctx.moveTo(x, y);
-		}
-		ctx.stroke();
-	}
-
-	document.getElementById("clear-canvas").addEventListener("click", (e) => {
-		e.preventDefault();
-
-		if (!finishedDrawing) {
-			return;
-		}
-		ctx.clearRect(0, 0, can.width, can.height);
-		xPoints = [];
-		yPoints = [];
-		timePoints = [];
-		startTime = null;
-		finishedDrawing = false;
-		currentPosition = [];
-	})
 </script>
 <style>
 	.field {
 		width: 60%;
-	}
-
-	#can {
-		width: 90%;
-		height: 70%;
-		border: 0.1rem solid var(--fg2);
-		box-sizing: border-box;
-		margin-top: 0.8rem;
 	}
 </style>
 {{footer}}

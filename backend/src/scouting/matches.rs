@@ -2,7 +2,7 @@ use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use super::{status::RobotStatus, Competition, TeamNumber};
+use super::{status::RobotStatus, ClimbAbility, Competition, ReefLevel, TeamNumber};
 
 /// A single match
 #[derive(Serialize, Deserialize, Clone)]
@@ -116,45 +116,40 @@ pub struct MatchStats {
 	/// The auto that the team ran during this match
 	#[serde(default)]
 	pub auto: Option<String>,
-	/// The hits/misses of the shots of the auto, in order
-	#[serde(default)]
-	pub auto_shots: Vec<bool>,
-	/// The number of times that the team attempted to score during auto
-	pub auto_attempts: u8,
-	/// The number of times that the team scored during auto
-	pub auto_scores: u8,
+	/// The auto coral attempts
+	pub auto_coral_attempts: Vec<CoralAttempt>,
+	/// The number of times that the team attempted to score algae during auto
+	pub auto_algae_attempts: u8,
+	/// The number of times that the team scored algae during auto
+	pub auto_algae_scores: u8,
 	/// The number of auto intake attempts
-	#[serde(default)]
 	pub auto_intake_attempts: u8,
 	/// The number of auto intake successes
-	#[serde(default)]
 	pub auto_intake_successes: u8,
 	/// Whether or not the robot collided with another during auto
 	pub auto_collision: bool,
+	/// The coral attempts during teleop
+	pub teleop_coral_attempts: Vec<CoralAttempt>,
+	/// The number of intake attempts during teleop
+	pub teleop_intake_attempts: u8,
+	/// The number of intake successes during teleop
+	pub teleop_intake_successes: u8,
+	/// The number of times the team successfully agitated algae
+	pub agitations: u8,
+	/// The number of processor attempts
+	pub processor_attempts: u8,
+	/// The number of processor scores
+	pub processor_scores: u8,
+	/// The number of successful net shots
+	pub net_shots: u8,
+	/// The climb that the team attempted to do
+	pub climb_attempted: ClimbAbility,
+	/// Whether the climb was successful
+	pub climb_successful: bool,
+	/// How long the climb took
+	pub climb_time: f32,
 	/// The total number of points that the team scored
 	pub points_scored: u16,
-	/// The number of times that the team attempted to score in the amp
-	pub amp_attempts: u8,
-	/// The number of times that the team scored in the amp
-	pub amp_scores: u8,
-	/// The number of times that the team attempted to score in the speaker
-	pub speaker_attempts: u8,
-	/// The number of times that the team scored in the speaker
-	pub speaker_scores: u8,
-	/// Whether or not the team attempted to climb
-	pub climb_attempted: bool,
-	/// Whether or not the team succeeded the climb
-	pub climb_successful: bool,
-	/// Whether or not the team attempted the trap
-	pub trap_attempted: bool,
-	/// Whether or not the team succeeded the trap
-	pub trap_successful: bool,
-	/// The number of times that the alliance amplified
-	pub amplifications: u8,
-	/// The number of times that the team scored into an amplified speaker
-	pub amplified_notes: u8,
-	/// The number of times that the team passed notes
-	pub passes: u8,
 	/// The number of times that the team defended against other robots
 	pub defenses: u8,
 	/// The number of penalties that the team incurred during the match
@@ -181,6 +176,15 @@ pub struct MatchStats {
 	/// Team weaknesses during the match
 	#[serde(default)]
 	pub weaknesses: String,
+}
+
+/// A single coral placement attempt on the reef
+#[derive(Serialize, Deserialize, Clone)]
+pub struct CoralAttempt {
+	/// Whether the attempt was successful
+	pub successful: bool,
+	/// The reef level of the placement
+	pub level: ReefLevel,
 }
 
 /// Count how many matches a member has scouted

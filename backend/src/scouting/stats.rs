@@ -16,6 +16,7 @@ use crate::{
 
 use super::{
 	autos::{calculate_auto_stats, AutoStats},
+	game::{get_coral_points, ClimbAbility},
 	matches::MatchStats,
 	status::RobotStatus,
 	Competition, TeamNumber,
@@ -71,24 +72,21 @@ pub struct TeamStats {
 	pub epa: f32,
 	pub apa: f32,
 	pub win_rate: f32,
-	pub speaker_score: f32,
-	pub speaker_accuracy: f32,
-	pub amp_score: f32,
-	pub amp_accuracy: f32,
-	pub climb_score: f32,
+	pub coral_score: f32,
+	pub coral_average: f32,
+	pub coral_accuracy: f32,
+	pub algae_score: f32,
+	pub processor_average: f32,
+	pub processor_accuracy: f32,
+	pub net_average: f32,
+	pub intake_accuracy: f32,
 	pub climb_accuracy: f32,
-	pub trap_score: f32,
-	pub trap_accuracy: f32,
-	/// Average number of notes scored per auto
-	pub auto_score: f32,
+	pub climb_time: f32,
+	pub auto_coral: f32,
+	pub auto_algae: f32,
+	pub auto_coral_accuracy: f32,
+	pub auto_algae_accuracy: f32,
 	pub auto_collisions: u8,
-	pub auto_accuracy: f32,
-	/// Average number of amplifications per match
-	pub amplification_rate: f32,
-	/// Average number of notes per amplification
-	pub amplification_power: f32,
-	/// Average number of passes per match
-	pub pass_average: f32,
 	/// Average number of offensive moves per match
 	pub offense_average: f32,
 	/// Average number of defensive moves per match
@@ -137,21 +135,26 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		epa: 0.0,
 		apa: ctx.points_scored as f32 / match_count_f32,
 		win_rate: ctx.wins as f32 / match_count_f32,
-		speaker_score: ctx.speaker_scores as f32 / match_count_f32,
-		speaker_accuracy: ctx.speaker_scores as f32 / fix_zero(ctx.speaker_attempts as f32),
-		amp_score: ctx.amp_scores as f32 / match_count_f32,
-		amp_accuracy: ctx.amp_scores as f32 / fix_zero(ctx.amp_attempts as f32),
-		climb_score: ctx.climb_successes as f32 / match_count_f32,
+		coral_score: ctx.coral_score_total as f32 / match_count_f32,
+		coral_average: ctx.coral_scores as f32 / match_count_f32,
+		coral_accuracy: ctx.coral_scores as f32 / fix_zero(ctx.coral_attempts as f32),
+		algae_score: ctx.algae_score_total as f32 / match_count_f32,
+		processor_average: ctx.processor_scores as f32 / match_count_f32,
+		processor_accuracy: ctx.processor_scores as f32 / fix_zero(ctx.processor_attempts as f32),
+		net_average: ctx.net_scores as f32 / match_count_f32,
 		climb_accuracy: ctx.climb_successes as f32 / fix_zero(ctx.climb_attempts as f32),
-		trap_score: ctx.trap_successes as f32 / match_count_f32,
-		trap_accuracy: ctx.trap_successes as f32 / fix_zero(ctx.trap_attempts as f32),
-		auto_score: ctx.auto_scores as f32 / match_count_f32,
+		climb_time: ctx.climb_time_total / fix_zero(ctx.climb_attempts as f32),
+		auto_coral: ctx.auto_coral_scores as f32 / match_count_f32,
+		auto_coral_accuracy: ctx.auto_coral_scores as f32
+			/ fix_zero(ctx.auto_coral_attempts as f32),
+		auto_algae: ctx.auto_algae_scores as f32 / match_count_f32,
+		auto_algae_accuracy: ctx.auto_algae_scores as f32
+			/ fix_zero(ctx.auto_algae_attempts as f32),
 		auto_collisions: ctx.auto_collisions,
-		auto_accuracy: ctx.auto_scores as f32 / fix_zero(ctx.auto_attempts as f32),
-		amplification_rate: ctx.amplifications as f32 / match_count_f32,
-		amplification_power: ctx.amplified_notes as f32 / match_count_f32,
-		pass_average: ctx.passes as f32 / match_count_f32,
-		offense_average: (ctx.amp_scores as f32 + ctx.speaker_scores as f32) / match_count_f32,
+		offense_average: (ctx.coral_scores as f32
+			+ ctx.processor_scores as f32
+			+ ctx.net_scores as f32)
+			/ match_count_f32,
 		defense_average: ctx.defenses as f32 / match_count_f32,
 		cycle_time: cycle_time_average,
 		cycle_time_consistency: ctx.cycle_time_consistency_sum as f32
@@ -168,21 +171,24 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 #[derive(Default)]
 struct StatsContext {
 	total_matches: u16,
-	auto_attempts: u16,
-	auto_scores: u16,
-	auto_collisions: u8,
 	points_scored: u16,
-	amp_attempts: u16,
-	amp_scores: u16,
-	speaker_attempts: u16,
-	speaker_scores: u16,
+	auto_coral_attempts: u16,
+	auto_coral_scores: u16,
+	auto_algae_attempts: u16,
+	auto_algae_scores: u16,
+	auto_collisions: u8,
+	coral_attempts: u16,
+	coral_scores: u16,
+	coral_score_total: u16,
+	processor_attempts: u16,
+	processor_scores: u16,
+	net_scores: u16,
+	algae_score_total: u16,
+	intake_attempts: u16,
+	intake_successes: u16,
 	climb_attempts: u16,
 	climb_successes: u16,
-	trap_attempts: u16,
-	trap_successes: u16,
-	amplifications: u16,
-	amplified_notes: u16,
-	passes: u16,
+	climb_time_total: f32,
 	defenses: u16,
 	penalties: u8,
 	cycle_time_sum: f32,
@@ -200,31 +206,53 @@ struct StatsContext {
 /// Add stats from a match to running stat totals in the context
 fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	ctx.total_matches += 1;
-	ctx.auto_attempts += stats.auto_attempts as u16;
-	ctx.auto_scores += stats.auto_scores as u16;
+	ctx.auto_coral_attempts += stats.auto_coral_attempts.len() as u16;
+	ctx.auto_coral_scores += stats
+		.auto_coral_attempts
+		.iter()
+		.filter(|x| x.successful)
+		.count() as u16;
+	ctx.auto_algae_attempts += stats.auto_algae_attempts as u16;
+	ctx.auto_algae_scores += stats.auto_algae_scores as u16;
+
 	if stats.auto_collision {
 		ctx.auto_collisions += 1;
 	}
+
 	ctx.points_scored += stats.points_scored as u16;
-	ctx.amp_attempts += stats.amp_attempts as u16;
-	ctx.amp_scores += stats.amp_scores as u16;
-	ctx.speaker_attempts += stats.speaker_attempts as u16;
-	ctx.speaker_scores += stats.speaker_scores as u16;
-	if stats.climb_attempted {
+	ctx.coral_attempts += stats.teleop_coral_attempts.len() as u16;
+	ctx.coral_scores += stats
+		.teleop_coral_attempts
+		.iter()
+		.filter(|x| x.successful)
+		.count() as u16;
+	ctx.processor_attempts += stats.processor_attempts as u16;
+	ctx.processor_scores += stats.processor_scores as u16;
+	ctx.net_scores += stats.net_shots as u16;
+	ctx.intake_attempts += stats.teleop_intake_attempts as u16;
+	ctx.intake_successes += stats.teleop_intake_successes as u16;
+
+	let mut coral_score_total = 0;
+	for attempt in &stats.teleop_coral_attempts {
+		if attempt.successful {
+			coral_score_total += get_coral_points(attempt.level, false) as u16;
+		}
+	}
+	ctx.coral_score_total += coral_score_total;
+
+	ctx.algae_score_total += stats.processor_scores as u16 * 6;
+	ctx.algae_score_total += stats.net_shots as u16 * 4;
+
+	if stats.climb_attempted != ClimbAbility::None {
 		ctx.climb_attempts += 1;
 	}
 	if stats.climb_successful {
 		ctx.climb_successes += 1;
 	}
-	if stats.trap_attempted {
-		ctx.trap_attempts += 1;
+	if stats.climb_successful {
+		ctx.climb_time_total += stats.climb_time;
 	}
-	if stats.trap_successful {
-		ctx.trap_successes += 1;
-	}
-	ctx.amplifications += stats.amplifications as u16;
-	ctx.amplified_notes += stats.amplified_notes as u16;
-	ctx.passes += stats.passes as u16;
+
 	ctx.defenses += stats.defenses as u16;
 	ctx.penalties += stats.penalties;
 
