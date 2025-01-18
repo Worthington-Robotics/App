@@ -2,7 +2,9 @@ use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use super::{status::RobotStatus, ClimbAbility, Competition, ReefLevel, TeamNumber};
+use super::{
+	game::ClimbResult, status::RobotStatus, ClimbAbility, Competition, ReefLevel, TeamNumber,
+};
 
 /// A single match
 #[derive(Serialize, Deserialize, Clone)]
@@ -144,8 +146,8 @@ pub struct MatchStats {
 	pub net_shots: u8,
 	/// The climb that the team attempted to do
 	pub climb_attempted: ClimbAbility,
-	/// Whether the climb was successful
-	pub climb_successful: bool,
+	/// The result of the climb
+	pub climb_result: ClimbResult,
 	/// How long the climb took
 	pub climb_time: f32,
 	/// The total number of points that the team scored

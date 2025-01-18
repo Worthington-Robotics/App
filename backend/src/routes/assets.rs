@@ -142,6 +142,39 @@ pub fn icon_algae() -> CacheFor<Svg> {
 	CacheFor(Svg(include_bytes!("../assets/icons/algae.svg")), ONE_WEEK)
 }
 
+#[rocket::get("/assets/icons/error.svg")]
+pub fn icon_error() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/error.svg")), ONE_WEEK)
+}
+
+#[rocket::get("/assets/icons/window.svg")]
+pub fn icon_window() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/window.svg")), ONE_WEEK)
+}
+
+#[rocket::get("/assets/icons/hashtag.svg")]
+pub fn icon_hashtag() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/hashtag.svg")), ONE_WEEK)
+}
+
+#[rocket::get("/assets/icons/download.svg")]
+pub fn icon_download() -> CacheFor<Svg> {
+	CacheFor(
+		Svg(include_bytes!("../assets/icons/download.svg")),
+		ONE_WEEK,
+	)
+}
+
+#[rocket::get("/assets/icons/shield.svg")]
+pub fn icon_shield() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/shield.svg")), ONE_WEEK)
+}
+
+#[rocket::get("/assets/icons/upload.svg")]
+pub fn icon_upload() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/upload.svg")), ONE_WEEK)
+}
+
 #[derive(Responder)]
 #[response(content_type = "image/x-icon")]
 pub struct Ico(pub &'static [u8]);

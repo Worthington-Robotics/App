@@ -50,44 +50,74 @@
 	</div>
 	<h2>Auto</h2>
 	<div class="section-grid">
-		<button id="auto-score" class="grid-button">Score</button>
-		<button id="auto-miss" class="grid-button miss">Miss</button>
-		<button id="auto-intake" class="grid-button">Intake</button>
-		<button id="auto-intake-miss" class="grid-button miss">Intake Miss</button>
-		<button class="grid-button penalty">Penalty</button>
+		<button id="auto-coral-l4" class="grid-button auto-nonconfirm reef"><img src="/assets/icons/coral.svg"
+				class="grid-icon coral" /></button>
+		<button id="auto-algae" class="grid-button auto-nonconfirm"><img src="/assets/icons/algae.svg" class="grid-icon algae" /></button>
+		<button id="auto-coral-l3" class="grid-button auto-nonconfirm reef"><img src="/assets/icons/coral.svg"
+				class="grid-icon coral" /></button>
+		<button id="auto-algae-miss" class="grid-button auto-nonconfirm miss"><img src="/assets/icons/algae.svg"
+				class="grid-icon algae" /></button>
+		<button id="auto-coral-l2" class="grid-button auto-nonconfirm reef"><img src="/assets/icons/coral.svg"
+				class="grid-icon coral" /></button>
+		<button id="auto-intake" class="grid-button auto-nonconfirm"><img src="/assets/icons/download.svg" class="grid-icon" /></button>
+		<button id="auto-coral-l1" class="grid-button auto-nonconfirm reef"><img src="/assets/icons/coral.svg"
+				class="grid-icon coral" /></button>
+		<button id="auto-intake-miss" class="grid-button auto-nonconfirm miss"><img src="/assets/icons/download.svg"
+				class="grid-icon" /></button>
+		<button class="grid-button auto-nonconfirm penalty"><img src="/assets/icons/error.svg" class="grid-icon" /></button>
+
+		<button class="grid-button auto-confirm success" id="auto-success" style="display:none"><img
+				src="/assets/icons/check.svg" class="grid-icon" /></button>
+		<button class="grid-button auto-confirm failure" id="auto-failure" style="display:none"><img
+				src="/assets/icons/error.svg" class="grid-icon" /></button>
 	</div>
 	<label for="auto">Auto</label>
 	<select name="auto" id="auto" class="field">
 		<option value="none">Unknown</option>
 	</select>
 	<h2>Teleop</h2>
+	<div class="section-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+		<button id="coral-l4" class="grid-button teleop-nonconfirm reef"><img src="/assets/icons/coral.svg"
+				class="grid-icon coral" /></button>
+		<button id="processor" class="grid-button teleop-nonconfirm"><img src="/assets/icons/window.svg" class="grid-icon" /></button>
+		<button id="processor-miss" class="grid-button teleop-nonconfirm miss"><img src="/assets/icons/window.svg"
+				class="grid-icon" /></button>
+
+		<button id="coral-l3" class="grid-button teleop-nonconfirm reef"><img src="/assets/icons/coral.svg"
+				class="grid-icon coral" /></button>
+		<button id="intake" class="grid-button teleop-nonconfirm"><img src="/assets/icons/download.svg" class="grid-icon" /></button>
+		<button id="intake-miss" class="grid-button teleop-nonconfirm miss"><img src="/assets/icons/download.svg"
+				class="grid-icon" /></button>
+
+		<button id="coral-l2" class="grid-button teleop-nonconfirm reef"><img src="/assets/icons/coral.svg"
+				class="grid-icon coral" /></button>
+		<button id="net" class="grid-button teleop-nonconfirm"><img src="/assets/icons/hashtag.svg" class="grid-icon" /></button>
+		<button id="agitate" class="grid-button teleop-nonconfirm"><img src="/assets/icons/upload.svg" class="grid-icon" /></button>
+
+		<button id="coral-l1" class="grid-button teleop-nonconfirm reef"><img src="/assets/icons/coral.svg"
+				class="grid-icon coral" /></button>
+		<button id="defend" class="grid-button teleop-nonconfirm"><img src="/assets/icons/shield.svg" class="grid-icon" /></button>
+		<button class="grid-button teleop-nonconfirm penalty"><img src="/assets/icons/error.svg" class="grid-icon" /></button>
+
+		<button class="grid-button teleop-confirm success" id="teleop-success" style="display:none"><img
+				src="/assets/icons/check.svg" class="grid-icon" /></button>
+		<button class="grid-button teleop-confirm failure" id="teleop-failure" style="display:none"><img
+				src="/assets/icons/error.svg" class="grid-icon" /></button>
+	</div>
+	<h2>Climb</h2>
 	<div class="section-grid">
-		<button id="speaker-score" class="grid-button">Speaker Score</button>
-		<button id="speaker-miss" class="grid-button miss">Speaker Miss</button>
-		<button id="amp-score" class="grid-button">Amp Score</button>
-		<button id="amp-miss" class="grid-button miss">Amp Miss</button>
-		<button id="pass" class="grid-button">Pass</button>
-		<button id="defend" class="grid-button">Defend</button>
-		<button id="amplify" class="grid-button">Amplify</button>
-		<button class="grid-button penalty">Penalty</button>
+		<button id="start-shallow" class="cont grid-button"><img src="/assets/icons/box.svg" class="grid-icon" />
+			Start Shallow</button>
+		<button id="start-deep" class="cont grid-button"><img src="/assets/icons/box.svg" class="grid-icon" />
+			Start Deep</button>
+		<button id="climb-fail" class="cont grid-button miss"><img src="/assets/icons/error.svg" class="grid-icon" />
+			Time Expired</button>
+		<button id="climb-fall" class="cont grid-button miss"><img src="/assets/icons/download.svg" class="grid-icon" />
+			Fell</button>
+		<button id="climb-successful" class="cont grid-button"><img src="/assets/icons/check.svg" class="grid-icon" />
+			Successful</button>
 	</div>
 	<h2>Post-Match</h2>
-	<div class="cont">
-		<input type="checkbox" name="climb-attempted" id="climb-attempted" class="field" />
-		<label for="climb-attempted">Climb Attempted?</label>
-	</div>
-	<div class="cont">
-		<input type="checkbox" name="climb-successful" id="climb-successful" class="field" />
-		<label for="climb-attempted">Climb Successful?</label>
-	</div>
-	<div class="cont">
-		<input type="checkbox" name="trap-attempted" id="trap-attempted" class="field" />
-		<label for="trap-attempted">Trap Attempted?</label>
-	</div>
-	<div class="cont">
-		<input type="checkbox" name="trap-successful" id="trap-successful" class="field" />
-		<label for="trap-attempted">Trap Successful?</label>
-	</div>
 	<div class="cont">
 		<input type="checkbox" name="won" id="won" class="field" />
 		<label for="won">Won?</label>
@@ -113,6 +143,8 @@
 <script>
 	// Object for all processing about the match
 	var M = {};
+	// Pending event for success buttons
+	var pendingEvent = null;
 
 	// Initializes the match data. Can be used to clear the match data as well.
 	function initMatchData() {
@@ -126,21 +158,16 @@
 			timerRunning: false,
 			timeScale: 1,
 			timeOffset: 0,
-			// Contains a list of [timestamp: number, success: bool]
-			autoScores: [],
-			autoIntakes: [],
-			speakerScores: [],
-			ampScores: [],
-			totalAutoScores: 0,
-			totalSpeakerScores: 0,
-			totalAmpScores: 0,
-			ampStartTime: null,
-			amplifications: 0,
-			amplifiedScores: 0,
-			passes: 0,
-			defenses: 0,
-			penalties: 0
+			// Has a list of all events during teleop and auto, as {teleop: bool, id: string, timestamp: number}. Events with a success will have a success: bool field. Coral events will have a level: number field.
+			matchEvents: [],
+			climbType: "none",
+			climbStart: null,
+			climbEnd: null,
+			climbResult: "failed"
 		};
+		pendingEvent = null;
+		hideAutoConfirm();
+		hideTeleopConfirm();
 	}
 
 	initMatchData();
@@ -158,14 +185,6 @@
 				let now = Date.now() / 1000;
 				let delta = (now - M.startTime) * M.timeScale;
 				M.time = M.baseTime + delta;
-
-				// Turn off amplify button automatically
-				if (M.ampStartTime != null && now - M.ampStartTime > 10) {
-					M.ampStartTime = null;
-					let elem = document.getElementById("amplify");
-					elem.innerHTML = "Amplify";
-					elem.classList.remove("selected");
-				}
 			}
 		}
 
@@ -238,73 +257,376 @@
 	});
 
 	// Event buttons
-	document.getElementById("auto-score").addEventListener("click", () => {
-		M.autoScores.push([M.time, true]);
-		M.totalAutoScores++;
+	document.getElementById("auto-coral-l4").addEventListener("click", () => {
+		setAutoPendingEvent({
+			teleop: false,
+			id: "coral",
+			level: 3,
+			timestamp: M.time,
+		});
 	});
-	document.getElementById("auto-miss").addEventListener("click", () => {
-		M.autoScores.push([M.time, false]);
+	document.getElementById("auto-coral-l3").addEventListener("click", () => {
+		setAutoPendingEvent({
+			teleop: false,
+			id: "coral",
+			level: 2,
+			timestamp: M.time,
+		});
+	});
+	document.getElementById("auto-coral-l2").addEventListener("click", () => {
+		setAutoPendingEvent({
+			teleop: false,
+			id: "coral",
+			level: 1,
+			timestamp: M.time,
+		});
+	});
+	document.getElementById("auto-coral-l1").addEventListener("click", () => {
+		setAutoPendingEvent({
+			teleop: false,
+			id: "coral",
+			level: 0,
+			timestamp: M.time,
+		});
+	});
+	document.getElementById("auto-algae").addEventListener("click", () => {
+		M.matchEvents.push({
+			teleop: false,
+			id: "algae",
+			timestamp: M.time,
+			successful: true
+		});
+	});
+	document.getElementById("auto-algae-miss").addEventListener("click", () => {
+		M.matchEvents.push({
+			teleop: false,
+			id: "algae",
+			timestamp: M.time,
+			successful: false
+		});
 	});
 	document.getElementById("auto-intake").addEventListener("click", () => {
-		M.autoIntakes.push([M.time, true]);
+		M.matchEvents.push({
+			teleop: false,
+			id: "intake",
+			timestamp: M.time,
+			successful: true
+		});
 	});
 	document.getElementById("auto-intake-miss").addEventListener("click", () => {
-		M.autoIntakes.push([M.time, false]);
+		M.matchEvents.push({
+			teleop: false,
+			id: "intake",
+			timestamp: M.time,
+			successful: false
+		});
 	});
-	document.getElementById("speaker-score").addEventListener("click", () => {
-		M.speakerScores.push([M.time, true]);
-		if (M.ampStartTime != null) {
-			M.amplifiedScores++;
-		}
-		M.totalSpeakerScores++;
+	document.getElementById("coral-l4").addEventListener("click", () => {
+		setTeleopPendingEvent({
+			teleop: true,
+			id: "coral",
+			level: 3,
+			timestamp: M.time,
+		});
 	});
-	document.getElementById("speaker-miss").addEventListener("click", () => {
-		M.speakerScores.push([M.time, false]);
+	document.getElementById("coral-l3").addEventListener("click", () => {
+		setTeleopPendingEvent({
+			teleop: true,
+			id: "coral",
+			level: 2,
+			timestamp: M.time,
+		});
 	});
-	document.getElementById("amp-score").addEventListener("click", () => {
-		M.ampScores.push([M.time, true]);
-		M.totalAmpScores++;
+	document.getElementById("coral-l2").addEventListener("click", () => {
+		setTeleopPendingEvent({
+			teleop: true,
+			id: "coral",
+			level: 1,
+			timestamp: M.time,
+		});
 	});
-	document.getElementById("amp-miss").addEventListener("click", () => {
-		M.ampScores.push([M.time, false]);
+	document.getElementById("coral-l1").addEventListener("click", () => {
+		setTeleopPendingEvent({
+			teleop: true,
+			id: "coral",
+			level: 0,
+			timestamp: M.time,
+		});
 	});
-	document.getElementById("pass").addEventListener("click", () => {
-		M.passes++;
+	document.getElementById("processor").addEventListener("click", () => {
+		M.matchEvents.push({
+			teleop: true,
+			id: "processor",
+			timestamp: M.time,
+			successful: true
+		});
+	});
+	document.getElementById("processor-miss").addEventListener("click", () => {
+		M.matchEvents.push({
+			teleop: true,
+			id: "processor",
+			timestamp: M.time,
+			successful: false
+		});
+	});
+	document.getElementById("intake").addEventListener("click", () => {
+		M.matchEvents.push({
+			teleop: true,
+			id: "intake",
+			timestamp: M.time,
+			successful: true
+		});
+	});
+	document.getElementById("intake-miss").addEventListener("click", () => {
+		M.matchEvents.push({
+			teleop: true,
+			id: "intake",
+			timestamp: M.time,
+			successful: false
+		});
+	});
+	document.getElementById("net").addEventListener("click", () => {
+		M.matchEvents.push({
+			teleop: true,
+			id: "net",
+			timestamp: M.time,
+			successful: true
+		});
+	});
+	document.getElementById("agitate").addEventListener("click", () => {
+		M.matchEvents.push({
+			teleop: true,
+			id: "agitate",
+			timestamp: M.time
+		});
 	});
 	document.getElementById("defend").addEventListener("click", () => {
-		M.defenses++;
+		M.matchEvents.push({
+			teleop: true,
+			id: "defend",
+			timestamp: M.time
+		});
 	});
-	for (let elem of document.getElementsByClassName("penalty")) {
+
+	// To fix the minifier
+	let penalty = "penalty";
+	for (let elem of document.getElementsByClassName(penalty)) {
 		elem.addEventListener("click", () => {
-			M.penalties++;
+			M.matchEvents.push({
+				teleop: false,
+				id: penalty,
+				timestamp: M.time
+			});
 		})
 	}
 
-	document.getElementById("amplify").addEventListener("click", (e) => {
-		if (M.ampStartTime == null) {
-			M.ampStartTime = Date.now() / 1000;
-			M.amplifications++;
-			e.target.innerHTML = "Amplified!";
-			e.target.classList.add("selected");
-		} else {
-			M.ampStartTime = null;
-			e.target.innerHTML = "Amplify";
-			e.target.classList.remove("selected");
+	function setAutoPendingEvent(event) {
+		pendingEvent = event;
+		for (let e of document.getElementsByClassName("auto-confirm")) {
+			e.style.display = "";
 		}
+		for (let e of document.getElementsByClassName("auto-nonconfirm")) {
+			e.style.display = "none";
+		}
+	}
+
+	document.getElementById("auto-success").addEventListener("click", () => {
+		if (pendingEvent != null) {
+			pendingEvent.successful = true;
+			M.matchEvents.push(pendingEvent);
+		}
+		pendingEvent = null;
+		hideAutoConfirm();
+	});
+
+	document.getElementById("auto-failure").addEventListener("click", () => {
+		if (pendingEvent != null) {
+			pendingEvent.successful = false;
+			M.matchEvents.push(pendingEvent);
+		}
+		pendingEvent = null;
+		hideAutoConfirm();
+	});
+
+	function hideAutoConfirm() {
+		for (let e of document.getElementsByClassName("auto-confirm")) {
+			e.style.display = "none";
+		}
+		for (let e of document.getElementsByClassName("auto-nonconfirm")) {
+			e.style.display = "";
+		}
+	}
+
+	function setTeleopPendingEvent(event) {
+		pendingEvent = event;
+		for (let e of document.getElementsByClassName("teleop-confirm")) {
+			e.style.display = "";
+		}
+		for (let e of document.getElementsByClassName("teleop-nonconfirm")) {
+			e.style.display = "none";
+		}
+	}
+
+	document.getElementById("teleop-success").addEventListener("click", () => {
+		if (pendingEvent != null) {
+			pendingEvent.successful = true;
+			M.matchEvents.push(pendingEvent);
+		}
+		pendingEvent = null;
+		hideTeleopConfirm();
+	});
+
+	document.getElementById("teleop-failure").addEventListener("click", () => {
+		if (pendingEvent != null) {
+			pendingEvent.successful = false;
+			M.matchEvents.push(pendingEvent);
+		}
+		pendingEvent = null;
+		hideTeleopConfirm();
+	});
+
+	function hideTeleopConfirm() {
+		for (let e of document.getElementsByClassName("teleop-confirm")) {
+			e.style.display = "none";
+		}
+		for (let e of document.getElementsByClassName("teleop-nonconfirm")) {
+			e.style.display = "";
+		}
+	}
+
+	document.getElementById("start-shallow").addEventListener("click", () => {
+		M.climbType = "shallow";
+		M.climbStart = M.time;
+	});
+	document.getElementById("start-deep").addEventListener("click", () => {
+		M.climbType = "deep";
+		M.climbStart = M.time;
+	});
+	document.getElementById("climb-fail").addEventListener("click", () => {
+		M.climbResult = "failed";
+		M.climbEnd = M.time;
+	});
+	document.getElementById("climb-fall").addEventListener("click", () => {
+		M.climbResult = "fell";
+		M.climbEnd = M.time;
+	});
+	document.getElementById("climb-successful").addEventListener("click", () => {
+		M.climbResult = "succeeded";
+		M.climbEnd = M.time;
 	});
 
 	function onSubmit(event) {
 		event.preventDefault();
 
-		// Calculate cycle times and cycle time average
+		// Calculate stats from all the events
+
+		let isReverseCycle = false;
+		let cycleStartTime = null;
 		let cycleTimes = [];
-		for (let item of M.ampScores.concat(M.speakerScores)) {
-			if (item[1]) {
-				cycleTimes.push(item[0] - M.timeOffset);
+
+		let autoCoralAttempts = [];
+		let autoAlgaeAttempts = 0;
+		let autoAlgaeScores = 0;
+		let autoIntakeAttempts = [];
+		let autoIntakeSuccesses = [];
+
+		let teleopCoralAttempts = [];
+		let teleopIntakeAttempts = 0;
+		let teleopIntakeSuccesses = 0;
+		let agitations = 0;
+		let processorAttempts = 0;
+		let processorScores = 0;
+		let netShots = 0;
+		let defenses = 0;
+
+		let penalties = 0;
+		let totalScore = 0;
+
+		M.matchEvents.sort((a, b) => a - b);
+
+		for (let event of M.matchEvents) {
+			// Totals and score calculations
+			if (event.id == "coral") {
+				let attempt = {
+					successful: event.successful,
+					level: `l${event.level + 1}`,
+				}
+				if (event.teleop) {
+					totalScore += event.level;
+					totalScore += 2;
+					teleopCoralAttempts.push(attempt);
+				} else {
+					totalScore += event.level;
+					totalScore += 3;
+					if (event.level > 1) {
+						totalScore += 1;
+					}
+					autoCoralAttempts.push(attempt);
+				}
+			} else if (event.id == "algae") {
+				totalScore += 4;
+				autoAlgaeAttempts++;
+				if (event.successful) {
+					autoAlgaeScores++;
+				}
+			} else if (event.id == "processor") {
+				totalScore += 4;
+				processorAttempts++;
+				if (event.successful) {
+					processorScores++;
+				}
+			} else if (event.id == "net") {
+				totalScore += 4;
+				netShots++;
+			} else if (event.id == "intake") {
+				if (event.teleop) {
+					teleopIntakeAttempts++;
+					if (event.successful) {
+						teleopIntakeSuccesses++;
+					}
+				} else {
+					autoIntakeAttempts++;
+					if (event.successful) {
+						autoIntakeSuccesses++;
+					}
+				}
+			} else if (event.id == "agitate") {
+				agitations++;
+			} else if (event.id == "defend") {
+				defenses++;
+			} else if (event.id == "penalty") {
+				penalties++;
+				totalScore -= 5;
+			}
+
+			// Cycles
+			if (event.teleop) {
+				if (event.successful != undefined && event.successful) {
+					if (event.id == "intake") {
+						if (isReverseCycle) {
+							cycleTimes.push(cycleStartTime);
+							cycleStartTime = null;
+							isReverseCycle = false;
+						}
+						cycleStartTime = event.timestamp;
+					} else if (event.id == "coral" || event.id == "processor" || event.id == "net") {
+						if (cycleStartTime != null) {
+							isReverseCycle = true;
+						}
+					}
+				}
 			}
 		}
-		// Cycle times will be out of order due to the amp and speaker scores being concatted
-		cycleTimes.sort((a, b) => a - b);
+
+		// // Calculate cycle times and cycle time average
+		// let cycleTimes = [];
+		// for (let item of M.ampScores.concat(M.speakerScores)) {
+		// 	if (item[1]) {
+		// 		cycleTimes.push(item[0] - M.timeOffset);
+		// 	}
+		// }
+		// // Cycle times will be out of order due to the amp and speaker scores being concatted
+		// cycleTimes.sort((a, b) => a - b);
 
 		let cycleTimeSum = 0;
 		for (let i = 1; i < cycleTimes.length; i++) {
@@ -317,29 +639,7 @@
 			cycleTime = cycleTimeSum / (cycleTimes.length - 1);
 		}
 
-		let climbSuccess = document.getElementById("climb-successful").checked;
-		let trapSuccess = document.getElementById("trap-successful").checked;
-
-		// Calculate points scored
-		let pointsScored = 0;
-		pointsScored += M.totalAutoScores;
-		pointsScored += M.totalAmpScores;
-		pointsScored += (M.totalSpeakerScores - M.amplifiedScores) * 2;
-		pointsScored += M.amplifiedScores * 5;
-		pointsScored += climbSuccess ? 3 : 0;
-		pointsScored += trapSuccess ? 5 : 0;
-
-		// Record auto shots
-		let autoShots = [];
-		for (let shot of M.autoScores) {
-			autoShots.push(shot[1]);
-		}
-
-		let auto = document.getElementById("auto").value;
-		if (auto == "none") {
-			auto = null;
-		}
-
+		// Get the match number
 		let matchNumberString = document.getElementById("match-number").value;
 		let matchNumber = null;
 		if (matchNumberString.length >= 2) {
@@ -364,31 +664,37 @@
 				num: number,
 			};
 		}
+		
+		let auto = document.getElementById("auto").value;
+		if (auto == "none") {
+			auto = null;
+		}
 
 		const data = {
 			team_number: document.getElementById("team-number").value * 1,
 			match_id: "",
 			match_number: matchNumber,
 			recorded_live: document.getElementById("recorded-live").checked,
-			auto_shots: autoShots,
 			auto: auto,
-			auto_attempts: M.autoScores.length,
-			auto_scores: M.totalAutoScores,
 			auto_collision: document.getElementById("collision").checked,
-			points_scored: pointsScored,
-			amp_attempts: M.ampScores.length,
-			amp_scores: M.totalAmpScores,
-			speaker_attempts: M.speakerScores.length,
-			speaker_scores: M.totalSpeakerScores,
-			climb_attempted: document.getElementById("climb-attempted").checked,
-			climb_successful: climbSuccess,
-			trap_attempted: document.getElementById("trap-attempted").checked,
-			trap_successful: trapSuccess,
-			amplifications: M.amplifications,
-			amplified_notes: M.amplifiedScores,
-			passes: M.passes,
-			defenses: M.defenses,
-			penalties: M.penalties,
+			auto_coral_attempts: autoCoralAttempts,
+			auto_algae_attempts: autoAlgaeAttempts,
+			auto_algae_scores: autoAlgaeScores,
+			auto_intake_attempts: autoIntakeAttempts,
+			auto_intake_successes: autoIntakeSuccesses,
+			teleop_coral_attempts: teleopCoralAttempts,
+			teleop_intake_attempts: teleopIntakeAttempts,
+			teleop_intake_successes: teleopIntakeSuccesses,
+			agitations: agitations,
+			processor_attempts: processorAttempts,
+			processor_scores: processorScores,
+			net_shots: netShots,
+			climb_attempted: M.climbType,
+			climb_result: M.climbResult,
+			climb_time: M.climbEnd - M.climbStart,
+			points_scored: totalScore,
+			defenses: defenses,
+			penalties: penalties,
 			cycle_time: cycleTime,
 			cycle_times: cycleTimes,
 			status: document.getElementById("status").value,
@@ -417,10 +723,6 @@
 		initMatchData();
 		document.getElementById("team-number").value = null;
 		document.getElementById("showed-up").checked = false;
-		document.getElementById("climb-attempted").checked = false;
-		document.getElementById("climb-successful").checked = false;
-		document.getElementById("trap-attempted").checked = false;
-		document.getElementById("trap-successful").checked = false;
 		document.getElementById("won").checked = false;
 		document.getElementById("broken").checked = false;
 		document.getElementById("notes").value = "";
@@ -544,18 +846,30 @@
 		margin: 0.4rem;
 	}
 
-	#pass,
+	.grid-icon {
+		margin: auto;
+		pointer-events: none;
+		width: 1.4rem;
+	}
+
+	.coral {
+		width: 1.1rem;
+	}
+
+	.algae {
+		width: 1.6rem;
+	}
+
+	.reef {
+		background-color: rgb(121, 53, 231);
+	}
+
 	#defend {
 		background-color: var(--bg3);
 	}
 
-	#amplify {
-		background-color: goldenrod;
-	}
-
-	#amplify.selected {
-		background-color: gold;
-		color: var(--bg);
+	#agitate {
+		background-color: #12e3ab;
 	}
 </style>
 {{footer}}

@@ -9,6 +9,16 @@ pub enum ClimbAbility {
 	Deep,
 }
 
+/// Result stating the success of a climb
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ClimbResult {
+	Failed,
+	Fell,
+	Succeeded,
+}
+
+
 /// Level for the reef
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]

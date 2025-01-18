@@ -246,6 +246,10 @@ pub fn render_progress_ring(size: f32, progress: f32) -> String {
 
 /// Calculates standard deviation
 pub fn standard_deviation(values: &[f32], mean: f32) -> f32 {
+	if values.is_empty() {
+		return 0.0;
+	}
+
 	let mut sum = 0.0;
 	for value in values {
 		sum += (mean - value).powi(2);

@@ -16,7 +16,7 @@ use crate::{
 
 use super::{
 	autos::{calculate_auto_stats, AutoStats},
-	game::{get_coral_points, ClimbAbility},
+	game::{get_coral_points, ClimbAbility, ClimbResult},
 	matches::MatchStats,
 	status::RobotStatus,
 	Competition, TeamNumber,
@@ -246,10 +246,8 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	if stats.climb_attempted != ClimbAbility::None {
 		ctx.climb_attempts += 1;
 	}
-	if stats.climb_successful {
+	if stats.climb_result == ClimbResult::Succeeded {
 		ctx.climb_successes += 1;
-	}
-	if stats.climb_successful {
 		ctx.climb_time_total += stats.climb_time;
 	}
 
@@ -389,7 +387,7 @@ impl Fairing for UpdateStats {
 /// Calculate the consistency of cycle times by getting the r^2 value of the linear regression of the times.
 /// Returns None if there are no cycle times
 fn calculate_cycle_consistency(cycle_times: &[f32]) -> Option<f32> {
-	if cycle_times.is_empty() {
+	if cycle_times.len() < 2 {
 		return None;
 	}
 
