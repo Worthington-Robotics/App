@@ -83,10 +83,12 @@ pub struct StatsForm {
 }
 
 /// Form for match reporting will all the bells and whistles
-#[rocket::get("/scouting/report")]
+#[rocket::get("/scouting/report?<team_number>&<match_number>")]
 pub async fn match_report_main(
 	session_id: OptionalSessionID<'_>,
 	state: &State,
+	team_number: Option<TeamNumber>,
+	match_number: Option<&str>,
 ) -> Result<PageOrRedirect, Status> {
 	let span = span!(Level::DEBUG, "Match report");
 	let _enter = span.enter();
@@ -101,6 +103,15 @@ pub async fn match_report_main(
 	};
 
 	let page = include_str!("../pages/scouting/report/main.min.html");
+	let page = page.replace(
+		"{team-number}",
+		&if let Some(team_number) = team_number {
+			team_number.to_string()
+		} else {
+			String::new()
+		},
+	);
+	let page = page.replace("{match-number}", match_number.unwrap_or_default());
 
 	let page = create_page("Match Report", &page, Some(Scope::Scouting));
 

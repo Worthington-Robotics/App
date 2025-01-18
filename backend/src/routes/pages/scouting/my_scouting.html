@@ -33,6 +33,7 @@
 			</div>
 			<div class="cont">
 				<button id="popup-claim">Claim</button>
+				<a id="popup-scout-link"><button id="popup-scout">Scout Match</button></a>
 				<button id="popup-cancel">Close</button>
 			</div>
 		</div>
@@ -205,6 +206,13 @@
 		} else {
 			popupClaimButton.innerHTML = "Claim";
 		}
+
+		scoutURL = `/scouting/report?match_number=${selectedMatch}`;
+		if (selectedMatchIsClaimed) {
+			scoutURL += `&team_number=${selectedMatchTeam}`;
+		}
+		document.getElementById("popup-scout-link").href = scoutURL;
+
 		popupContainer.style.display = "";
 	}
 
