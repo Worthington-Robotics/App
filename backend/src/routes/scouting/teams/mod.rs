@@ -581,7 +581,7 @@ pub async fn team_details(
 		&render_stat_card_optional_float("CT", "", team_info.cycle_time, false, ""),
 	);
 	let page = page.replace(
-		"{{climb-time}}",
+		"{{pit-climb-time}}",
 		&render_stat_card_optional_float("Clmb Time", "", team_info.climb_time, false, ""),
 	);
 	let page = page.replace(
