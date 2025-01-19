@@ -11,10 +11,15 @@
 		<input name="file" type="file" accept=".json" />
 		<input type="submit" value="Submit" />
 	</form>
-	<button id="download-data">Download Scouting Data</button>
-	<iframe id="download-iframe" style="display:none;"></iframe>
 	<div class="cont col">
-		<h3>Settings</h3>
+		<h2>Download Scouting Data</h2>
+		<button id="download-team-stats">Team Stats</button>
+		<button id="download-matches">Matches</button>
+		<button id="download-team-info">Pit Scouting</button>
+		<iframe id="download-iframe" style="display:none;"></iframe>
+	</div>
+	<div class="cont col">
+		<h2>Settings</h2>
 		<div class="cont">
 			<div class="cont col">
 				<label for="competition">Current Competition</label>
@@ -39,8 +44,14 @@
 	}
 </style>
 <script>
-	document.getElementById("download-data").addEventListener("click", () => {
-		document.getElementById("download-iframe").src = "/api/scouting_data.csv";
+	document.getElementById("download-team-stats").addEventListener("click", () => {
+		document.getElementById("download-iframe").src = "/api/scouting_download/team_stats.csv";
+	});
+	document.getElementById("download-matches").addEventListener("click", () => {
+		document.getElementById("download-iframe").src = "/api/scouting_download/matches.csv";
+	});
+	document.getElementById("download-team-info").addEventListener("click", () => {
+		document.getElementById("download-iframe").src = "/api/scouting_download/team_info.csv";
 	});
 
 	document.getElementById("settings-submit").addEventListener("click", (e) => {

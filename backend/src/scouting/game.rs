@@ -18,7 +18,6 @@ pub enum ClimbResult {
 	Succeeded,
 }
 
-
 /// Level for the reef
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -27,6 +26,18 @@ pub enum ReefLevel {
 	L2,
 	L3,
 	L4,
+}
+
+impl ReefLevel {
+	/// Get the integer index of this level
+	pub fn to_int(&self) -> u8 {
+		match self {
+			Self::L1 => 0,
+			Self::L2 => 1,
+			Self::L3 => 2,
+			Self::L4 => 3,
+		}
+	}
 }
 
 /// Game pieces

@@ -155,6 +155,9 @@ pub trait Database {
 	/// Create team info for a team
 	async fn create_team_info(&mut self, team: TeamNumber, info: TeamInfo) -> anyhow::Result<()>;
 
+	/// Get all team info
+	async fn get_all_team_info(&self) -> anyhow::Result<impl Iterator<Item = TeamInfo>>;
+
 	/// Get an auto
 	async fn get_auto(&self, auto: &str) -> anyhow::Result<Option<Auto>>;
 

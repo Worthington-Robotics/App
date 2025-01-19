@@ -178,6 +178,7 @@ impl ToDropdown for Division {
 #[derive(Serialize, Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct TeamInfo {
+	pub team: TeamNumber,
 	/// The max speed of the robot, in feet per second
 	pub max_speed: Option<f32>,
 	/// The height of the robot, in feet, when fully extended

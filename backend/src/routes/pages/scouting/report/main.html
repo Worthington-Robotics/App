@@ -121,7 +121,7 @@
 		<button id="climb-fail" class="cont grid-button miss"><img src="/assets/icons/error.svg" class="grid-icon" />
 			Time Expired</button>
 		<button id="climb-fall" class="cont grid-button miss"><img src="/assets/icons/download.svg" class="grid-icon" />
-			Fell</button>
+			Fell Down</button>
 		<button id="climb-successful" class="cont grid-button"><img src="/assets/icons/check.svg" class="grid-icon" />
 			Successful</button>
 	</div>
@@ -625,16 +625,6 @@
 				}
 			}
 		}
-
-		// // Calculate cycle times and cycle time average
-		// let cycleTimes = [];
-		// for (let item of M.ampScores.concat(M.speakerScores)) {
-		// 	if (item[1]) {
-		// 		cycleTimes.push(item[0] - M.timeOffset);
-		// 	}
-		// }
-		// // Cycle times will be out of order due to the amp and speaker scores being concatted
-		// cycleTimes.sort((a, b) => a - b);
 
 		let cycleTimeSum = 0;
 		for (let i = 1; i < cycleTimes.length; i++) {

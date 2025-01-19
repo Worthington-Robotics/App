@@ -403,6 +403,12 @@ impl Database for CacheDatabase {
 		Ok(())
 	}
 
+	async fn get_all_team_info(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = crate::scouting::TeamInfo>> {
+		self.cache.get_all_team_info().await
+	}
+
 	async fn get_auto(&self, id: &str) -> anyhow::Result<Option<crate::scouting::autos::Auto>> {
 		if let Some(auto) = self.cache.get_auto(id).await? {
 			Ok(Some(auto))

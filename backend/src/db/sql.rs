@@ -781,6 +781,27 @@ impl Database for SqlDatabase {
 		Ok(())
 	}
 
+	async fn get_all_team_info(&self) -> anyhow::Result<impl Iterator<Item = TeamInfo>> {
+		let result = sqlx::query("SELECT * FROM team_info")
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let info = read_team_info(row).context("Failed to read team info")?;
+					out.push(info);
+				}
+
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get all team info from database: {e}");
+				Err(anyhow!("Failed to get all team info from database"))
+			}
+		}
+	}
+
 	async fn get_auto(&self, id: &str) -> anyhow::Result<Option<Auto>> {
 		let mut result = sqlx::query("SELECT * FROM autos WHERE Id = $1")
 			.bind(id)
