@@ -186,7 +186,7 @@
 	setInterval(() => {
 		if (M.timerRunning && M.startTime != null) {
 			// Length of a match plus extra, with the offset removed to account for it
-			if (M.time - M.timeOffset > 140) {
+			if (M.time - M.timeOffset > 150) {
 				M.timerRunning = false;
 				document.getElementById("time-pause-button").innerHTML = "Match Finished";
 			} else {
