@@ -259,7 +259,14 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		ctx.cycle_time_consistency_sum += consistency;
 		ctx.cycle_time_consistency_count += 1;
 	}
-	ctx.cycle_times.extend(stats.cycle_times.iter());
+
+	// Get the deltas between the cycle timestamps
+	let mut cycle_deltas = Vec::with_capacity(stats.cycle_times.len());
+	for window in stats.cycle_times.windows(2) {
+		cycle_deltas.push(window[1] - window[0]);
+	}
+
+	ctx.cycle_times.extend(cycle_deltas);
 
 	if stats.status != RobotStatus::Good {
 		ctx.breaks += 1;
