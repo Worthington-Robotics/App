@@ -511,16 +511,22 @@
 		M.climbStart = M.time;
 	});
 	document.getElementById("climb-fail").addEventListener("click", () => {
-		M.climbResult = "failed";
-		M.climbEnd = M.time;
+		if (M.climbStart != null) {
+			M.climbResult = "failed";
+			M.climbEnd = M.time;
+		}
 	});
 	document.getElementById("climb-fall").addEventListener("click", () => {
-		M.climbResult = "fell";
-		M.climbEnd = M.time;
+		if (M.climbStart != null) {
+			M.climbResult = "fell";
+			M.climbEnd = M.time;
+		}
 	});
 	document.getElementById("climb-successful").addEventListener("click", () => {
-		M.climbResult = "succeeded";
-		M.climbEnd = M.time;
+		if (M.climbStart != null) {
+			M.climbResult = "succeeded";
+			M.climbEnd = M.time;
+		}
 	});
 
 	function onSubmit(event) {
@@ -604,7 +610,7 @@
 				defenses++;
 			} else if (event.id == "penalty") {
 				penalties++;
-				totalScore -= 5;
+				totalScore -= 4;
 			}
 
 			// Cycles
@@ -623,6 +629,23 @@
 						}
 					}
 				}
+			}
+		}
+
+		// Auto cross line points
+		if (autoAlgaeAttempts > 0 || autoCoralAttempts.length > 0 || autoIntakeAttempts > 0) {
+			totalScore += 3;
+		}
+
+		// Climb points
+		if (M.climb_attempted != "none") {
+			totalScore += 2;
+		}
+		if (M.climb_result == "succeeded") {
+			if (M.climb_attempted == "shallow") {
+				totalScore += 6;
+			} else if (M.climb_attempted == "deep") {
+				totalScore += 12;
 			}
 		}
 
