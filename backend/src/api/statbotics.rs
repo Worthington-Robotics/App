@@ -27,12 +27,10 @@ impl StatboticsClient {
 		self.epa_cache.read().await.get(&team).copied()
 	}
 
-	/// Update the EPA cache with values from the Statbotics server
-	pub async fn get_stats(&self) -> anyhow::Result<()> {
-		let base_url = format!(
-			"https://api.statbotics.io/v3/team_years?year={}",
-			get_season(&Utc::now())
-		);
+	/// Update the EPA cache with values from the Statbotics server. If no season is provided, uses the default one.
+	pub async fn get_stats(&self, season: Option<u32>) -> anyhow::Result<()> {
+		let season = season.unwrap_or_else(|| get_season(&Utc::now()));
+		let base_url = format!("https://api.statbotics.io/v3/team_years?year={}", season);
 
 		let mut offset = 0;
 		let mut teams = Vec::new();

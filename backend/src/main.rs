@@ -69,7 +69,7 @@ async fn rocket() -> _ {
 		let statbotics_client = StatboticsClient::new(&req_client);
 		if std::env::var("POPULATE_EPA").is_ok_and(|x| x == "1") {
 			statbotics_client
-				.get_stats()
+				.get_stats(Some(2024))
 				.await
 				.expect("Failed to get Statbotics stats");
 		}
