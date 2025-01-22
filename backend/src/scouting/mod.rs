@@ -62,6 +62,12 @@ pub enum Competition {
 	MiamiValley,
 	Champs,
 	States,
+	Week1,
+	Week2,
+	Week3,
+	Week4,
+	Week5,
+	Week6,
 }
 
 impl Competition {
@@ -72,6 +78,12 @@ impl Competition {
 			"MiamiValley" => Some(Self::MiamiValley),
 			"Champs" => Some(Self::Champs),
 			"States" => Some(Self::States),
+			"Week1" => Some(Self::Week1),
+			"Week2" => Some(Self::Week2),
+			"Week3" => Some(Self::Week3),
+			"Week4" => Some(Self::Week4),
+			"Week5" => Some(Self::Week5),
+			"Week6" => Some(Self::Week6),
 			_ => None,
 		}
 	}
@@ -83,6 +95,12 @@ impl Competition {
 			Self::MiamiValley => "MVR",
 			Self::Champs => "CMPTX",
 			Self::States => "OSC",
+			Self::Week1 => "Wk1",
+			Self::Week2 => "Wk2",
+			Self::Week3 => "Wk3",
+			Self::Week4 => "Wk4",
+			Self::Week5 => "Wk5",
+			Self::Week6 => "Wk6",
 		}
 	}
 
@@ -94,6 +112,9 @@ impl Competition {
 			Self::MiamiValley => Some("OHMV"),
 			Self::Champs => None,
 			Self::States => None,
+			Self::Week1 | Self::Week2 | Self::Week3 | Self::Week4 | Self::Week5 | Self::Week6 => {
+				None
+			}
 		}
 	}
 
