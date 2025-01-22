@@ -137,6 +137,7 @@ pub async fn populate_teams(
 			followers: HashSet::new(),
 		};
 
+		println!("Creating team {}", team.number);
 		db.create_team(team)
 			.await
 			.context("Failed to create team")?;

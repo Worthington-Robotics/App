@@ -84,6 +84,13 @@ fn render_status_update(
 	let out = out.replace("{{details}}", &update.details);
 	let out = out.replace("{{status}}", &update.status.to_string());
 	let out = out.replace("{{status-color}}", update.status.get_color());
+	let out = out.replace(
+		"{{competition}}",
+		&update
+			.competition
+			.map(|x| x.to_string())
+			.unwrap_or_default(),
+	);
 
 	let reasons = update.infer_reasons();
 	let mut reasons_string = String::new();
@@ -119,15 +126,21 @@ pub async fn update_status(
 
 	let date = Utc::now().to_rfc2822();
 
+	let mut lock = state.db.write().await;
+
+	let global_data = lock.get_global_data().await.map_err(|e| {
+		error!("Failed to get global data from database: {e}");
+		Status::InternalServerError
+	})?;
+
 	let update = StatusUpdate {
 		team: status.team,
 		member: requesting_member.id,
 		details: status.details.clone(),
 		status: status.status,
 		date,
+		competition: global_data.current_competition,
 	};
-
-	let mut lock = state.db.write().await;
 
 	if let Err(e) = lock.update_team_status(update).await {
 		error!("Failed to create status update in database: {e}");

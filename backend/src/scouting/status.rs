@@ -3,7 +3,7 @@ use std::{fmt::Display, str::FromStr};
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 
-use super::TeamNumber;
+use super::{Competition, TeamNumber};
 
 /// Status update (broken / fixed) for a team
 #[derive(Serialize, Deserialize, Clone)]
@@ -13,6 +13,7 @@ pub struct StatusUpdate {
 	pub status: RobotStatus,
 	pub details: String,
 	pub member: String,
+	pub competition: Option<Competition>,
 }
 
 impl StatusUpdate {

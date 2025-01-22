@@ -60,6 +60,7 @@ pub async fn create_match_stats(
 				status: stats.status,
 				details: stats.notes.clone(),
 				member: requesting_member.id.clone(),
+				competition: stats.competition.clone(),
 			};
 
 			// Not a super bad error, it's more important that the stats get posted

@@ -905,13 +905,14 @@ impl Database for SqlDatabase {
 
 	async fn update_team_status(&mut self, update: StatusUpdate) -> anyhow::Result<()> {
 		sqlx::query(
-				"INSERT INTO team_status (Team, Date, Status, Details, Member) VALUES ($1, $2, $3, $4, $5)",
+				"INSERT INTO team_status (Team, Date, Status, Details, Member, Competition) VALUES ($1, $2, $3, $4, $5, $6)",
 			)
 			.bind(update.team as i32)
 			.bind(update.date)
 			.bind(update.status.to_db())
 			.bind(update.details)
 			.bind(update.member)
+			.bind(update.competition.map(|x| x.to_string()))
 			.execute(&self.pool)
 			.await
 			.context("Failed to create new status update in database")?;
@@ -1225,7 +1226,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	);
 
 	let status_task = pool.execute(
-		"CREATE TABLE IF NOT EXISTS team_status (Team int2, Date text, Status text, Details text, Member text)",
+		"CREATE TABLE IF NOT EXISTS team_status (Team int2, Date text, Status text, Details text, Member text, Competition text)",
 	);
 
 	let matches_task = pool.execute(
@@ -1467,6 +1468,8 @@ fn read_status(id: TeamNumber, row: PgRow) -> anyhow::Result<StatusUpdate> {
 	};
 	let details: String = row.try_get("details")?;
 	let member: String = row.try_get("member")?;
+	let competition: Option<String> = row.try_get("competition")?;
+	let competition = competition.and_then(|x| Competition::from_db(&x));
 
 	Ok(StatusUpdate {
 		team: id,
@@ -1474,6 +1477,7 @@ fn read_status(id: TeamNumber, row: PgRow) -> anyhow::Result<StatusUpdate> {
 		details,
 		status,
 		member,
+		competition,
 	})
 }
 
