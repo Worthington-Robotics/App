@@ -264,6 +264,8 @@
 			if (resp.status != 200) {
 				setError(resp.statusText);
 				e.target.checked = !e.target.checked;
+			} else {
+				setSuccess("Competitions updated");
 			}
 		});
 	}
