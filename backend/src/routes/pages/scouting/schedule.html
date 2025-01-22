@@ -23,8 +23,8 @@
 			<form class="cont col" id="upload-form">
 				<input type="file" id="upload-file" />
 				<div class="cont">
+					<button id="upload-popup-close">Cancel</button>
 					<input type="submit" value="Upload">
-					<button id="upload-popup-close">Close</button>
 				</div>
 			</form>
 		</div>
@@ -145,6 +145,10 @@
 		background-color: var(--bg2);
 		padding: 1.5rem;
 		width: 80%;
+	}
+
+	#upload-popup-close {
+		background-color: var(--bg3);
 	}
 </style>
 <script>
