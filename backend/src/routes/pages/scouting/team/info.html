@@ -47,8 +47,12 @@
 	<input type="checkbox" class="field" name="can-pickup-coral" id="can-pickup-coral" {{can-pickup-coral-checked}} />
 	<label for="can-hold-both">Can Hold Both at Once?</label>
 	<input type="checkbox" class="field" name="can-hold-both" id="can-hold-both" {{can-hold-both-checked}} />
-	<label for="can-ground-intake">Can Ground Intake?</label>
-	<input type="checkbox" class="field" name="can-ground-intake" id="can-ground-intake" {{can-ground-intake-checked}} />
+	<label for="can-ground-intake-coral">Can Ground Intake Coral?</label>
+	<input type="checkbox" class="field" name="can-ground-intake-coral" id="can-ground-intake-coral"
+		{{can-ground-intake-coral-checked}} />
+	<label for="can-ground-intake-algae">Can Ground Intake Algae?</label>
+	<input type="checkbox" class="field" name="can-ground-intake-algae" id="can-ground-intake-algae"
+		{{can-ground-intake-algae-checked}} />
 	<label for="can-slide-intake">Can Slide Intake?</label>
 	<input type="checkbox" class="field" name="can-slide-intake" id="can-slide-intake" {{can-slide-intake-checked}} />
 	<label for="can-reef">Can Score on Reef?</label>
@@ -57,22 +61,21 @@
 	<input type="checkbox" class="field" name="can-processor" id="can-processor" {{can-processor-checked}} />
 	<label for="can-net">Can Score in Net?</label>
 	<input type="checkbox" class="field" name="can-net" id="can-net" {{can-net-checked}} />
+	<label for="can-agitate">Can Agitate Algae?</label>
+	<input type="checkbox" class="field" name="can-agitate" id="can-agitate" {{can-agitate-checked}} />
 
-	<label for="reef-level">Reef Level</label>
-	<select name="reef-level" id="reef-level" class="field">
-		<option value="unknown">Unknown</option>
-		<option value="l1" {{reef-l1-selected}}>L1</option>
-		<option value="l2" {{reef-l2-selected}}>L2</option>
-		<option value="l3" {{reef-l3-selected}}>L3</option>
-		<option value="l4" {{reef-l4-selected}}>L4</option>
-	</select>
-	<label for="climb-ability">Climb Ability</label>
-	<select name="climb-ability" id="climb-ability" class="field">
-		<option value="unknown">Unknown</option>
-		<option value="none" {{climb-none-selected}}>None</option>
-		<option value="shallow" {{climb-shallow-selected}}>Shallow</option>
-		<option value="deep" {{climb-deep-selected}}>Deep</option>
-	</select>
+	<label for="">Reef Levels</label>
+	<div class="cont">
+		<input type="checkbox" class="field" name="can-l1" id="can-l1" {{can-l1-checked}} />
+		<input type="checkbox" class="field" name="can-l2" id="can-l2" {{can-l2-checked}} />
+		<input type="checkbox" class="field" name="can-l3" id="can-l3" {{can-l3-checked}} />
+		<input type="checkbox" class="field" name="can-l4" id="can-l4" {{can-l4-checked}} />
+	</div>
+
+	<label for="can-shallow">Can Climb Shallow?</label>
+	<input type="checkbox" class="field" name="can-shallow" id="can-shallow" {{can-shallow-checked}} />
+	<label for="can-deep">Can Climb Deep?</label>
+	<input type="checkbox" class="field" name="can-deep" id="can-deep" {{can-deep-checked}} />
 	<label for="preferred-piece">Preferred Game Piece</label>
 	<select name="preferred-piece" id="preferred-piece" class="field">
 		<option value="unknown">Unknown</option>
@@ -81,8 +84,11 @@
 	</select>
 	<h2>Teleop</h2>
 	<label for="cycle-time">Cycle Time</label>
-	<input type="number" name="cycle-time" id="cycle-time" class="field" placeholder="0.00" step=any
-		value="{{cycle-time}}" />
+	<div class="cont">
+		<input type="number" name="cycle-time" id="cycle-time" class="field" placeholder="0.00" step=any
+			value="{{cycle-time}}" />
+		<button id="cycle-time-convert">CPM</button>
+	</div>
 	<label for="cycle-time">Climb Time</label>
 	<input type="number" name="climb-time" id="climb-time" class="field" placeholder="0.00" step=any
 		value="{{cycle-time}}" />
@@ -99,7 +105,7 @@
 	<input type="checkbox" class="field" name="auto-scores-back" id="auto-scores-back" {{auto-scores-back-checked}} />
 	<label for="auto-scores-side">Scores on Side of Reef?</label>
 	<input type="checkbox" class="field" name="auto-scores-side" id="auto-scores-side" {{auto-scores-side-checked}} />
-	<label for="auto-algae">Avergae Algae Scored</label>
+	<label for="auto-algae">Average Algae Scored</label>
 	<input type="number" name="auto-algae" id="auto-algae" class="field" placeholder="0" step=any
 		value="{{auto-algae}}" />
 	<label for="auto-coral">Average Coral Scored</label>
@@ -130,16 +136,6 @@
 			drivetrainType = null;
 		}
 
-		let reefLevel = document.getElementById("reef-level").value;
-		if (reefLevel == "unknown") {
-			reefLevel = null;
-		}
-
-		let climbAbility = document.getElementById("climb-ability").value;
-		if (climbAbility == "unknown") {
-			climbAbility = null;
-		}
-
 		let preferredPiece = document.getElementById("preferred-piece").value;
 		if (preferredPiece == "unknown") {
 			preferredPiece = null;
@@ -156,13 +152,19 @@
 			can_pickup_algae: document.getElementById("can-pickup-algae").checked,
 			can_pickup_coral: document.getElementById("can-pickup-coral").checked,
 			can_hold_both: document.getElementById("can-hold-both").checked,
-			can_ground_intake: document.getElementById("can-ground-intake").checked,
+			can_ground_intake_algae: document.getElementById("can-ground-intake-algae").checked,
+			can_ground_intake_coral: document.getElementById("can-ground-intake-coral").checked,
 			can_slide_intake: document.getElementById("can-slide-intake").checked,
 			can_reef: document.getElementById("can-reef").checked,
 			can_processor: document.getElementById("can-processor").checked,
 			can_net: document.getElementById("can-net").checked,
-			reef_level: reefLevel,
-			climb_ability: climbAbility,
+			can_agitate: document.getElementById("can-agitate").checked,
+			can_l1: document.getElementById("can-l1").checked,
+			can_l2: document.getElementById("can-l2").checked,
+			can_l3: document.getElementById("can-l3").checked,
+			can_l4: document.getElementById("can-l4").checked,
+			can_shallow: document.getElementById("can-shallow").checked,
+			can_deep: document.getElementById("can-deep").checked,
 			preferred_piece: preferredPiece,
 			cycle_time: document.getElementById("cycle-time").value * 1,
 			climb_time: document.getElementById("climb-time").value * 1,
@@ -236,6 +238,11 @@
 		e.preventDefault();
 		let elem = document.getElementById("width");
 		elem.value = elem.value / 12;
+	});
+	document.getElementById("cycle-time-convert").addEventListener("click", (e) => {
+		e.preventDefault();
+		let elem = document.getElementById("cycle-time");
+		elem.value = 120.0 / elem.value;
 	});
 </script>
 <style>

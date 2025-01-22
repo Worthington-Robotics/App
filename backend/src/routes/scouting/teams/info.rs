@@ -9,10 +9,7 @@ use tracing::{error, span, Level};
 use crate::{
 	db::Database,
 	routes::{OptionalSessionID, SessionID},
-	scouting::{
-		game::ClimbAbility, game::GamePiece, game::ReefLevel, DriveTrainType, PitScoutingProgress,
-		TeamNumber,
-	},
+	scouting::{game::GamePiece, DriveTrainType, PitScoutingProgress, TeamNumber},
 	util::{checkbox_attr, selected_attr},
 	State,
 };
@@ -126,9 +123,16 @@ pub async fn team_info_page(
 			.unwrap_or_default(),
 	);
 	let page = page.replace(
-		"{{can-ground-intake-checked}}",
+		"{{can-ground-intake-algae-checked}}",
 		&team_info
-			.can_ground_intake
+			.can_ground_intake_algae
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-ground-intake-coral-checked}}",
+		&team_info
+			.can_ground_intake_coral
 			.map(checkbox_attr)
 			.unwrap_or_default(),
 	);
@@ -155,44 +159,32 @@ pub async fn team_info_page(
 		&team_info.can_net.map(checkbox_attr).unwrap_or_default(),
 	);
 	let page = page.replace(
-		"{{reef-l1-selected}}",
-		selected_attr(team_info.reef_level.is_some_and(|x| x == ReefLevel::L1)),
+		"{{can-agitate-checked}}",
+		&team_info.can_agitate.map(checkbox_attr).unwrap_or_default(),
 	);
 	let page = page.replace(
-		"{{reef-l2-selected}}",
-		selected_attr(team_info.reef_level.is_some_and(|x| x == ReefLevel::L2)),
+		"{{can-l1-checked}}",
+		&team_info.can_l1.map(checkbox_attr).unwrap_or_default(),
 	);
 	let page = page.replace(
-		"{{reef-l3-selected}}",
-		selected_attr(team_info.reef_level.is_some_and(|x| x == ReefLevel::L3)),
+		"{{can-l2-checked}}",
+		&team_info.can_l2.map(checkbox_attr).unwrap_or_default(),
 	);
 	let page = page.replace(
-		"{{reef-l4-selected}}",
-		selected_attr(team_info.reef_level.is_some_and(|x| x == ReefLevel::L4)),
+		"{{can-l3-checked}}",
+		&team_info.can_l3.map(checkbox_attr).unwrap_or_default(),
 	);
 	let page = page.replace(
-		"{{climb-none-selected}}",
-		selected_attr(
-			team_info
-				.climb_ability
-				.is_some_and(|x| x == ClimbAbility::None),
-		),
+		"{{can-l4-checked}}",
+		&team_info.can_l4.map(checkbox_attr).unwrap_or_default(),
 	);
 	let page = page.replace(
-		"{{climb-shallow-selected}}",
-		selected_attr(
-			team_info
-				.climb_ability
-				.is_some_and(|x| x == ClimbAbility::Shallow),
-		),
+		"{{can-shallow-checked}}",
+		&team_info.can_shallow.map(checkbox_attr).unwrap_or_default(),
 	);
 	let page = page.replace(
-		"{{climb-deep-selected}}",
-		selected_attr(
-			team_info
-				.climb_ability
-				.is_some_and(|x| x == ClimbAbility::Deep),
-		),
+		"{{can-deep-checked}}",
+		&team_info.can_deep.map(checkbox_attr).unwrap_or_default(),
 	);
 	let page = page.replace(
 		"{{piece-coral-selected}}",

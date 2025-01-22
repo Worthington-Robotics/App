@@ -92,13 +92,16 @@
 			{{can-pickup-algae}}
 			{{can-pickup-coral}}
 			{{can-hold-both}}
-			{{can-ground-intake}}
+			{{can-ground-intake-algae}}
+			{{can-ground-intake-coral}}
 			{{can-slide-intake}}
 			{{can-reef}}
 			{{can-processor}}
 			{{can-net}}
-			{{reef-level}}
-			{{climb-ability}}
+			{{can-agitate}}
+			{{reef-ability}}
+			{{can-shallow}}
+			{{can-deep}}
 			{{preferred-piece}}
 			{{pit-cycle-time}}
 			{{pit-climb-time}}
@@ -231,6 +234,23 @@
 	/* Start with competition-only cards hidden */
 	.comp {
 		display: none;
+	}
+
+	.reef-ability {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.4rem;
+	}
+
+	.reef-level {
+		border-radius: 0.2rem;
+		width: 1rem;
+		height: 1rem;
+		background-color: var(--bg3);
+	}
+
+	.reef-level.selected {
+		background-color: var(--fg);
 	}
 </style>
 <script>

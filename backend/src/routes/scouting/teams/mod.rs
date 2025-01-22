@@ -20,8 +20,8 @@ use crate::{
 	db::{Database, DatabaseImpl},
 	routes::{OptionalSessionID, SessionID},
 	scouting::{
-		game::ClimbAbility, game::GamePiece, game::ReefLevel, stats::CombinedTeamStats,
-		status::RobotStatus, Competition, DriveTrainType, Team, TeamNumber,
+		game::GamePiece, stats::CombinedTeamStats, status::RobotStatus, Competition,
+		DriveTrainType, Team, TeamNumber,
 	},
 	State,
 };
@@ -29,9 +29,9 @@ use crate::{
 use super::{
 	create_page,
 	stats::{
-		render_stat_card_float, render_stat_card_optional, render_stat_card_optional_bool,
-		render_stat_card_optional_float, stat_card_float, stat_card_other, stat_card_pct,
-		STAT_ALGAE, STAT_CORAL,
+		render_stat_card, render_stat_card_float, render_stat_card_optional,
+		render_stat_card_optional_bool, render_stat_card_optional_float, stat_card_float,
+		stat_card_other, stat_card_pct, STAT_ALGAE, STAT_CORAL,
 	},
 	PageOrRedirect, Scope,
 };
@@ -511,8 +511,24 @@ pub async fn team_details(
 		&render_stat_card_optional_bool("Hold Both?", "", team_info.can_hold_both, false, ""),
 	);
 	let page = page.replace(
-		"{{can-ground-intake}}",
-		&render_stat_card_optional_bool("Ground Int?", "", team_info.can_ground_intake, false, ""),
+		"{{can-ground-intake-algae}}",
+		&render_stat_card_optional_bool(
+			&format!("{STAT_ALGAE} Ground?"),
+			"",
+			team_info.can_ground_intake_algae,
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{can-ground-intake-coral}}",
+		&render_stat_card_optional_bool(
+			&format!("{STAT_CORAL} Ground?"),
+			"",
+			team_info.can_ground_intake_coral,
+			false,
+			"",
+		),
 	);
 	let page = page.replace(
 		"{{can-slide-intake}}",
@@ -531,34 +547,30 @@ pub async fn team_details(
 		&render_stat_card_optional_bool("Net?", "", team_info.can_net, false, ""),
 	);
 	let page = page.replace(
-		"{{reef-level}}",
-		&render_stat_card_optional(
-			"Reef Lvl",
-			"",
-			team_info.reef_level.map(|x| match x {
-				ReefLevel::L1 => "L1",
-				ReefLevel::L2 => "L2",
-				ReefLevel::L3 => "L3",
-				ReefLevel::L4 => "L4",
-			}),
-			true,
-			"",
-		),
+		"{{can-agitate}}",
+		&render_stat_card_optional_bool("Agitate?", "", team_info.can_agitate, false, ""),
+	);
+
+	let l1_elem = render_reef_level(team_info.can_l1.unwrap_or_default());
+	let l2_elem = render_reef_level(team_info.can_l2.unwrap_or_default());
+	let l3_elem = render_reef_level(team_info.can_l3.unwrap_or_default());
+	let l4_elem = render_reef_level(team_info.can_l4.unwrap_or_default());
+	let reef_level =
+		format!("<div class=\"reef-ability\">{l1_elem}{l2_elem}{l3_elem}{l4_elem}</div>");
+	let page = page.replace(
+		"{{reef-ability}}",
+		&render_stat_card("Reef Lvls", "", reef_level, true, ""),
+	);
+
+	let page = page.replace(
+		"{{can-shallow}}",
+		&render_stat_card_optional_bool("Shallow?", "", team_info.can_shallow, false, ""),
 	);
 	let page = page.replace(
-		"{{climb-ability}}",
-		&render_stat_card_optional(
-			"Climb",
-			"",
-			team_info.climb_ability.map(|x| match x {
-				ClimbAbility::None => "X",
-				ClimbAbility::Shallow => "S",
-				ClimbAbility::Deep => "D",
-			}),
-			true,
-			"",
-		),
+		"{{can-deep}}",
+		&render_stat_card_optional_bool("Deep?", "", team_info.can_deep, false, ""),
 	);
+
 	let page = page.replace(
 		"{{preferred-piece}}",
 		&render_stat_card_optional(
@@ -781,4 +793,12 @@ pub async fn get_historical_stat(
 	})?;
 
 	Ok(RawJson(out))
+}
+
+fn render_reef_level(enabled: bool) -> &'static str {
+	if enabled {
+		"<div class=\"reef-level selected\"></div>"
+	} else {
+		"<div class=\"reef-level\"></div>"
+	}
 }
