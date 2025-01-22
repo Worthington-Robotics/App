@@ -40,6 +40,10 @@
 	<input type="number" class="field" name="team-number" id="team-number" placeholder="0000" value="{team-number}" />
 	<label for="match-number">Match Number</label>
 	<input type="text" class="field" name="match-number" id="match-number" placeholder="Q0" value="{match-number}" />
+	<label for="competition">Competition</label>
+	<select id="competition" name="competition">
+		{{competition-options}}
+	</select>
 	<div class="cont">
 		<input type="checkbox" name="recorded-live" id="recorded-live" class="field" />
 		<label for="recorded-live">Recording Live?</label>
@@ -691,10 +695,16 @@
 			auto = null;
 		}
 
+		let competition = document.getElementById("competition").value;
+		if (competition == "none") {
+			competition = null;
+		}
+
 		const data = {
 			team_number: document.getElementById("team-number").value * 1,
 			match_id: "",
 			match_number: matchNumber,
+			competition: competition,
 			recorded_live: document.getElementById("recorded-live").checked,
 			auto: auto,
 			auto_collision: document.getElementById("collision").checked,

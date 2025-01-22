@@ -18,7 +18,7 @@ use crate::{
 		status::{RobotStatus, StatusUpdate},
 		Competition, TeamNumber,
 	},
-	util::{date_from_js, render_time},
+	util::{date_from_js, render_time, ToDropdown},
 	State,
 };
 
@@ -40,11 +40,18 @@ pub async fn create_match_stats(
 
 	let now = Utc::now().to_rfc2822();
 
+	let mut lock = state.db.write().await;
+
 	// Fill out record info
 	stats.recorder = Some(requesting_member.id.clone());
 	stats.record_time = Some(now.clone());
-
-	let mut lock = state.db.write().await;
+	if stats.competition.is_none() {
+		let global_data = lock.get_global_data().await.map_err(|e| {
+			error!("Failed to get global data from database: {e}");
+			Status::InternalServerError
+		})?;
+		stats.competition = global_data.current_competition;
+	}
 
 	// If the report was posted live, then update robot status. We only add a good status update if the robot wasn't good before
 	if stats.recorded_live {
@@ -113,6 +120,10 @@ pub async fn match_report_main(
 		},
 	);
 	let page = page.replace("{match-number}", match_number.unwrap_or_default());
+
+	let options = Competition::create_options(None);
+	let options = format!("<option value=none>None</option>{options}");
+	let page = page.replace("{{competition-options}}", &options);
 
 	let page = create_page("Match Report", &page, Some(Scope::Scouting));
 

@@ -48,7 +48,7 @@ impl FromStr for MatchNumber {
 		let ty = &s[0..1];
 		let ty = match ty {
 			"Q" => MatchType::Qualification,
-			"P" => MatchType::Playoff,
+			"P" | "F" => MatchType::Playoff,
 			_ => return Err(()),
 		};
 
