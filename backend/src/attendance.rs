@@ -38,7 +38,7 @@ impl Event {
 		let date = DateTime::parse_from_rfc2822(&self.date);
 		if let Ok(date) = date {
 			let date = date.with_timezone(&Utc);
-			if now > &date {
+			if now < &date {
 				return false;
 			}
 		}

@@ -2,7 +2,6 @@ use std::collections::HashSet;
 use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
-use chrono_tz::US::Eastern;
 use itertools::Itertools;
 use rocket::form::{Form, FromForm};
 use rocket::http::Status;
@@ -14,7 +13,7 @@ use crate::announcements::Announcement;
 use crate::db::Database;
 use crate::member::{MemberGroup, MemberMention};
 use crate::routes::SessionID;
-use crate::util::{generate_id, render_date};
+use crate::util::{generate_id, render_date, TIMEZONE};
 use crate::{routes::OptionalSessionID, State};
 
 use super::{create_page, PageOrRedirect, Scope};
@@ -79,7 +78,7 @@ fn render_announcement(announcement: Announcement, member_id: &str) -> String {
 	let component = include_str!("components/announcement.min.html");
 	let out = component.replace("{{id}}", &announcement.id);
 	let date = DateTime::parse_from_rfc2822(&announcement.date)
-		.map(|x| x.with_timezone(&Eastern))
+		.map(|x| x.with_timezone(TIMEZONE))
 		.map(render_date)
 		.unwrap_or("Invalid date".into());
 	let out = out.replace("{{date}}", &date);
@@ -269,7 +268,7 @@ pub async fn announcement_details(
 	let page = page.replace("{{id}}", &announcement.id);
 	let page = page.replace("{{title}}", &announcement.title);
 	let date = DateTime::parse_from_rfc2822(&announcement.date)
-		.map(|x| render_date(x.with_timezone(&Eastern)))
+		.map(|x| render_date(x.with_timezone(TIMEZONE)))
 		.unwrap_or("Invalid Date".into());
 	let page = page.replace("{{date}}", &date);
 

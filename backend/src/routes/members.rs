@@ -5,7 +5,6 @@ use std::str::FromStr;
 
 use argon2::PasswordHasher;
 use chrono::{DateTime, Utc};
-use chrono_tz::US::Eastern;
 use itertools::Itertools;
 use password_hash::SaltString;
 use rand::{rngs::StdRng, SeedableRng};
@@ -20,8 +19,8 @@ use crate::attendance::get_attendance_stats;
 use crate::events::Event;
 use crate::forms::Form as WorBotsForm;
 use crate::routes::OptionalSessionID;
-use crate::util::ToDropdown;
 use crate::util::{generate_id, render_date};
+use crate::util::{ToDropdown, TIMEZONE};
 use crate::{
 	auth::Privilege,
 	member::{Member, MemberGroup},
@@ -422,7 +421,7 @@ pub async fn member_details(
 	let page = page.replace("{{kind}}", &member.kind.to_string());
 
 	let date = if let Ok(date) = DateTime::parse_from_rfc2822(&member.creation_date) {
-		render_date(date.with_timezone(&Eastern))
+		render_date(date.with_timezone(TIMEZONE))
 	} else {
 		error!("Failed to parse date");
 		"Invalid date".into()

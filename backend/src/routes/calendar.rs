@@ -1,7 +1,6 @@
 use std::{fmt::Display, path::PathBuf, str::FromStr};
 
-use chrono::{DateTime, Duration, NaiveTime, Offset, TimeZone, Utc};
-use chrono_tz::US::Eastern;
+use chrono::{DateTime, NaiveTime, Offset, TimeZone, Utc};
 use itertools::Itertools;
 use rocket::{
 	form::Form,
@@ -17,7 +16,7 @@ use crate::{
 	db::Database,
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{count_group_members, Member, MemberGroup, MemberMention},
-	util::{date_from_js, generate_id, render_date, render_date_range, ToDropdown},
+	util::{date_from_js, generate_id, render_date, render_date_range, ToDropdown, TIMEZONE},
 };
 use crate::{events::get_relevant_events, State};
 
@@ -102,7 +101,7 @@ async fn render_event(
 
 	let date = DateTime::parse_from_rfc2822(&event.date)
 		.map(|x| {
-			let date = x.with_timezone(&Eastern);
+			let date = x.with_timezone(TIMEZONE);
 			render_date(date)
 		})
 		.unwrap_or_else(|e| {
@@ -187,8 +186,8 @@ pub async fn event_details(
 		let end_date = event
 			.end_date
 			.and_then(|x| DateTime::parse_from_rfc2822(&x).ok());
-		let date = date.with_timezone(&Eastern);
-		let end_date = end_date.map(|x| x.with_timezone(&Eastern));
+		let date = date.with_timezone(TIMEZONE);
+		let end_date = end_date.map(|x| x.with_timezone(TIMEZONE));
 		render_date_range(date, end_date)
 	} else {
 		error!("Failed to parse date");
@@ -626,7 +625,6 @@ fn date_to_js<T: TimeZone + Offset>(date: DateTime<T>) -> String
 where
 	T::Offset: Display,
 {
-	// FIXME: Use the actual time zone instead of just assuming US East
-	let date = date - Duration::hours(4);
+	let date = date.with_timezone(TIMEZONE);
 	date.format("%Y-%m-%dT%H:%M").to_string()
 }

@@ -1,5 +1,4 @@
 use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Utc};
-use chrono_tz::US::Eastern;
 use itertools::Itertools;
 use rocket::{
 	form::{Form, FromForm},
@@ -18,7 +17,7 @@ use crate::{
 		status::{RobotStatus, StatusUpdate},
 		Competition, TeamNumber,
 	},
-	util::{date_from_js, render_time, ToDropdown},
+	util::{date_from_js, render_time, ToDropdown, TIMEZONE},
 	State,
 };
 
@@ -235,7 +234,7 @@ async fn render_match(m: Match, now: &DateTime<Utc>, next_chosen: &mut bool) -> 
 			} else {
 				""
 			};
-			(render_time(date.with_timezone(&Eastern)), next_class)
+			(render_time(date.with_timezone(TIMEZONE)), next_class)
 		} else {
 			(String::new(), "")
 		};

@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
-use chrono_tz::US::Eastern;
 use itertools::Itertools;
 use rocket::{
 	form::Form,
@@ -18,7 +17,7 @@ use crate::{
 		status::{RobotStatus, StatusReason, StatusUpdate},
 		TeamNumber,
 	},
-	util::render_date,
+	util::{render_date, TIMEZONE},
 	State,
 };
 
@@ -76,7 +75,7 @@ fn render_status_update(
 ) -> String {
 	let out = include_str!("../components/scouting/status_update.min.html");
 	let date = if let Ok(date) = DateTime::parse_from_rfc2822(&update.date) {
-		render_date(date.with_timezone(&Eastern))
+		render_date(date.with_timezone(TIMEZONE))
 	} else {
 		String::from("Invalid Date")
 	};

@@ -1,5 +1,4 @@
 use chrono::DateTime;
-use chrono_tz::US::Eastern;
 use rocket::{
 	http::Status,
 	response::{content::RawHtml, Redirect},
@@ -14,7 +13,7 @@ use crate::{
 		matches::{count_matches_scouted, Match, MatchStats},
 		TeamNumber,
 	},
-	util::render_time,
+	util::{render_time, TIMEZONE},
 	State,
 };
 
@@ -125,7 +124,7 @@ fn render_match(
 	let out = out.replace("{{number}}", &m.num.num.to_string());
 
 	let date = if let Some(Ok(date)) = m.date.as_ref().map(|x| DateTime::parse_from_rfc2822(x)) {
-		render_time(date.with_timezone(&Eastern))
+		render_time(date.with_timezone(TIMEZONE))
 	} else {
 		String::new()
 	};

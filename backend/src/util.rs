@@ -6,9 +6,13 @@ use base64::{
 	Engine,
 };
 use chrono::{DateTime, Datelike, NaiveDate, TimeZone, Utc};
+use chrono_tz::{Tz, US::Eastern};
 use itertools::Itertools;
 use rand::{rngs::StdRng, RngCore, SeedableRng};
 use strum::IntoEnumIterator;
+
+/// Global timezone
+pub static TIMEZONE: &Tz = &Eastern;
 
 /// Trait for enums that can be converted into HTML select options
 pub trait ToDropdown {
@@ -33,23 +37,6 @@ pub trait ToDropdown {
 			})
 			.join("")
 	}
-}
-
-pub fn get_days_from_month(year: i32, month: u32) -> i64 {
-	NaiveDate::from_ymd_opt(
-		match month {
-			12 => year + 1,
-			_ => year,
-		},
-		match month {
-			12 => 1,
-			_ => month + 1,
-		},
-		1,
-	)
-	.unwrap()
-	.signed_duration_since(NaiveDate::from_ymd_opt(year, month, 1).unwrap())
-	.num_days()
 }
 
 /// Generate the ID for something like an event
@@ -138,39 +125,33 @@ where
 /// Parses a date from JS/HTML's version
 pub fn date_from_js(date: String, is_utc: bool) -> anyhow::Result<DateTime<Utc>> {
 	let year = date[0..4].parse().context("Failed to parse year")?;
-	let mut month = date[5..7].parse().context("Failed to parse month")?;
-	let mut day = date[8..10].parse().context("Failed to parse day")?;
-	// FIXME: Use the actual time zone instead of just assuming US East
-	let mut hour = date[11..13]
+	let month = date[5..7].parse().context("Failed to parse month")?;
+	let day = date[8..10].parse().context("Failed to parse day")?;
+	let hour = date[11..13]
 		.parse::<u32>()
 		.context("Failed to parse hour")?;
-	if !is_utc {
-		hour += 4;
-		// Chrono doesn't accept overflows, so we move the hours into days instead
-		if hour >= 24 {
-			day += hour / 24;
-			hour %= 24;
-		}
-	}
+
 	let min = date[14..16].parse().context("Failed to parse minute")?;
 
 	// If the date fails, then we know that we overflowed the day from wrapping the hour. Try wrapping the day now.
-	let naive_date = NaiveDate::from_ymd_opt(year, month, day);
-	let naive_date = match naive_date {
-		Some(date) => Some(date),
-		None => {
-			let days_in_month = get_days_from_month(year, month) as u32;
-			month += day / days_in_month;
-			day %= days_in_month;
-			NaiveDate::from_ymd_opt(year, month, day)
-		}
-	}
-	.context("Failed to create date")?;
+	let naive_date = NaiveDate::from_ymd_opt(year, month, day).context("Failed to create date")?;
 
 	let naive_dt = naive_date
 		.and_hms_opt(hour, min, 0)
 		.context("Failed to add time to date")?;
-	Ok(naive_dt.and_utc())
+
+	// Parse from the specified timezone
+	let out = if is_utc {
+		naive_dt.and_utc()
+	} else {
+		TIMEZONE
+			.from_local_datetime(&naive_dt)
+			.earliest()
+			.context("Failed to solve to a single Datetime")?
+			.to_utc()
+	};
+
+	Ok(out)
 }
 
 /// Changes a number to one if it is zero
