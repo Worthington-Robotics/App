@@ -208,4 +208,3 @@ impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for CacheFor<R> {
 
 pub const ONE_YEAR: usize = 31536000;
 pub const ONE_WEEK: usize = 604800;
-pub const ONE_DAY: usize = 86400;

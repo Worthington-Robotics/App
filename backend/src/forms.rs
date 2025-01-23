@@ -21,14 +21,6 @@ pub enum Form {
 }
 
 impl Form {
-	/// Gets if this form is necessary or optional
-	pub fn is_optional(&self) -> bool {
-		match self {
-			Self::ConsentRelease | Self::TeamFees => false,
-			_ => true,
-		}
-	}
-
 	pub fn to_db(&self) -> &'static str {
 		match self {
 			Self::ConsentRelease => "ConsentRelease",
