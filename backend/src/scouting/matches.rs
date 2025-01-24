@@ -111,6 +111,10 @@ impl MatchStatsID {
 			recorder.unwrap_or_default(),
 		))
 	}
+
+	pub fn from_str(string: String) -> Self {
+		Self(string)
+	}
 }
 
 impl Display for MatchStatsID {

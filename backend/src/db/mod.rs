@@ -154,6 +154,9 @@ pub trait Database {
 	/// Get a specific match stats
 	async fn get_match_stats(&self, id: &MatchStatsID) -> anyhow::Result<Option<MatchStats>>;
 
+	/// Remove a specific match stats
+	async fn delete_match_stats(&mut self, id: &MatchStatsID) -> anyhow::Result<()>;
+
 	/// Get team info
 	async fn get_team_info(&self, team: TeamNumber) -> anyhow::Result<Option<TeamInfo>>;
 

@@ -13,7 +13,7 @@ use crate::{
 	events::get_season,
 	routes::{create_page, OptionalSessionID, PageOrRedirect, Scope, SessionID},
 	scouting::{
-		matches::{Match, MatchNumber, MatchStats, MatchType},
+		matches::{Match, MatchNumber, MatchStats, MatchStatsID, MatchType},
 		status::{RobotStatus, StatusUpdate},
 		Competition, TeamNumber,
 	},
@@ -31,6 +31,8 @@ pub async fn create_match_stats(
 	let _enter = span.enter();
 
 	let requesting_member = session_id.get_requesting_member(state).await?;
+
+	let stats_id = stats.stats_id.clone().filter(|x| !x.is_empty());
 
 	let mut stats: MatchStats = serde_json::from_str(&stats.data).map_err(|e| {
 		error!("Invalid match stats data: {e}");
@@ -76,6 +78,15 @@ pub async fn create_match_stats(
 		}
 	}
 
+	// If there is a stats ID, we are replacing an existing stats report and need to remove it
+	if let Some(stats_id) = stats_id {
+		let id = MatchStatsID::from_str(stats_id);
+		if let Err(e) = lock.delete_match_stats(&id).await {
+			error!("Failed to delete existing match stats with id {id} in database: {e}");
+			return Err(Status::InternalServerError);
+		}
+	}
+
 	if let Err(e) = lock.create_match_stats(stats).await {
 		error!("Failed to create match stats in database: {e}");
 		return Err(Status::InternalServerError);
@@ -87,15 +98,17 @@ pub async fn create_match_stats(
 #[derive(FromForm)]
 pub struct StatsForm {
 	data: String,
+	stats_id: Option<String>,
 }
 
 /// Form for match reporting will all the bells and whistles
-#[rocket::get("/scouting/report?<team_number>&<match_number>")]
+#[rocket::get("/scouting/report?<team_number>&<match_number>&<stats_id>")]
 pub async fn match_report_main(
 	session_id: OptionalSessionID<'_>,
 	state: &State,
 	team_number: Option<TeamNumber>,
 	match_number: Option<&str>,
+	stats_id: Option<&str>,
 ) -> Result<PageOrRedirect, Status> {
 	let span = span!(Level::DEBUG, "Match report");
 	let _enter = span.enter();
@@ -123,6 +136,9 @@ pub async fn match_report_main(
 	let options = Competition::create_options(None);
 	let options = format!("<option value=none>None</option>{options}");
 	let page = page.replace("{{competition-options}}", &options);
+
+	let stats_id = stats_id.filter(|x| !x.is_empty());
+	let page = page.replace("{{stats-id}}", stats_id.unwrap_or_default());
 
 	let page = create_page("Match Report", &page, Some(Scope::Scouting));
 

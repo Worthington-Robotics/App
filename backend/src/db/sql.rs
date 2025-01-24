@@ -772,6 +772,17 @@ impl Database for SqlDatabase {
 		}
 	}
 
+	async fn delete_match_stats(&mut self, id: &MatchStatsID) -> anyhow::Result<()> {
+		let query = sqlx::query("DELETE FROM match_stats WHERE Id = $1").bind(id.to_string());
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to remove match stats from database")?;
+
+		Ok(())
+	}
+
 	async fn get_team_info(&self, team: TeamNumber) -> anyhow::Result<Option<TeamInfo>> {
 		let mut result = sqlx::query("SELECT * FROM team_info WHERE Team = $1")
 			.bind(team as i32)

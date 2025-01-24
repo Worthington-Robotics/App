@@ -386,6 +386,16 @@ impl Database for CacheDatabase {
 		self.cache.get_match_stats(id).await
 	}
 
+	async fn delete_match_stats(
+		&mut self,
+		id: &crate::scouting::matches::MatchStatsID,
+	) -> anyhow::Result<()> {
+		self.sql.delete_match_stats(id).await?;
+		self.cache.delete_match_stats(id).await?;
+
+		Ok(())
+	}
+
 	async fn get_team_info(
 		&self,
 		team: TeamNumber,

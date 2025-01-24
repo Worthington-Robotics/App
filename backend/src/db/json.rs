@@ -288,6 +288,19 @@ impl Database for JSONDatabase {
 			.cloned())
 	}
 
+	async fn delete_match_stats(&mut self, id: &MatchStatsID) -> anyhow::Result<()> {
+		let pos = self
+			.contents
+			.match_stats
+			.iter()
+			.position(|x| &x.get_id() == id);
+		if let Some(pos) = pos {
+			self.contents.match_stats.remove(pos);
+		}
+
+		self.write()
+	}
+
 	async fn get_team_info(&self, team: TeamNumber) -> anyhow::Result<Option<TeamInfo>> {
 		Ok(self.contents.team_info.get(&team).cloned())
 	}
