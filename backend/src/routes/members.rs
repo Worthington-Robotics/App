@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use std::ops::Deref;
 use std::str::FromStr;
 
+use anyhow::bail;
 use argon2::PasswordHasher;
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
@@ -116,16 +117,7 @@ pub async fn create_member(
 		})?;
 
 	let (hashed_password, salt) = if let Some(password) = &member.password {
-		let result = if let Some(hash) = &state.password_hash {
-			// Create salt
-			let salt = SaltString::generate(&mut StdRng::from_entropy());
-			hash.hash_password(password.as_bytes(), &salt.clone())
-				.map(|x| (x.to_string(), Some(salt)))
-		} else {
-			Ok((password.clone(), None))
-		};
-		let Ok((hashed_password, salt)) = result else {
-			error!("Failed to hash password");
+		let Ok((hashed_password, salt)) = hash_password(&password, state) else {
 			return Err(Status::InternalServerError);
 		};
 
@@ -197,6 +189,24 @@ pub async fn create_member(
 	}
 
 	Ok(member.id.clone())
+}
+
+/// Hashes the given plaintext password, returning the hashed password and salt string
+fn hash_password(password: &str, state: &State) -> anyhow::Result<(String, Option<SaltString>)> {
+	let result = if let Some(hash) = &state.password_hash {
+		// Create salt
+		let salt = SaltString::generate(&mut StdRng::from_entropy());
+		hash.hash_password(password.as_bytes(), &salt.clone())
+			.map(|x| (x.to_string(), Some(salt)))
+	} else {
+		Ok((password.to_string(), None))
+	};
+	let Ok((hashed_password, salt)) = result else {
+		error!("Failed to hash password");
+		bail!("Failed to hash password");
+	};
+
+	Ok((hashed_password, salt))
 }
 
 #[derive(FromForm)]
@@ -531,7 +541,7 @@ pub async fn update_member_form(
 	id: &str,
 	form: &str,
 ) -> Result<(), Status> {
-	let span = span!(Level::DEBUG, "Updating team competition");
+	let span = span!(Level::DEBUG, "Updating member form");
 	let _enter = span.enter();
 
 	session_id.verify_elevated(state).await?;
@@ -556,6 +566,43 @@ pub async fn update_member_form(
 	} else {
 		member.completed_forms.insert(form);
 	}
+
+	if let Err(e) = lock.create_member(member).await {
+		error!("Failed to update member {id} in database: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
+}
+
+#[rocket::post("/api/update_member_password/<id>", data = "<password>")]
+pub async fn update_member_password(
+	state: &State,
+	session_id: SessionID<'_>,
+	id: &str,
+	password: String,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Updating member passowrd");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	let mut lock = state.db.write().await;
+	let Some(mut member) = lock.get_member(id).await.map_err(|e| {
+		error!("Failed to get member from database: {e}");
+		Status::InternalServerError
+	})?
+	else {
+		error!("Member {id} does not exist");
+		return Err(Status::NotFound);
+	};
+
+	let Ok((password, salt)) = hash_password(&password, state) else {
+		return Err(Status::InternalServerError);
+	};
+
+	member.password = password;
+	member.password_salt = salt.map(|x| x.to_string());
 
 	if let Err(e) = lock.create_member(member).await {
 		error!("Failed to update member {id} in database: {e}");

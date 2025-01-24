@@ -40,6 +40,14 @@
 			{{form-checkboxes}}
 		</div>
 	</div>
+	<br />
+	<div class="cont col">
+		<h3>Set New Password</h3>
+		<form class="cont" id="password-form">
+			<input type="text" id="password"></input>
+			<input type="submit" value="Save" />
+		</form>
+	</div>
 </div>
 <style>
 	#form-checkboxes {
@@ -84,5 +92,22 @@
 		let cb = elem.firstChild;
 		cb.addEventListener("change", formCb);
 	}
+
+	document.getElementById("password-form").addEventListener("submit", (e) => {
+		e.preventDefault();
+
+		let password = document.getElementById("password").value;
+
+		fetch(`/api/update_member_password/{{id}}`, {
+			method: "POST",
+			body: password,
+		}).then((resp) => {
+			if (resp.status == 200) {
+				setSuccess("Password updated.");
+			} else {
+				setError(resp.statusText);
+			}
+		});
+	})
 </script>
 {{footer}}

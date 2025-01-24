@@ -122,6 +122,7 @@ async fn rocket() -> _ {
 				routes::members::member_details,
 				routes::members::delete_member,
 				routes::members::update_member_form,
+				routes::members::update_member_password,
 				routes::assets::favicon,
 				routes::assets::main_css,
 				routes::assets::static_css,
