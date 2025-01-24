@@ -234,8 +234,12 @@ impl Fairing for AttendanceFairing {
 					members
 				};
 				for member in members {
-					if let Ok(Some(current_attendance)) = lock.get_current_attendance(&member).await
-					{
+					let Ok(attendance) = lock.get_current_attendance(&member).await else {
+						continue;
+					};
+					let attendance: Vec<_> = attendance.collect();
+
+					for current_attendance in attendance {
 						let Ok(event) = lock.get_event(&current_attendance.event).await else {
 							error!("Failed to get event from database");
 							continue;
@@ -249,7 +253,7 @@ impl Fairing for AttendanceFairing {
 							continue;
 						};
 						if now > end_date.with_timezone(&Utc) {
-							if let Err(e) = lock.finish_attendance(&member).await {
+							if let Err(e) = lock.finish_attendance(&member, &event.id).await {
 								error!("Failed to finish attendance for member {member}: {e}");
 							}
 						}

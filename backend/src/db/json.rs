@@ -148,11 +148,15 @@ impl Database for JSONDatabase {
 	async fn get_current_attendance(
 		&self,
 		member: &str,
-	) -> anyhow::Result<Option<AttendanceEntry>> {
-		let Some(attendance) = self.contents.attendance.get(member) else {
-			return Ok(None);
-		};
-		Ok(attendance.iter().find(|x| !x.is_complete()).cloned())
+	) -> anyhow::Result<impl Iterator<Item = AttendanceEntry>> {
+		Ok(self
+			.contents
+			.attendance
+			.get(member)
+			.cloned()
+			.unwrap_or_default()
+			.into_iter()
+			.filter(|x| !x.is_complete()))
 	}
 
 	async fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
@@ -168,12 +172,15 @@ impl Database for JSONDatabase {
 		self.write()
 	}
 
-	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
+	async fn finish_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
 		let Some(entries) = self.contents.attendance.get_mut(member) else {
 			return Ok(());
 		};
-		if let Some(entry) = entries.iter_mut().find(|x| !x.is_complete()) {
-			entry.end_time = Some(Utc::now().to_rfc2822());
+		for entry in entries {
+			if !entry.is_complete() && entry.event == event {
+				entry.end_time = Some(Utc::now().to_rfc2822());
+				break;
+			}
 		}
 
 		self.write()

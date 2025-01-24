@@ -6,15 +6,30 @@
 </div>
 <style>
 	#attendance-panel {
-		row-gap: 0.2rem;
+		row-gap: 0.15rem;
 		width: 100%;
 	}
 
+	#attendance-items {
+		width: 75%;
+		margin-top: 0.5rem;
+	}
+
 	.attend-item {
-		padding: 1.8rem;
+		padding: 1.2rem;
 		background-color: var(--bg2);
 		width: 90%;
 		box-sizing: border-box;
+		text-align: center;
+	}
+
+	button.unattend {
+		background-color: var(--wbred);
+	}
+
+	button.rsvp,
+	button.unrsvp {
+		background-color: var(--bg3);
 	}
 </style>
 <script>
@@ -22,40 +37,64 @@
 		elem.addEventListener("click", clickItem);
 	}
 
-	function clickItem(event) {
-		let target = event.target.parentElement;
-		let button = event.target;
+	function clickItem(e) {
+		let target = e.target.parentElement;
+		let button = e.target;
+		let action = target.dataset.action;
+		let event = target.dataset.event;
 
-		if (target.id == "attending") {
-			fetch(`/api/unattend`, {
+		if (action == "attend") {
+			fetch(`/api/attend/${event}`, {
 				method: "POST",
 			}).then((resp) => {
 				if (resp.status == 200) {
-					for (let item of document.getElementsByClassName("attend-item")) {
-						item.style.display = "flex";
-					}
 					if (button != null) {
-						button.innerText = "Attend";
+						button.innerText = "Leave";
 					}
-					target.id = null;
+					target.dataset.action = "unattend";
+					button.classList.add("unattend");
+					button.classList.remove("attend");
 				} else {
 					setError(resp.statusText);
 				}
 			});
-
-		} else {
-			fetch(`/api/attend/${target.dataset.event}`, {
+		} else if (action == "unattend") {
+			fetch(`/api/unattend/${event}`, {
 				method: "POST",
 			}).then((resp) => {
 				if (resp.status == 200) {
-					for (let item of document.getElementsByClassName("attend-item")) {
-						item.style.display = "none";
-					}
-					target.style.display = "flex";
 					if (button != null) {
-						button.innerText = "Leave";
+						button.innerText = "Attend";
 					}
-					target.id = "attending";
+					target.dataset.action = "attend";
+					button.classList.add("attend");
+					button.classList.remove("unattend");
+				} else {
+					setError(resp.statusText);
+				}
+			});
+		} else if (action == "rsvp") {
+			fetch(`/api/rsvp_event/${event}?value=true`, {
+				method: "POST",
+			}).then((resp) => {
+				if (resp.status == 200) {
+					if (button != null) {
+						button.innerText = "Remove RSVP";
+					}
+					target.dataset.action = "unrsvp";
+				} else {
+					setError(resp.statusText);
+				}
+			});
+		} else if (action == "unrsvp") {
+			fetch(`/api/rsvp_event/${event}?value=false`, {
+				method: "POST",
+			}).then((resp) => {
+				if (resp.status == 200) {
+					if (button != null) {
+						button.innerText = "RSVP";
+					}
+					target.dataset.action = "rsvp";
 				} else {
 					setError(resp.statusText);
 				}

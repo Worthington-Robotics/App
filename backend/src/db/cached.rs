@@ -253,7 +253,7 @@ impl Database for CacheDatabase {
 	async fn get_current_attendance(
 		&self,
 		member: &str,
-	) -> anyhow::Result<Option<crate::attendance::AttendanceEntry>> {
+	) -> anyhow::Result<impl Iterator<Item = crate::attendance::AttendanceEntry>> {
 		self.sql.get_current_attendance(member).await
 	}
 
@@ -261,8 +261,8 @@ impl Database for CacheDatabase {
 		self.sql.record_attendance(member, event).await
 	}
 
-	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
-		self.sql.finish_attendance(member).await
+	async fn finish_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
+		self.sql.finish_attendance(member, event).await
 	}
 
 	async fn get_checklist(&self, checklist: &str) -> anyhow::Result<Option<Checklist>> {

@@ -378,25 +378,32 @@ impl Database for SqlDatabase {
 	async fn get_current_attendance(
 		&self,
 		member: &str,
-	) -> anyhow::Result<Option<AttendanceEntry>> {
+	) -> anyhow::Result<impl Iterator<Item = AttendanceEntry>> {
 		let result = sqlx::query("SELECT * FROM attendance WHERE Member = $1 AND EndDate IS NULL")
 			.bind(member)
-			.fetch_optional(&self.pool)
-			.await
-			.context("Failed to get current attendance from database")?;
+			.fetch_all(&self.pool)
+			.await;
+		match result {
+			Ok(rows) => {
+				let mut out = Vec::with_capacity(rows.len());
+				for row in rows {
+					let entry =
+						read_attendance_entry(row).context("Failed to read attendance entry")?;
+					out.push(entry);
+				}
 
-		if let Some(row) = result {
-			Ok(Some(
-				read_attendance_entry(row).context("Failed to read entry")?,
-			))
-		} else {
-			Ok(None)
+				Ok(out.into_iter())
+			}
+			Err(e) => {
+				error!("Failed to get all attendance from database: {e}");
+				Err(anyhow!("Failed to get attendance from database"))
+			}
 		}
 	}
 
 	async fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
 		// Make sure that any current attendance is finished
-		self.finish_attendance(member)
+		self.finish_attendance(member, event)
 			.await
 			.context("Failed to finish existing attendance")?;
 		if let Err(e) = sqlx::query(
@@ -416,10 +423,11 @@ impl Database for SqlDatabase {
 		Ok(())
 	}
 
-	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()> {
-		sqlx::query("UPDATE attendance SET EndDate = $1 WHERE Member = $2 AND EndDate IS NULL")
+	async fn finish_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()> {
+		sqlx::query("UPDATE attendance SET EndDate = $1 WHERE Member = $2 AND Event = $3 AND EndDate IS NULL")
 			.bind(Utc::now().to_rfc2822())
 			.bind(member)
+			.bind(event)
 			.execute(&self.pool)
 			.await
 			.context("Failed to finish attendance in database")?;

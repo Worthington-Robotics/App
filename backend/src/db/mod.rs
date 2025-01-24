@@ -85,15 +85,14 @@ pub trait Database {
 	/// Get all attendance records for a member
 	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>>;
 
-	/// Get the current attendance record for a member
-	async fn get_current_attendance(&self, member: &str)
-		-> anyhow::Result<Option<AttendanceEntry>>;
+	/// Get the current attendance records for a member
+	async fn get_current_attendance(&self, member: &str) -> anyhow::Result<impl Iterator<Item = AttendanceEntry>>;
 
 	/// Record attendance for a member
 	async fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()>;
 
 	/// Finish attending an event
-	async fn finish_attendance(&mut self, member: &str) -> anyhow::Result<()>;
+	async fn finish_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()>;
 
 	/// Get a checklist
 	async fn get_checklist(&self, checklist: &str) -> anyhow::Result<Option<Checklist>>;
