@@ -379,6 +379,13 @@ impl Database for CacheDatabase {
 		self.cache.get_all_match_stats().await
 	}
 
+	async fn get_match_stats(
+		&self,
+		id: &crate::scouting::matches::MatchStatsID,
+	) -> anyhow::Result<Option<crate::scouting::matches::MatchStats>> {
+		self.cache.get_match_stats(id).await
+	}
+
 	async fn get_team_info(
 		&self,
 		team: TeamNumber,

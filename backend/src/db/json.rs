@@ -20,7 +20,7 @@ use crate::{
 	scouting::{
 		assignment::{MatchClaims, ScoutingAssignment},
 		autos::Auto,
-		matches::{Match, MatchNumber, MatchStats},
+		matches::{Match, MatchNumber, MatchStats, MatchStatsID},
 		status::StatusUpdate,
 		Team, TeamInfo, TeamNumber,
 	},
@@ -277,6 +277,15 @@ impl Database for JSONDatabase {
 
 	async fn get_all_match_stats(&self) -> anyhow::Result<impl Iterator<Item = MatchStats>> {
 		Ok(self.contents.match_stats.iter().cloned())
+	}
+
+	async fn get_match_stats(&self, id: &MatchStatsID) -> anyhow::Result<Option<MatchStats>> {
+		Ok(self
+			.contents
+			.match_stats
+			.iter()
+			.find(|x| &x.get_id() == id)
+			.cloned())
 	}
 
 	async fn get_team_info(&self, team: TeamNumber) -> anyhow::Result<Option<TeamInfo>> {

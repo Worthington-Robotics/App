@@ -93,6 +93,32 @@ impl FromStr for MatchType {
 	}
 }
 
+/// Unique identifier for match stats made from information like the match number, competition, and recorder
+#[derive(Clone, PartialEq, Eq)]
+pub struct MatchStatsID(String);
+
+impl MatchStatsID {
+	pub fn new(
+		team_number: TeamNumber,
+		match_number: Option<MatchNumber>,
+		competition: Option<Competition>,
+		recorder: Option<&str>,
+	) -> Self {
+		Self(format!(
+			"{team_number}.{}.{}.{}",
+			match_number.unwrap_or_default(),
+			competition.map(|x| x.to_string()).unwrap_or_default(),
+			recorder.unwrap_or_default(),
+		))
+	}
+}
+
+impl Display for MatchStatsID {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}", self.0)
+	}
+}
+
 /// Stats for a single team in a match
 #[derive(Serialize, Deserialize, Clone)]
 pub struct MatchStats {
@@ -178,6 +204,17 @@ pub struct MatchStats {
 	/// Team weaknesses during the match
 	#[serde(default)]
 	pub weaknesses: String,
+}
+
+impl MatchStats {
+	pub fn get_id(&self) -> MatchStatsID {
+		MatchStatsID::new(
+			self.team_number,
+			self.match_number.clone(),
+			self.competition,
+			self.recorder.as_deref(),
+		)
+	}
 }
 
 /// A single coral placement attempt on the reef

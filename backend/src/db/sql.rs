@@ -20,7 +20,7 @@ use crate::{
 	scouting::{
 		assignment::{MatchClaims, ScoutingAssignment},
 		autos::Auto,
-		matches::{Match, MatchNumber, MatchStats, MatchType},
+		matches::{Match, MatchNumber, MatchStats, MatchStatsID, MatchType},
 		status::{RobotStatus, StatusUpdate},
 		Competition, Division, Team, TeamInfo, TeamNumber,
 	},
@@ -719,7 +719,8 @@ impl Database for SqlDatabase {
 	async fn create_match_stats(&mut self, stats: MatchStats) -> anyhow::Result<()> {
 		let serialized =
 			serde_json::to_string(&stats).context("Failed to serialize match stats")?;
-		sqlx::query("INSERT INTO match_stats (Team, Data) VALUES ($1, $2)")
+		sqlx::query("INSERT INTO match_stats (Id, Team, Data) VALUES ($1, $2, $3)")
+			.bind(stats.get_id().to_string())
 			.bind(stats.team_number as i32)
 			.bind(serialized)
 			.execute(&self.pool)
@@ -745,6 +746,27 @@ impl Database for SqlDatabase {
 			}
 			Err(e) => {
 				error!("Failed to get all match stats from database: {e}");
+				Err(anyhow!("Failed to get match stats from database"))
+			}
+		}
+	}
+
+	async fn get_match_stats(&self, id: &MatchStatsID) -> anyhow::Result<Option<MatchStats>> {
+		let mut result = sqlx::query("SELECT * FROM match_stats WHERE Id = $1")
+			.bind(id.to_string())
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let stats = read_match_stats(row).context("Failed to read match stats")?;
+
+				Ok(Some(stats))
+			}
+			Err(e) => {
+				error!("Failed to get match stats {id} from database: {e}");
 				Err(anyhow!("Failed to get match stats from database"))
 			}
 		}
@@ -1222,8 +1244,9 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	let team_info_task =
 		pool.execute("CREATE TABLE IF NOT EXISTS team_info (Team int2, Data text)");
 
-	let match_stats_task =
-		pool.execute("CREATE TABLE IF NOT EXISTS match_stats (Team int2, Data text)");
+	let match_stats_task = pool.execute(
+		"CREATE TABLE IF NOT EXISTS match_stats (Id text PRIMARY KEY, Team int2, Data text)",
+	);
 
 	let prescouting_assignments_task = pool.execute(
 		"CREATE TABLE IF NOT EXISTS prescouting_assignments (Member text PRIMARY KEY, Teams int2[])",

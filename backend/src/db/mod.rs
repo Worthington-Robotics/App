@@ -8,7 +8,7 @@ use crate::{
 	scouting::{
 		assignment::{MatchClaims, ScoutingAssignment},
 		autos::Auto,
-		matches::{Match, MatchNumber, MatchStats},
+		matches::{Match, MatchNumber, MatchStats, MatchStatsID},
 		status::StatusUpdate,
 		Competition, Division, Team, TeamInfo, TeamNumber,
 	},
@@ -86,7 +86,10 @@ pub trait Database {
 	async fn get_attendance(&self, member: &str) -> anyhow::Result<Vec<AttendanceEntry>>;
 
 	/// Get the current attendance records for a member
-	async fn get_current_attendance(&self, member: &str) -> anyhow::Result<impl Iterator<Item = AttendanceEntry>>;
+	async fn get_current_attendance(
+		&self,
+		member: &str,
+	) -> anyhow::Result<impl Iterator<Item = AttendanceEntry>>;
 
 	/// Record attendance for a member
 	async fn record_attendance(&mut self, member: &str, event: &str) -> anyhow::Result<()>;
@@ -147,6 +150,9 @@ pub trait Database {
 
 	/// Get a list of all match stats
 	async fn get_all_match_stats(&self) -> anyhow::Result<impl Iterator<Item = MatchStats>>;
+
+	/// Get a specific match stats
+	async fn get_match_stats(&self, id: &MatchStatsID) -> anyhow::Result<Option<MatchStats>>;
 
 	/// Get team info
 	async fn get_team_info(&self, team: TeamNumber) -> anyhow::Result<Option<TeamInfo>>;
