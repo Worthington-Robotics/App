@@ -123,12 +123,8 @@ impl RobotStatus {
 	}
 
 	/// Get the status of a robot from a list of status updates in chronological order
-	pub fn get_from_updates(updates: &[StatusUpdate]) -> Self {
-		if updates.is_empty() {
-			return Self::Good;
-		}
-
-		updates.last().expect("Should not be empty").status
+	pub fn get_from_updates<'a>(updates: impl Iterator<Item = &'a StatusUpdate>) -> Self {
+		updates.last().map(|x| x.status).unwrap_or_default()
 	}
 }
 

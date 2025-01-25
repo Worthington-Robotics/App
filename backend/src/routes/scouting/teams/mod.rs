@@ -135,7 +135,7 @@ async fn render_team(team: Team, stat_client: &StatboticsClient, db: &DatabaseIm
 	let out = out.replace("{{epa}}", &format!("{epa:.2}"));
 
 	let status = if let Ok(status_updates) = db.get_team_status(team.number).await {
-		let status = RobotStatus::get_from_updates(&status_updates);
+		let status = RobotStatus::get_from_updates(status_updates.iter());
 		if status == RobotStatus::Good {
 			String::new()
 		} else {
@@ -208,7 +208,7 @@ pub async fn team_details(
 	})?;
 
 	// Status
-	let current_status = RobotStatus::get_from_updates(&status_updates);
+	let current_status = RobotStatus::get_from_updates(status_updates.iter());
 	let page = page.replace("{{status}}", &current_status.to_string());
 	let page = page.replace("{{status-color}}", current_status.get_color());
 

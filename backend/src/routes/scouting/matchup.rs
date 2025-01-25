@@ -7,9 +7,14 @@ use rocket::{
 use tracing::{error, span, Level};
 
 use crate::{
+	api::statbotics::StatboticsClient,
 	db::Database,
 	routes::OptionalSessionID,
-	scouting::{stats::CombinedTeamStats, DriveTrainType, Team, TeamInfo, TeamNumber},
+	scouting::{
+		stats::CombinedTeamStats,
+		status::{RobotStatus, StatusUpdate},
+		DriveTrainType, Team, TeamInfo, TeamNumber,
+	},
 	State,
 };
 
@@ -83,6 +88,11 @@ pub async fn matchup(
 		}
 	}
 
+	let statuses = lock.get_all_status().await.map_err(|e| {
+		error!("Failed to get statuses from database: {e}");
+		Status::InternalServerError
+	})?;
+
 	// Don't include the breakdowns if no teams are provided
 	let page = if teams.iter().any(|x| x.is_some()) {
 		let red_alliance = if teams.len() > 3 {
@@ -98,7 +108,10 @@ pub async fn matchup(
 				team_stats.deref(),
 				&db_teams_red,
 				&team_info_red,
-			),
+				&state.statbotics_client,
+				&statuses,
+			)
+			.await,
 		);
 		let blue_alliance = if teams.len() > 3 { &teams[3..] } else { &[] };
 		let page = page.replace(
@@ -109,7 +122,10 @@ pub async fn matchup(
 				team_stats.deref(),
 				&db_teams_blue,
 				&team_info_blue,
-			),
+				&state.statbotics_client,
+				&statuses,
+			)
+			.await,
 		);
 
 		page
@@ -126,12 +142,14 @@ pub async fn matchup(
 }
 
 /// Render one alliance breakdown for a matchup
-fn render_alliance_breakdown(
+async fn render_alliance_breakdown(
 	alliance: AllianceColor,
 	teams: &[Option<TeamNumber>],
 	team_stats: &HashMap<TeamNumber, CombinedTeamStats>,
 	db_teams: &HashMap<TeamNumber, Team>,
 	team_info: &HashMap<TeamNumber, TeamInfo>,
+	statbotics_client: &StatboticsClient,
+	statuses: &[StatusUpdate],
 ) -> String {
 	let default_stats = CombinedTeamStats::default();
 	let mut all_stats = Vec::new();
@@ -141,8 +159,13 @@ fn render_alliance_breakdown(
 	for team in teams {
 		if let Some(team) = team {
 			let stats = team_stats.get(&team).unwrap_or(&default_stats);
-			// TODO: Use current competition stats in here eventually
-			point_total += stats.current_competition.apa;
+			point_total += get_expected_points(
+				stats,
+				statbotics_client
+					.get_epa(*team)
+					.await
+					.unwrap_or(stats.current_competition.apa),
+			);
 			all_stats.push((*team, stats));
 		}
 	}
@@ -178,6 +201,16 @@ fn render_alliance_breakdown(
 	let mut tips_string = String::new();
 
 	// These tips being added should be ordered so that the most important ones are first and at the top in the breakdown
+
+	for team in db_teams.keys() {
+		let status = RobotStatus::get_from_updates(statuses.iter().filter(|x| x.team == *team));
+		if status == RobotStatus::Questionable {
+			tips_string.push_str(&Tip::Questionable(*team).render());
+		} else if status == RobotStatus::Broken {
+			tips_string.push_str(&Tip::Broken(*team).render());
+		}
+	}
+
 	let def_avg = all_stats
 		.iter()
 		.fold(0.0, |acc, x| acc + x.1.current_competition.defense_average)
@@ -196,6 +229,14 @@ fn render_alliance_breakdown(
 		.map(|x| x.0)
 	{
 		tips_string.push_str(&Tip::MecanumBot(*mecanum).render());
+	}
+
+	if let Some(tank) = team_info
+		.iter()
+		.find(|x| x.1.drivetrain_type == Some(DriveTrainType::Tank))
+		.map(|x| x.0)
+	{
+		tips_string.push_str(&Tip::TankBot(*tank).render());
 	}
 
 	if let Some(zoomer) = team_info
@@ -223,8 +264,11 @@ enum AllianceColor {
 }
 
 enum Tip {
+	Questionable(TeamNumber),
+	Broken(TeamNumber),
 	VeteranTeam(TeamNumber),
 	MecanumBot(TeamNumber),
+	TankBot(TeamNumber),
 	HighSpeed(TeamNumber),
 	StrongDefense,
 	CantProcess,
@@ -233,14 +277,35 @@ enum Tip {
 impl Tip {
 	/// Render a single tip for an alliance breakdown
 	fn render(self) -> String {
-		let title = match self {
+		let title = match &self {
+			Self::Questionable(team) => format!("Questionable:<br />{team}"),
+			Self::Broken(team) => format!("Broken:<br />{team}"),
 			Self::VeteranTeam(team) => format!("Veteran Team:<br />{team}"),
 			Self::MecanumBot(team) => format!("Mechanum Bot:<br />{team}"),
+			Self::TankBot(team) => format!("Tank Bot:<br />{team}"),
 			Self::HighSpeed(team) => format!("High Speed:<br />{team}"),
 			Self::StrongDefense => "Strong Defense".into(),
 			Self::CantProcess => "Can't Process".into(),
 		};
 
-		format!("<div class=\"cont round tip\">{title}</div>")
+		let urgent_class = match &self {
+			Self::Questionable(..) | Self::Broken(..) => " urgent",
+			_ => "",
+		};
+
+		format!("<div class=\"cont round tip {urgent_class}\">{title}</div>")
 	}
+}
+
+/// Get expected points from a team as a combination of EPA and APA
+fn get_expected_points(stats: &CombinedTeamStats, epa: f32) -> f32 {
+	let epa_weight = 3.0;
+	let all_time_weight = 5.0;
+	let current_comp_weight = stats.current_competition.matches as f32;
+	let total = epa_weight + all_time_weight + current_comp_weight;
+
+	(epa * epa_weight
+		+ stats.all_time.apa * all_time_weight
+		+ stats.current_competition.apa * current_comp_weight)
+		/ total
 }

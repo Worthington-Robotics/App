@@ -63,7 +63,7 @@ pub async fn create_match_stats(
 			error!("Failed to get status updates from database: {e}");
 			Status::InternalServerError
 		})?;
-		let current_status = RobotStatus::get_from_updates(&status_updates);
+		let current_status = RobotStatus::get_from_updates(status_updates.iter());
 		if stats.status != RobotStatus::Good || current_status != RobotStatus::Good {
 			let update = StatusUpdate {
 				team: stats.team_number,
