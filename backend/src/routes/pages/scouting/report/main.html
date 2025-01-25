@@ -1,4 +1,4 @@
-{{worbots-header}}{{error}}
+{{worbots-header}}{{error}}{{prompt}}
 <h1>Match Report</h1>
 <div class="cont">
 	<button onclick="history.back()">Back</button>
@@ -50,7 +50,7 @@
 	</div>
 	<div class="cont">
 		<input type="checkbox" name="showed-up" id="showed-up" class="field" />
-		<label for="showed-up">Showed Up?</label>
+		<label for="showed-up">Team Showed Up to Match?</label>
 	</div>
 	<h2>Auto</h2>
 	<div class="section-grid">
@@ -128,6 +128,8 @@
 			Fell Down</button>
 		<button id="climb-successful" class="cont grid-button"><img src="/assets/icons/check.svg" class="grid-icon" />
 			Successful</button>
+		<button id="climb-refresh" class="cont grid-button miss"><img src="/assets/icons/refresh.svg" class="grid-icon" />
+			Reset</button>
 	</div>
 	<h2>Post-Match</h2>
 	<div class="cont">
@@ -145,6 +147,12 @@
 		<label for="collision">Collision During Auto?</label>
 	</div>
 	<h2>Review</h2>
+	<div id="events">
+		<h4>Match Events</h4>
+		<br />
+		<div id="events-container" class="cont col item-cont"></div>
+	</div>
+	<br />
 	<label for="notes">Match Notes</label>
 	<textarea name="notes" id="notes" class="round border" placeholder="Enter extra match notes here..."></textarea>
 	<div class="cont">
@@ -268,6 +276,39 @@
 		timeEditPopupContainer.style.display = "none";
 	});
 
+	function createEvent(event) {
+		M.matchEvents.push(event);
+		updateEvents();
+	}
+
+	function updateEvents() {
+		let container = document.getElementById("events-container");
+
+		// Clear the existing events
+		container.textContent = "";
+		M.matchEvents.sort((a, b) => a - b);
+		for (let i = 0; i < M.matchEvents.length; i++) {
+			let event = M.matchEvents[i];
+
+			let elem = document.createElement("div");
+			elem.className = "item round event";
+			elem.dataset.index = i;
+
+			let period = `<div class="cont round event-period">${event.teleop ? "T" : "A"}</div>`;
+			let time = `<div class="cont event-time">${renderTime(event.timestamp)}</div>`;
+			let nameUppercase = event.id.charAt(0).toUpperCase() + event.id.slice(1);
+			let name = `<div class="cont event-name">${event.id}</div>`;
+			let removeButton = `<div class=cont><div class="cont round event-remove" onclick="eventRemove(event);"><img src="/assets/icons/delete2.svg" size=12px /></div></div>`;
+			elem.innerHTML = `${period}${time}${name}${removeButton}`;
+			container.appendChild(elem);
+		}
+	}
+
+	function eventRemove(event) {
+		M.matchEvents.splice(event.target.dataset.index, 1);
+		updateEvents();
+	}
+
 	// Event buttons
 	document.getElementById("auto-coral-l4").addEventListener("click", () => {
 		setAutoPendingEvent({
@@ -302,7 +343,7 @@
 		});
 	});
 	document.getElementById("auto-algae").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: false,
 			id: "algae",
 			timestamp: M.time,
@@ -310,7 +351,7 @@
 		});
 	});
 	document.getElementById("auto-algae-miss").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: false,
 			id: "algae",
 			timestamp: M.time,
@@ -318,7 +359,7 @@
 		});
 	});
 	document.getElementById("auto-intake").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: false,
 			id: "intake",
 			timestamp: M.time,
@@ -326,7 +367,7 @@
 		});
 	});
 	document.getElementById("auto-intake-miss").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: false,
 			id: "intake",
 			timestamp: M.time,
@@ -366,7 +407,7 @@
 		});
 	});
 	document.getElementById("processor").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: true,
 			id: "processor",
 			timestamp: M.time,
@@ -374,7 +415,7 @@
 		});
 	});
 	document.getElementById("processor-miss").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: true,
 			id: "processor",
 			timestamp: M.time,
@@ -382,7 +423,7 @@
 		});
 	});
 	document.getElementById("intake").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: true,
 			id: "intake",
 			timestamp: M.time,
@@ -390,7 +431,7 @@
 		});
 	});
 	document.getElementById("intake-miss").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: true,
 			id: "intake",
 			timestamp: M.time,
@@ -398,7 +439,7 @@
 		});
 	});
 	document.getElementById("net").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: true,
 			id: "net",
 			timestamp: M.time,
@@ -406,14 +447,14 @@
 		});
 	});
 	document.getElementById("agitate").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: true,
 			id: "agitate",
 			timestamp: M.time
 		});
 	});
 	document.getElementById("defend").addEventListener("click", () => {
-		M.matchEvents.push({
+		createEvent({
 			teleop: true,
 			id: "defend",
 			timestamp: M.time
@@ -424,7 +465,7 @@
 	let penalty = "penalty";
 	for (let elem of document.getElementsByClassName(penalty)) {
 		elem.addEventListener("click", () => {
-			M.matchEvents.push({
+			createEvent({
 				teleop: false,
 				id: penalty,
 				timestamp: M.time
@@ -445,7 +486,7 @@
 	document.getElementById("auto-success").addEventListener("click", () => {
 		if (pendingEvent != null) {
 			pendingEvent.successful = true;
-			M.matchEvents.push(pendingEvent);
+			createEvent(pendingEvent);
 		}
 		pendingEvent = null;
 		hideAutoConfirm();
@@ -454,7 +495,7 @@
 	document.getElementById("auto-failure").addEventListener("click", () => {
 		if (pendingEvent != null) {
 			pendingEvent.successful = false;
-			M.matchEvents.push(pendingEvent);
+			createEvent(pendingEvent);
 		}
 		pendingEvent = null;
 		hideAutoConfirm();
@@ -482,7 +523,7 @@
 	document.getElementById("teleop-success").addEventListener("click", () => {
 		if (pendingEvent != null) {
 			pendingEvent.successful = true;
-			M.matchEvents.push(pendingEvent);
+			createEvent(pendingEvent);
 		}
 		pendingEvent = null;
 		hideTeleopConfirm();
@@ -491,7 +532,7 @@
 	document.getElementById("teleop-failure").addEventListener("click", () => {
 		if (pendingEvent != null) {
 			pendingEvent.successful = false;
-			M.matchEvents.push(pendingEvent);
+			createEvent(pendingEvent);
 		}
 		pendingEvent = null;
 		hideTeleopConfirm();
@@ -508,11 +549,17 @@
 
 	document.getElementById("start-shallow").addEventListener("click", () => {
 		M.climbType = "shallow";
-		M.climbStart = M.time;
+		if (M.climbStart == null) {
+			M.climbStart = M.time;
+		}
+		M.climbEnd = null;
 	});
 	document.getElementById("start-deep").addEventListener("click", () => {
 		M.climbType = "deep";
-		M.climbStart = M.time;
+		if (M.climbStart == null) {
+			M.climbStart = M.time;
+		}
+		M.climbEnd = null;
 	});
 	document.getElementById("climb-fail").addEventListener("click", () => {
 		if (M.climbStart != null) {
@@ -531,6 +578,12 @@
 			M.climbResult = "succeeded";
 			M.climbEnd = M.time;
 		}
+	});
+	document.getElementById("climb-refresh").addEventListener("click", () => {
+		M.climbResult = null;
+		M.climbStart = null;
+		M.climbType = "none";
+		M.climbResult = "failed";
 	});
 
 	function onSubmit(event) {
@@ -753,15 +806,21 @@
 	document.getElementById("submit").addEventListener("click", onSubmit);
 
 	document.getElementById("clear").addEventListener("click", () => {
-		initMatchData();
-		document.getElementById("team-number").value = null;
-		document.getElementById("showed-up").checked = false;
-		document.getElementById("won").checked = false;
-		document.getElementById("broken").checked = false;
-		document.getElementById("notes").value = "";
+		showConfirmPrompt("clear the data for the match", () => {
+			initMatchData();
+			hideTeleopConfirm();
+			hideAutoConfirm();
+			updateEvents();
 
-		document.getElementById("time-speed").value = "1";
-		document.getElementById("time-pause-button").innerHTML = "Play";
+			document.getElementById("team-number").value = null;
+			document.getElementById("showed-up").checked = false;
+			document.getElementById("won").checked = false;
+			document.getElementById("broken").checked = false;
+			document.getElementById("notes").value = "";
+
+			document.getElementById("time-speed").value = "1";
+			document.getElementById("time-pause-button").innerHTML = "Play";
+		});
 	});
 
 	// Fill in auto options when a team is selected (the element is unfocused)
@@ -880,7 +939,7 @@
 	}
 
 	.grid-icon {
-		margin: auto;
+		margin-right: auto;
 		pointer-events: none;
 		width: 1.4rem;
 	}
@@ -923,6 +982,27 @@
 
 	.failure:hover {
 		background-color: var(--wbredacc);
+	}
+
+	.event {
+		width: 24rem;
+		display: grid;
+		grid-template-columns: minmax(0, 0.6fr) minmax(0, 2fr) minmax(0, 2fr) minmax(0, 0.8fr);
+	}
+
+	.event-period {
+		padding: 0.1rem;
+		background-color: var(--bg4);
+	}
+
+	.event-remove {
+		padding: 0.4rem;
+		background-color: var(--bg3);
+		cursor: pointer;
+	}
+
+	.event-remove>img {
+		pointer-events: none;
 	}
 </style>
 {{footer}}
