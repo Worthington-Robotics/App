@@ -545,8 +545,8 @@
 		let autoCoralAttempts = [];
 		let autoAlgaeAttempts = 0;
 		let autoAlgaeScores = 0;
-		let autoIntakeAttempts = [];
-		let autoIntakeSuccesses = [];
+		let autoIntakeAttempts = 0;
+		let autoIntakeSuccesses = 0;
 
 		let teleopCoralAttempts = [];
 		let teleopIntakeAttempts = 0;
@@ -698,6 +698,8 @@
 		let competition = document.getElementById("competition").value;
 		if (competition == "none") {
 			competition = null;
+		} else {
+			competition = competition.split(/\.?(?=[A-Z])/).join('_').toLowerCase();
 		}
 
 		const data = {

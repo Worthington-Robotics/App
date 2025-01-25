@@ -1,0 +1,22 @@
+<div class="round cont item match nolink">
+	<div class="match-inner">
+		<div class="cont match-section match-number">
+			{{number}}
+		</div>
+		<div class="cont match-section match-comp">
+			{{competition}}
+		</div>
+		<div class="cont match-section match-recorder">
+			{{recorder}}
+		</div>
+		<div class="cont">
+			<button class="cont round info-button" data-id="{{stats-id}}" data-number="{{number}}">
+				<img src="/assets/icons/info.svg" width="12px" />
+				<div style="display:none">
+					<!-- This is where we store all of the notes for the match -->
+					{{notes}}
+				</div>
+			</button>
+		</div>
+	</div>
+</div>

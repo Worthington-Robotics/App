@@ -175,6 +175,11 @@ pub fn icon_upload() -> CacheFor<Svg> {
 	CacheFor(Svg(include_bytes!("../assets/icons/upload.svg")), ONE_WEEK)
 }
 
+#[rocket::get("/assets/icons/info.svg")]
+pub fn icon_info() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/info.svg")), ONE_WEEK)
+}
+
 #[derive(Responder)]
 #[response(content_type = "image/x-icon")]
 pub struct Ico(pub &'static [u8]);

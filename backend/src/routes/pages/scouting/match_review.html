@@ -1,0 +1,135 @@
+{{worbots-header}}{{error}}{{prompt}}
+<h1>Matches for {{team}}</h1>
+<div id="schedule" class="cont col">
+	<div class="cont">
+		<a href="/scouting/team/{{team}}"><button>Back</button></a>
+	</div>
+	<div class="cont col item-container" id="matches">
+		{{matches}}
+	</div>
+	<div id="popup-container" class="cont" style="display:none">
+		<div id="popup" class="cont col round">
+			<h3 id="popup-header"></h3>
+			<h4>Match Notes</h4>
+			<p id="popup-notes"></p>
+			<div class="cont">
+				<button id="popup-close">Close</button>
+				<a href="" id="popup-rescout"><button>Rescout</button></a>
+				<button id="popup-delete">Delete</button>
+			</div>
+		</div>
+	</div>
+</div>
+<style>
+	#matches {
+		row-gap: 0.6rem;
+	}
+
+	.match {
+		width: 23.5rem;
+		padding: 1.7rem;
+	}
+
+	.match-inner {
+		display: grid;
+		grid-template-columns: minmax(0, 0.2fr) minmax(0, 0.3fr) minmax(0, 0.2fr) minmax(0, 0.2fr);
+		width: 100%;
+	}
+
+	.match-number {
+		font-size: calc(1.7vw * var(--scale));
+		margin-right: 0.8rem;
+	}
+
+	.match-recorder {
+		color: var(--fg2);
+		text-align: center;
+		margin-right: 0.4rem;
+	}
+
+	.match-section {
+		box-sizing: border-box;
+	}
+
+	.info-button {
+		background-color: var(--bg3);
+		padding: 0.6rem;
+	}
+
+	.info-button:hover {
+		background-color: var(--bg3);
+	}
+
+	.info-button>img {
+		pointer-events: none;
+	}
+
+	#popup-container {
+		position: fixed;
+		left: 0;
+		top: 0;
+		width: 100vw;
+		height: 100vh;
+		z-index: 100;
+		background-color: rgba(0, 0, 0, 0.5);
+	}
+
+	#popup {
+		background-color: var(--bg2);
+		padding: 1.5rem;
+		width: 80%;
+	}
+
+	#popup-close {
+		background-color: var(--bg3);
+	}
+
+	#popup-header {
+		margin-bottom: -1.2rem;
+	}
+
+	#popup-delete {
+		background-color: var(--wbred);
+	}
+</style>
+<script>
+	let popupStatsID = null;
+	let popupMatchNumber = null;
+
+	document.getElementById("popup-delete").addEventListener("click", () => {
+		showConfirmPrompt("delete these match stats", () => {
+			id = encodeURIComponent(popupStatsID);
+			fetch(`/api/delete_match_stats/${id}`, {
+				method: "DELETE",
+			}).then((resp) => {
+				if (resp.status == 200) {
+					window.location.reload();
+				} else {
+					setError(resp.statusText);
+				}
+			});
+		});
+	});
+
+	function openPopup(event) {
+		popupStatsID = event.target.dataset.id;
+		popupMatchNumber = event.target.dataset.number;
+		document.getElementById("popup-rescout").href = `/scouting/report?team_number={{team}}&match_number=${popupMatchNumber}&stats_id=${encodeURIComponent(popupStatsID)}`;
+
+		document.getElementById("popup-header").innerHTML = `Match ${popupMatchNumber}`;
+
+		let notes = event.target.children[1].innerHTML;
+		document.getElementById("popup-notes").innerHTML = notes;
+
+		document.getElementById("popup-container").style.display = "";
+	}
+
+	for (let elem of document.getElementsByClassName("info-button")) {
+		elem.addEventListener("click", openPopup);
+	}
+
+	document.getElementById("popup-close").addEventListener("click", () => {
+		document.getElementById("popup-container").style.display = "none";
+	})
+</script>
+{{footer}}
