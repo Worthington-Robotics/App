@@ -163,6 +163,8 @@ async fn rocket() -> _ {
 				routes::calendar::event_details,
 				routes::calendar::delete_event,
 				routes::calendar::rsvp_event,
+				routes::calendar::create_week,
+				routes::calendar::create_week_api,
 				routes::inbox::inbox,
 				routes::inbox::create_announcement_api,
 				routes::inbox::create_announcement_page,

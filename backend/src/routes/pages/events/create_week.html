@@ -1,0 +1,29 @@
+{{worbots-header}}{{error}}
+<h2>Create Meetings for Week</h2>
+<form id="week-form" class="cont col">
+	<button onclick="history.back()">Back</button>
+	<label for="week">Week</label>
+	<input type="week" id="week" name="week" />
+
+	<input type="submit" id="submit" value="Create Meetings" />
+</form>
+<script>
+	function onSubmit(event) {
+		event.preventDefault();
+
+		let week = document.getElementById("week").value;
+
+		fetch(`/api/create_week/${week}`, {
+			method: "POST",
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to create events: " + response.statusText);
+				return;
+			}
+			window.location.href = "/calendar";
+		});
+	}
+
+	document.getElementById("week-form").addEventListener("submit", onSubmit);
+</script>
+{{footer}}

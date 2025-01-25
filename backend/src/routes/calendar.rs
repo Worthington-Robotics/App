@@ -1,6 +1,6 @@
-use std::{fmt::Display, path::PathBuf, str::FromStr};
+use std::{collections::HashSet, fmt::Display, path::PathBuf, str::FromStr};
 
-use chrono::{DateTime, NaiveTime, Offset, TimeZone, Utc};
+use chrono::{DateTime, Days, NaiveDate, NaiveDateTime, NaiveTime, Offset, TimeZone, Utc};
 use itertools::Itertools;
 use rocket::{
 	form::Form,
@@ -524,6 +524,127 @@ pub async fn rsvp_event(
 	if let Err(e) = lock.create_event(event).await {
 		error!("Failed to update RSVP for event {id} in database: {e}");
 		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
+}
+
+#[rocket::get("/create_week")]
+pub async fn create_week(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Create event page");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	if session_id.verify_elevated(state).await.is_err() {
+		return Ok(redirect);
+	};
+
+	let page = include_str!("pages/events/create_week.min.html");
+	let page = create_page("Create Week Meetings", &page, Some(Scope::Events));
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+#[rocket::post("/api/create_week/<week>")]
+pub async fn create_week_api(
+	session_id: SessionID<'_>,
+	state: &State,
+	week: &str,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Create week meetings API");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	let mut parts = week.split("-W");
+	let Some(year) = parts.next() else {
+		return Err(Status::BadRequest);
+	};
+	let Some(week) = parts.next() else {
+		return Err(Status::BadRequest);
+	};
+	let Ok(year) = year.parse::<i32>() else {
+		return Err(Status::BadRequest);
+	};
+	let Ok(week) = week.parse::<i32>() else {
+		return Err(Status::BadRequest);
+	};
+
+	let Some(monday) = NaiveDate::from_isoywd_opt(year, week as u32, chrono::Weekday::Mon) else {
+		return Err(Status::BadRequest);
+	};
+
+	// Base event properties
+	let normal_start_time = NaiveTime::from_hms_opt(16, 0, 0).unwrap();
+	let normal_end_time = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
+	let saturday_start_time = NaiveTime::from_hms_opt(10, 0, 0).unwrap();
+	let saturday_end_time = NaiveTime::from_hms_opt(16, 0, 0).unwrap();
+
+	let mut invites = HashSet::new();
+	invites.insert(MemberMention::Group(MemberGroup::Member));
+	invites.insert(MemberMention::Group(MemberGroup::Coach));
+	invites.insert(MemberMention::Group(MemberGroup::Mentor));
+
+	let mut lock = state.db.write().await;
+
+	for (day_offset, weekday, start_time, end_time) in [
+		(
+			0,
+			"Monday",
+			normal_start_time.clone(),
+			normal_end_time.clone(),
+		),
+		(
+			1,
+			"Tuesday",
+			normal_start_time.clone(),
+			normal_end_time.clone(),
+		),
+		(
+			2,
+			"Wednesday",
+			normal_start_time.clone(),
+			normal_end_time.clone(),
+		),
+		(3, "Thursday", normal_start_time, normal_end_time),
+		(5, "Saturday", saturday_start_time, saturday_end_time),
+	] {
+		let Some(date) = monday.checked_add_days(Days::new(day_offset as u64)) else {
+			continue;
+		};
+
+		let start_date = NaiveDateTime::new(date, start_time);
+		let end_date = NaiveDateTime::new(date, end_time);
+
+		let start_date = TIMEZONE
+			.from_local_datetime(&start_date)
+			.earliest()
+			.unwrap();
+		let end_date = TIMEZONE.from_local_datetime(&end_date).earliest().unwrap();
+
+		let event = Event {
+			id: generate_id(),
+			name: format!("{weekday} Team Meeting"),
+			date: start_date.to_rfc2822(),
+			end_date: Some(end_date.to_rfc2822()),
+			kind: EventKind::Meeting,
+			urgency: EventUrgency::Optional,
+			visibility: EventVisibility::Everyone,
+			invites: invites.clone(),
+			rsvp: HashSet::new(),
+		};
+
+		if let Err(e) = lock.create_event(event).await {
+			error!("Failed to create event: {}", e);
+			return Err(Status::InternalServerError);
+		}
 	}
 
 	Ok(())
