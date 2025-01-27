@@ -164,7 +164,7 @@ pub async fn team_details(
 	let span = span!(Level::DEBUG, "Team details page");
 	let _enter = span.enter();
 
-	let competition_str = competition.unwrap_or_default();
+	let competition_str = competition.unwrap_or("Current");
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
 	let Some(session_id) = session_id.to_session_id() else {

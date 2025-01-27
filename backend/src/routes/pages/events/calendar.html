@@ -16,20 +16,41 @@
 	let upcomingEvents = document.getElementById("upcoming");
 	let allEvents = document.getElementById("all");
 	let notUpcoming = document.getElementsByClassName("not-upcoming");
-	upcomingEvents.addEventListener("click", () => {
+
+	window.addEventListener("load", () => {
+		let anchor = location.href.split("#")[1];
+		if (anchor != null) {
+			if (anchor == "upcoming") {
+				showUpcoming()
+			} else if (anchor == "all") {
+				showAll();
+			}
+		}
+	});
+
+	function showUpcoming() {
 		upcomingEvents.style.backgroundColor = "";
 		allEvents.style.backgroundColor = "var(--bg2)";
 		for (let elem of notUpcoming) {
 			elem.style.display = "none";
 		}
-	});
-	allEvents.addEventListener("click", () => {
+
+		let url = location.href.split("#")[0];
+		location.href = url + "#upcoming";
+	}
+	upcomingEvents.addEventListener("click", showUpcoming);
+
+	function showAll() {
 		allEvents.style.backgroundColor = "";
 		upcomingEvents.style.backgroundColor = "var(--bg2)";
 		for (let elem of notUpcoming) {
 			elem.style.display = "";
 		}
-	});
+
+		let url = location.href.split("#")[0];
+		location.href = url + "#all";
+	}
+	allEvents.addEventListener("click", showAll);
 </script>
 <style>
 	#calendar {
@@ -38,8 +59,6 @@
 	}
 
 	.ev-header {
-		display: grid;
-		grid-template-columns: minmax(0, 0.15fr) minmax(0, 0.6fr) minmax(0, 1.2fr);
 		width: 100%;
 	}
 
