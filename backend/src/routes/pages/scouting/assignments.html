@@ -1,5 +1,5 @@
 {{worbots-header}}{{error}}{{prompt}}
-<h1>Scouting Assignments</h1>
+<h1>Prescouting Assignments</h1>
 <div id="assignments" class="cont col">
 	<div class="cont">
 		<button onclick="history.back()">Back</button>
@@ -62,6 +62,13 @@
 	.member-name {
 		font-size: calc(1.2vw * var(--scale));
 		text-align: center;
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.member-name.excluded {
+		text-decoration-line: line-through;
+		color: var(--fg2);
 	}
 
 	.member-teams {
@@ -205,10 +212,18 @@
 		window.scrollBy({ top: 20, behavior: "smooth" });
 	});
 
+	// Random assignments button
 	document.getElementById("random-button").addEventListener("click", () => {
 		showConfirmPrompt("clear all assignments and randomly assign", () => {
+			// Get the excluded members
+			let excluded = [];
+			for (let elem of document.getElementsByClassName("excluded")) {
+				excluded.push(elem.dataset.id);
+			}
+
 			fetch("/api/random_assign_teams", {
 				method: "POST",
+				body: excluded.join(","),
 			}).then((resp) => {
 				if (resp.status != 200) {
 					setError(resp.statusText);
@@ -218,5 +233,19 @@
 			});
 		});
 	});
+
+	// Clicking on member names to enable/disable them from random assignment
+	for (let elem of document.getElementsByClassName("member-name")) {
+		elem.addEventListener("click", (e) => {
+			e.preventDefault();
+			// Minification thing
+			let excluded = "excluded";
+			if (e.target.classList.contains(excluded)) {
+				e.target.classList.remove(excluded);
+			} else {
+				e.target.classList.add(excluded);
+			}
+		});
+	}
 </script>
 {{footer}}

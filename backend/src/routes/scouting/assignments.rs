@@ -39,21 +39,13 @@ pub async fn assignments(
 	let page = include_str!("../pages/scouting/assignments.min.html");
 
 	let lock = state.db.read().await;
-	let global_data = lock.get_global_data().await.map_err(|e| {
-		error!("Failed to get global data from database: {e}");
+
+	let teams = lock.get_teams().await.map_err(|e| {
+		error!("Failed to get teams from database: {e}");
 		Status::InternalServerError
 	})?;
-
-	let teams = if let Some(current_competition) = global_data.current_competition {
-		let teams = lock.get_teams().await.map_err(|e| {
-			error!("Failed to get teams from database: {e}");
-			Status::InternalServerError
-		})?;
-		let teams = teams.filter(|x| x.competitions.contains(&current_competition));
-		teams.sorted_by_key(|x| x.number)
-	} else {
-		Vec::new().into_iter()
-	};
+	let teams = teams.filter(|x| !x.competitions.is_empty());
+	let teams = teams.sorted_by_key(|x| x.number);
 
 	let assignments = lock.get_all_prescouting_assignments().await.map_err(|e| {
 		error!("Failed to get all prescouting assignments from database: {e}");
@@ -110,7 +102,8 @@ fn render_member(member: Member, assignment: ScoutingAssignment) -> String {
 		teams_str.push_str(&render_team(team, Some(&member.id)));
 	}
 	format!(
-		"<div class=\"round member\"><div class=\"cont member-name\">{}</div><div class=\"round member-teams\" data-id={}>{teams_str}</div></div>",
+		"<div class=\"round member\"><div class=\"cont member-name\" data-id={}>{}</div><div class=\"round member-teams\" data-id={}>{teams_str}</div></div>",
+		member.id,
 		member.name,
 		member.id
 	)
@@ -205,30 +198,27 @@ pub async fn unassign_team(
 	Ok(())
 }
 
-#[rocket::post("/api/random_assign_teams")]
-pub async fn random_assign(state: &State, session_id: SessionID<'_>) -> Result<(), Status> {
+#[rocket::post("/api/random_assign_teams", data = "<excluded>")]
+pub async fn random_assign(
+	excluded: String,
+	state: &State,
+	session_id: SessionID<'_>,
+) -> Result<(), Status> {
 	let span = span!(Level::DEBUG, "Randomly assigning teams");
 	let _enter = span.enter();
 
 	session_id.verify_elevated(state).await?;
 
+	let excluded: Vec<_> = excluded.split(',').collect();
+	dbg!(&excluded);
+
 	let mut lock = state.db.write().await;
-
-	let global_data = lock.get_global_data().await.map_err(|e| {
-		error!("Failed to get global data from database: {e}");
-		Status::InternalServerError
-	})?;
-
-	let Some(current_competition) = global_data.current_competition else {
-		error!("No current competition");
-		return Ok(());
-	};
 
 	let teams = lock.get_teams().await.map_err(|e| {
 		error!("Failed to get teams from database: {e}");
 		Status::InternalServerError
 	})?;
-	let teams = teams.filter(|x| x.competitions.contains(&current_competition));
+	let teams = teams.filter(|x| !x.competitions.is_empty());
 	let teams = teams.map(|x| x.number);
 	let teams = teams.sorted();
 	let teams: Vec<_> = teams.collect();
@@ -237,9 +227,30 @@ pub async fn random_assign(state: &State, session_id: SessionID<'_>) -> Result<(
 		error!("Failed to get all members from database: {e}");
 		Status::InternalServerError
 	})?;
-	let members: Vec<_> = members.map(|x| x.id).collect();
+	let members = members.map(|x| x.id);
 
-	let assignments = assign_scouts(&teams, &members);
+	let all_members: Vec<_> = members.collect();
+
+	let members_to_assign: Vec<_> = all_members
+		.iter()
+		.filter(|x| !excluded.contains(&x.as_str()))
+		.cloned()
+		.collect();
+
+	// Remove existing assignments
+	for member in all_members {
+		let assignment = ScoutingAssignment {
+			member: member.to_string(),
+			teams: Vec::new(),
+		};
+
+		if let Err(e) = lock.create_prescouting_assignment(assignment).await {
+			error!("Failed to clear existing assignments for member: {e}");
+			return Err(Status::InternalServerError);
+		}
+	}
+
+	let assignments = assign_scouts(&teams, &members_to_assign);
 	for assignment in assignments {
 		if let Err(e) = lock.create_prescouting_assignment(assignment).await {
 			error!("Failed to update assignment in database: {e}");
