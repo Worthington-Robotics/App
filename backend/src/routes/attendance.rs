@@ -41,7 +41,7 @@ pub async fn create_attendance_panel(
 				continue;
 			};
 			let diff = date.to_utc() - now;
-			if diff.abs().num_hours() <= 24 {
+			if diff.abs().num_hours() <= 36 {
 				events.push(AttendanceEvent {
 					event,
 					is_rsvp: true,
