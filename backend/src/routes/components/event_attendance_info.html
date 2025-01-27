@@ -1,0 +1,50 @@
+<div id="attendance">
+	<div class="cont col round attendance-section">
+		<h4>Invited</h4>
+		<div class="cont col attendance-cont">{{invited}}</div>
+	</div>
+	<div class="cont col round attendance-section">
+		<h4>Will Attend</h4>
+		<div class="cont col attendance-cont">{{will-attend}}</div>
+	</div>
+	<div class="cont col round attendance-section">
+		<h4>Will Not Attend</h4>
+		<div class="cont col attendance-cont">{{will-not-attend}}</div>
+	</div>
+	<div class="cont col round attendance-section">
+		<h4>Attending Now</h4>
+		<div class="cont col attendance-cont">{{attending-now}}</div>
+	</div>
+	<div class="cont col round attendance-section">
+		<h4>Attended</h4>
+		<div class="cont col attendance-cont">{{attended}}</div>
+	</div>
+</div>
+<style>
+	#attendance {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		width: 24rem;
+		gap: 0.8rem;
+		margin-top: 2rem;
+	}
+
+	.attendance-section {
+		background-color: var(--bg2);
+		padding: 1.5rem;
+		justify-content: flex-start;
+	}
+
+	.attendance-section>h4 {
+		margin-top: 0px;
+	}
+
+	.attendance-cont {
+		gap: 0.4rem;
+	}
+
+	.attendance-member {
+		font-size: calc(1.3vw * var(--scale));
+		color: var(--fg2);
+	}
+</style>

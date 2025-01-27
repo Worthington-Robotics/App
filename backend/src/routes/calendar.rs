@@ -1,5 +1,6 @@
-use std::{collections::HashSet, fmt::Display, path::PathBuf, str::FromStr};
+use std::{collections::HashSet, fmt::Display, ops::Deref, path::PathBuf, str::FromStr};
 
+use anyhow::Context;
 use chrono::{DateTime, Days, NaiveDate, NaiveDateTime, NaiveTime, Offset, TimeZone, Utc};
 use itertools::Itertools;
 use rocket::{
@@ -13,7 +14,7 @@ use tracing::{error, span, warn, Level};
 
 use crate::{
 	api::caldav::{Calendar, CalendarResponse},
-	db::Database,
+	db::{Database, DatabaseImpl},
 	events::{Event, EventKind, EventUrgency, EventVisibility},
 	member::{count_group_members, Member, MemberGroup, MemberMention},
 	util::{date_from_js, generate_id, render_date, render_date_range, ToDropdown, TIMEZONE},
@@ -181,6 +182,14 @@ pub async fn event_details(
 	let page = page.replace("{{urgency}}", &event.urgency.to_string());
 	let page = page.replace("{{visibility}}", &event.visibility.to_string());
 
+	let attendance_info = render_event_attendance_info(&event, lock.deref())
+		.await
+		.map_err(|e| {
+			error!("Failed to render event attendance info: {e}");
+			Status::InternalServerError
+		})?;
+	let page = page.replace("{{attendance-info}}", &attendance_info);
+
 	// Render the event date range
 	let date = if let Ok(date) = DateTime::parse_from_rfc2822(&event.date) {
 		let end_date = event
@@ -217,6 +226,63 @@ pub async fn event_details(
 	let page = create_page("Event Details", &page, Some(Scope::Events));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+async fn render_event_attendance_info(event: &Event, db: &DatabaseImpl) -> anyhow::Result<String> {
+	let out = include_str!("components/event_attendance_info.min.html");
+
+	let members = db
+		.get_members()
+		.await
+		.context("Failed to get members from database")?;
+	let members: Vec<_> = members.collect();
+
+	let mut invited_string = String::new();
+	let mut will_attend_string = String::new();
+	let will_not_attend_string = String::new();
+	let mut attending_now_string = String::new();
+	let mut attended_string = String::new();
+
+	for member in &members {
+		if !event.invites.iter().any(|x| match x {
+			MemberMention::Member(id) => id == &member.id,
+			MemberMention::Group(group) => member.groups.contains(group),
+		}) {
+			continue;
+		}
+
+		invited_string.push_str(&render_attendance_member(&member.name));
+
+		if event.rsvp.contains(&member.id) {
+			will_attend_string.push_str(&render_attendance_member(&member.name));
+		}
+
+		let Ok(attendance) = db.get_attendance(&member.id).await else {
+			error!("Failed to get attendance for member {}", member.id);
+			continue;
+		};
+
+		let entry = attendance.iter().find(|x| x.event == event.id);
+		if let Some(entry) = entry {
+			if entry.end_time.is_some() {
+				attended_string.push_str(&render_attendance_member(&member.name));
+			} else {
+				attending_now_string.push_str(&render_attendance_member(&member.name));
+			}
+		}
+	}
+
+	let out = out.replace("{{invited}}", &invited_string);
+	let out = out.replace("{{will-attend}}", &will_attend_string);
+	let out = out.replace("{{will-not-attend}}", &will_not_attend_string);
+	let out = out.replace("{{attending-now}}", &attending_now_string);
+	let out = out.replace("{{attended}}", &attended_string);
+
+	Ok(out)
+}
+
+fn render_attendance_member(name: &str) -> String {
+	format!("<div class=attendance-member>{name}</div>")
 }
 
 #[rocket::get("/create_event?<id>")]
