@@ -262,12 +262,11 @@ async fn render_event_attendance_info(event: &Event, db: &DatabaseImpl) -> anyho
 			continue;
 		};
 
-		let entry = attendance.iter().find(|x| x.event == event.id);
-		if let Some(entry) = entry {
-			if entry.end_time.is_some() {
-				attended_string.push_str(&render_attendance_member(&member.name));
-			} else {
+		if attendance.iter().any(|x| x.event == event.id) {
+			if event.is_attendable(&Utc::now()) {
 				attending_now_string.push_str(&render_attendance_member(&member.name));
+			} else {
+				attended_string.push_str(&render_attendance_member(&member.name));
 			}
 		}
 	}

@@ -43,6 +43,15 @@ impl Event {
 			}
 		}
 
+		if let Some(end_date) = &self.end_date {
+			if let Ok(end_date) = DateTime::parse_from_rfc2822(end_date) {
+				let end_date = end_date.with_timezone(&Utc);
+				if now > &end_date {
+					return false;
+				}
+			}
+		}
+
 		true
 	}
 }
