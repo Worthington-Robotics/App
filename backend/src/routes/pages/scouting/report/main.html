@@ -70,7 +70,8 @@
 				class="grid-icon center coral" /> L1</button>
 		<button id="auto-intake-miss" class="cont grid-button auto-nonconfirm miss"><img src="/assets/icons/download.svg"
 				class="grid-icon center" /> Intake Miss</button>
-		<button class="cont grid-button auto-nonconfirm penalty"><img src="/assets/icons/error.svg" class="grid-icon center" />
+		<button class="cont grid-button auto-nonconfirm penalty"><img src="/assets/icons/error.svg"
+				class="grid-icon center" />
 			Penalty</button>
 
 		<button class="grid-button auto-confirm success" id="auto-success" style="display:none"><img
@@ -794,6 +795,7 @@
 			showed_up: document.getElementById("showed-up").checked,
 			won: document.getElementById("won").checked,
 			notes: document.getElementById("notes").value,
+			match_report_data: M,
 		};
 		const dataReady = encodeURIComponent(JSON.stringify(data));
 

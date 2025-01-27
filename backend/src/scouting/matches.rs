@@ -208,6 +208,9 @@ pub struct MatchStats {
 	/// Team weaknesses during the match
 	#[serde(default)]
 	pub weaknesses: String,
+	/// Data from the match report
+	#[serde(default)]
+	pub match_report_data: Option<serde_json::Map<String, serde_json::Value>>,
 }
 
 impl MatchStats {
