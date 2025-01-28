@@ -239,7 +239,7 @@ async fn render_event_attendance_info(event: &Event, db: &DatabaseImpl) -> anyho
 
 	let mut invited_string = String::new();
 	let mut will_attend_string = String::new();
-	let will_not_attend_string = String::new();
+	let mut will_not_attend_string = String::new();
 	let mut attending_now_string = String::new();
 	let mut attended_string = String::new();
 
@@ -255,6 +255,10 @@ async fn render_event_attendance_info(event: &Event, db: &DatabaseImpl) -> anyho
 
 		if event.rsvp.contains(&member.id) {
 			will_attend_string.push_str(&render_attendance_member(&member.name));
+		}
+
+		if event.rsvp_no.contains(&member.id) {
+			will_not_attend_string.push_str(&render_attendance_member(&member.name));
 		}
 
 		let Ok(attendance) = db.get_attendance(&member.id).await else {
