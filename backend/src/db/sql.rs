@@ -1372,7 +1372,7 @@ fn read_event(id: &str, row: PgRow) -> anyhow::Result<Event> {
 		.into_iter()
 		.filter_map(|x| MemberMention::from_str(&x).ok());
 	let rsvp: Vec<String> = row.try_get("rsvp")?;
-	let rsvp_no: Vec<String> = row.try_get("rsvpno")?;
+	let rsvp_no: Option<Vec<String>> = row.try_get("rsvpno")?;
 
 	Ok(Event {
 		id: id.to_string(),
@@ -1385,7 +1385,7 @@ fn read_event(id: &str, row: PgRow) -> anyhow::Result<Event> {
 		visibility,
 		invites: invites.collect(),
 		rsvp: rsvp.into_iter().collect(),
-		rsvp_no: rsvp_no.into_iter().collect(),
+		rsvp_no: rsvp_no.unwrap_or_default().into_iter().collect(),
 	})
 }
 
