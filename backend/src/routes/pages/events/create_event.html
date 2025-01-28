@@ -4,6 +4,9 @@
 	<button onclick="history.back()">Back</button>
 	<input type="text" name="name" id="name-field" class="create-event-field" placeholder="Enter event name..."
 		value={{name}} />
+	<label for="description">Description</label>
+	<textarea name="description" id="description-field" class="round border"
+		placeholder="Enter event description..."></textarea>
 	<label for="date">Event Date</label>
 	<input type="datetime-local" name="date" id="date-field" placeholder="Enter event date..." value="{{date}}" />
 	<label for="end-date">Event End Date (Optional)</label>
@@ -36,6 +39,7 @@
 		event.preventDefault();
 		const id = "{{id}}";
 		const name = document.getElementById("name-field").value;
+		const description = document.getElementById("description-field").value;
 		const date = document.getElementById("date-field").value;
 		const end_date = document.getElementById("end-date-field").value;
 		const end_date_enable = document.getElementById("end-date-enable").checked;
@@ -64,10 +68,11 @@
 		let endDate = end_date_enable ? `&end_date=${end_date}` : "";
 
 		let nameEncoded = encodeURIComponent(name);
+		let descriptionEncoded = encodeURIComponent(description);
 
 		fetch("/api/create_event", {
 			method: "POST",
-			body: `id=${id}&name=${nameEncoded}&date=${date}${endDate}&kind=${kind}&urgency=${urgency}&visibility=${visibility}&invites=${invitesString}`,
+			body: `id=${id}&name=${nameEncoded}&description=${descriptionEncoded}&date=${date}${endDate}&kind=${kind}&urgency=${urgency}&visibility=${visibility}&invites=${invitesString}`,
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
 		}).then((response) => {
 			if (response.status != 200) {

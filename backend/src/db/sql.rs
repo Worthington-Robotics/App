@@ -187,9 +187,10 @@ impl Database for SqlDatabase {
 		self.delete_event(&event.id)
 			.await
 			.context("Failed to delete existing event")?;
-		sqlx::query("INSERT INTO events (Id, Name, Date, EndDate, Kind, Urgency, Visibility, Invites, RSVP) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)")
+		sqlx::query("INSERT INTO events (Id, Name, Description, Date, EndDate, Kind, Urgency, Visibility, Invites, RSVP, RSVPNo) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)")
 			.bind(event.id)
 			.bind(event.name)
+			.bind(event.description)
 			.bind(event.date)
 			.bind(event.end_date)
 			.bind(event.kind.to_dropdown())
@@ -203,6 +204,7 @@ impl Database for SqlDatabase {
 					.collect::<Vec<_>>(),
 			)
 			.bind(event.rsvp.into_iter().collect::<Vec<_>>())
+			.bind(event.rsvp_no.into_iter().collect::<Vec<_>>())
 			.execute(&self.pool)
 			.await
 			.context("Failed to create new event in database")?;
@@ -1235,7 +1237,7 @@ impl Database for SqlDatabase {
 async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	let members_task = pool.execute("CREATE TABLE IF NOT EXISTS members (Id text PRIMARY KEY, Name text, Kind text, Groups text[], Password text, PasswordSalt text, CreationDate text, CalendarId text, CompletedForms text[])");
 
-	let events_task = pool.execute("CREATE TABLE IF NOT EXISTS events (Id text PRIMARY KEY, Name text, Date text, EndDate text, Kind text, Urgency text, Visibility text, Invites text[], RSVP text[])");
+	let events_task = pool.execute("CREATE TABLE IF NOT EXISTS events (Id text PRIMARY KEY, Description text, Name text, Date text, EndDate text, Kind text, Urgency text, Visibility text, Invites text[], RSVP text[], RSVPNo text[])");
 
 	let attendance_task = pool.execute("CREATE TABLE IF NOT EXISTS attendance (Id serial PRIMARY KEY, Member text, StartDate text, EndDate text, Event text)");
 
@@ -1346,6 +1348,8 @@ fn read_member(id: &str, row: PgRow) -> anyhow::Result<Member> {
 /// Read an event from the database
 fn read_event(id: &str, row: PgRow) -> anyhow::Result<Event> {
 	let name: &str = row.try_get("name")?;
+	let description: Option<&str> = row.try_get("description")?;
+	let description = description.unwrap_or_default();
 	let date: &str = row.try_get("date")?;
 	let end_date: Option<String> = row.try_get("enddate")?;
 	let kind: &str = row.try_get("kind")?;
@@ -1368,10 +1372,12 @@ fn read_event(id: &str, row: PgRow) -> anyhow::Result<Event> {
 		.into_iter()
 		.filter_map(|x| MemberMention::from_str(&x).ok());
 	let rsvp: Vec<String> = row.try_get("rsvp")?;
+	let rsvp_no: Vec<String> = row.try_get("rsvpno")?;
 
 	Ok(Event {
 		id: id.to_string(),
 		name: name.to_string(),
+		description: description.to_string(),
 		date: date.to_string(),
 		end_date,
 		kind,
@@ -1379,6 +1385,7 @@ fn read_event(id: &str, row: PgRow) -> anyhow::Result<Event> {
 		visibility,
 		invites: invites.collect(),
 		rsvp: rsvp.into_iter().collect(),
+		rsvp_no: rsvp_no.into_iter().collect(),
 	})
 }
 

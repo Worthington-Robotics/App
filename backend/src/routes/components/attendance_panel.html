@@ -34,10 +34,10 @@
 </style>
 <script>
 	for (let elem of document.getElementsByClassName("attend-button")) {
-		elem.addEventListener("click", clickItem);
+		elem.addEventListener("click", attendButtonClick);
 	}
 
-	function clickItem(e) {
+	function attendButtonClick(e) {
 		let target = e.target.parentElement;
 		let button = e.target;
 		let action = target.dataset.action;
@@ -73,32 +73,24 @@
 					setError(resp.statusText);
 				}
 			});
-		} else if (action == "rsvp") {
-			fetch(`/api/rsvp_event/${event}?value=true`, {
-				method: "POST",
-			}).then((resp) => {
-				if (resp.status == 200) {
-					if (button != null) {
-						button.innerText = "Remove RSVP";
-					}
-					target.dataset.action = "unrsvp";
-				} else {
-					setError(resp.statusText);
-				}
-			});
-		} else if (action == "unrsvp") {
-			fetch(`/api/rsvp_event/${event}?value=false`, {
-				method: "POST",
-			}).then((resp) => {
-				if (resp.status == 200) {
-					if (button != null) {
-						button.innerText = "RSVP";
-					}
-					target.dataset.action = "rsvp";
-				} else {
-					setError(resp.statusText);
-				}
-			});
 		}
+	}
+
+	for (let elem of document.getElementsByClassName("rsvp-select")) {
+		elem.addEventListener("change", rsvpChange);
+	}
+
+	function rsvpChange(e) {
+		let target = e.target.parentElement;
+		let event = target.dataset.event;
+		let value = e.target.value;
+
+		fetch(`/api/rsvp_event/${event}?value=${value}`, {
+			method: "POST",
+		}).then((resp) => {
+			if (resp.status != 200) {
+				setError(resp.statusText);
+			}
+		});
 	}
 </script>

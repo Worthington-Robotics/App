@@ -15,7 +15,7 @@ use tracing::{error, span, warn, Level};
 use crate::{
 	api::caldav::{Calendar, CalendarResponse},
 	db::{Database, DatabaseImpl},
-	events::{Event, EventKind, EventUrgency, EventVisibility},
+	events::{Event, EventKind, EventUrgency, EventVisibility, RSVPStatus},
 	member::{count_group_members, Member, MemberGroup, MemberMention},
 	util::{date_from_js, generate_id, render_date, render_date_range, ToDropdown, TIMEZONE},
 };
@@ -178,9 +178,15 @@ pub async fn event_details(
 	let page = include_str!("pages/events/details.min.html");
 	let page = page.replace("{{id}}", &event.id);
 	let page = page.replace("{{name}}", &event.name);
+	let page = page.replace("{{description}}", &event.description);
 	let page = page.replace("{{kind}}", &event.kind.to_string());
 	let page = page.replace("{{urgency}}", &event.urgency.to_string());
 	let page = page.replace("{{visibility}}", &event.visibility.to_string());
+
+	let page = page.replace(
+		"{{rsvp-options}}",
+		&RSVPStatus::create_options(Some(&event.get_rsvp(&requesting_member.id))),
+	);
 
 	let attendance_info = render_event_attendance_info(&event, lock.deref())
 		.await
@@ -216,12 +222,6 @@ pub async fn event_details(
 		""
 	};
 	let page = page.replace("{{delete}}", delete_button);
-	let rsvp_checked = if event.rsvp.contains(&requesting_member.id) {
-		"checked"
-	} else {
-		""
-	};
-	let page = page.replace("{{rsvp-checked}}", rsvp_checked);
 
 	let page = create_page("Event Details", &page, Some(Scope::Events));
 
@@ -325,6 +325,7 @@ pub async fn create_event(
 		Event {
 			id,
 			name: String::new(),
+			description: String::new(),
 			date,
 			end_date: None,
 			kind: Default::default(),
@@ -332,6 +333,7 @@ pub async fn create_event(
 			visibility: Default::default(),
 			invites: Default::default(),
 			rsvp: Default::default(),
+			rsvp_no: Default::default(),
 		}
 	};
 
@@ -478,10 +480,12 @@ pub async fn create_event_api(
 		Status::InternalServerError
 	})?;
 	let existing_rsvps = existing_event.as_ref().map(|x| x.rsvp.clone());
+	let existing_rsvp_no = existing_event.as_ref().map(|x| x.rsvp_no.clone());
 
 	let event = Event {
 		id: event.id,
 		name: event.name,
+		description: event.description,
 		date: date.to_rfc2822(),
 		end_date,
 		kind: event.kind,
@@ -489,6 +493,7 @@ pub async fn create_event_api(
 		visibility: event.visibility,
 		invites,
 		rsvp: existing_rsvps.unwrap_or_default(),
+		rsvp_no: existing_rsvp_no.unwrap_or_default(),
 	};
 
 	if let Err(e) = lock.create_event(event).await {
@@ -503,6 +508,7 @@ pub async fn create_event_api(
 pub struct EventForm {
 	id: String,
 	name: String,
+	description: String,
 	date: String,
 	end_date: Option<String>,
 	kind: EventKind,
@@ -544,10 +550,14 @@ pub async fn rsvp_event(
 	state: &State,
 	session_id: SessionID<'_>,
 	id: &str,
-	value: bool,
+	value: &str,
 ) -> Result<(), Status> {
 	let span = span!(Level::DEBUG, "Updating RSVP for event");
 	let _enter = span.enter();
+
+	let Ok(rsvp) = RSVPStatus::from_str(value) else {
+		return Err(Status::BadRequest);
+	};
 
 	let lock = state.session_manager.lock().await;
 	let Some(session) = lock.get(session_id.id) else {
@@ -574,15 +584,24 @@ pub async fn rsvp_event(
 		return Err(Status::BadRequest);
 	};
 
-	if value {
-		let existed = !event.rsvp.insert(session.member.clone());
-		if existed {
-			warn!("Member added RSVP when they were already in the list");
+	match rsvp {
+		RSVPStatus::Unknown => {
+			event.rsvp.remove(&session.member);
+			event.rsvp_no.remove(&session.member);
 		}
-	} else {
-		let existed = event.rsvp.remove(&session.member);
-		if !existed {
-			warn!("Member removed RSVP when they weren't in the list to begin with");
+		RSVPStatus::Going => {
+			let existed = !event.rsvp.insert(session.member.clone());
+			if existed {
+				warn!("Member added RSVP when they were already in the list");
+			}
+			event.rsvp_no.remove(&session.member);
+		}
+		RSVPStatus::NotGoing => {
+			let existed = !event.rsvp_no.insert(session.member.clone());
+			if existed {
+				warn!("Member added RSVP No when they were already in the list");
+			}
+			event.rsvp.remove(&session.member);
 		}
 	}
 
@@ -697,6 +716,9 @@ pub async fn create_week_api(
 		let event = Event {
 			id: generate_id(),
 			name: format!("{weekday} Team Meeting"),
+			description: format!(
+				"Regular team practice for {weekday}. All members should attend if possible."
+			),
 			date: start_date.to_rfc2822(),
 			end_date: Some(end_date.to_rfc2822()),
 			kind: EventKind::Meeting,
@@ -704,6 +726,7 @@ pub async fn create_week_api(
 			visibility: EventVisibility::Everyone,
 			invites: invites.clone(),
 			rsvp: HashSet::new(),
+			rsvp_no: HashSet::new(),
 		};
 
 		if let Err(e) = lock.create_event(event).await {

@@ -21,12 +21,20 @@
 			{{visibility}}
 		</div>
 	</div>
+	<p id="description">
+		{{description}}
+	</p>
 	<div class="cont">
 		<label for="rsvp">RSVP</label>
-		<input type="checkbox" name="rsvp" id="rsvp" {{rsvp-checked}} />
+		<select id="rsvp" name="rsvp">{{rsvp-options}}</select>
 	</div>
 	{{attendance-info}}
 </div>
+<style>
+	#description {
+		color: var(--fg2);
+	}
+</style>
 <script>
 	document.getElementById("delete-button").addEventListener("click", () => {
 		showConfirmPrompt("delete this event", () => {
@@ -42,7 +50,7 @@
 		});
 	});
 	document.getElementById("rsvp").addEventListener("change", (e) => {
-		fetch(`/api/rsvp_event/{{id}}?value=${e.target.checked}`, {
+		fetch(`/api/rsvp_event/{{id}}?value=${e.target.value}`, {
 			method: "POST",
 		}).then((resp) => {
 			if (resp.status != 200) {

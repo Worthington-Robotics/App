@@ -8,6 +8,10 @@
 <div class="cont col">
 	<h3>More</h3>
 	<button id="cal-button">Get Calendar Link</button>
+	<a href="https://www.icloud.com/shortcuts/dab10b32a0c04ff9821b52c548dcf400"><button>Get App
+			Shortcut (iOS)</button></a>
+	<a href="https://pbs.twimg.com/profile_images/1760155550929530881/HB1eveGf_400x400.jpg"><button>Get App
+			Icon</button></a>
 </div>
 <script>
 	function onLogout(event) {
@@ -28,6 +32,7 @@
 		navigator.clipboard.writeText(
 			"https://worbots-e189414dd906.herokuapp.com/cal/{{cal-id}}/cal.ics"
 		);
+		event.target.innerHTML = "Copied!";
 	});
 </script>
 <style>

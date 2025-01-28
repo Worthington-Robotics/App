@@ -18,6 +18,9 @@ pub struct Event {
 	pub id: String,
 	/// The display name for this event
 	pub name: String,
+	/// The description for this event
+	#[serde(default)]
+	pub description: String,
 	/// The date for this event
 	pub date: String,
 	/// The end date for this event
@@ -38,6 +41,9 @@ pub struct Event {
 	/// People attending the event, as a set of member IDs
 	#[serde(default)]
 	pub rsvp: HashSet<String>,
+	/// People not attending the event, as a set of member IDs
+	#[serde(default)]
+	pub rsvp_no: HashSet<String>,
 }
 
 impl Event {
@@ -71,6 +77,19 @@ impl Event {
 			false
 		} else {
 			true
+		}
+	}
+
+	/// Get the RSVP status of the specified member
+	pub fn get_rsvp(&self, member: &str) -> RSVPStatus {
+		if !self.rsvp.contains(member) {
+			if !self.rsvp_no.contains(member) {
+				RSVPStatus::Unknown
+			} else {
+				RSVPStatus::NotGoing
+			}
+		} else {
+			RSVPStatus::Going
 		}
 	}
 }
@@ -204,6 +223,52 @@ impl Display for EventVisibility {
 			match self {
 				Self::Everyone => "Everyone",
 				Self::InviteOnly => "Invite-Only",
+			}
+		)
+	}
+}
+
+/// RSVP status for a member and event
+#[derive(Serialize, Deserialize, Default, FromFormField, Clone, Copy, EnumIter, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RSVPStatus {
+	#[default]
+	Unknown,
+	Going,
+	NotGoing,
+}
+
+impl FromStr for RSVPStatus {
+	type Err = ();
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"Unknown" => Ok(Self::Unknown),
+			"Going" => Ok(Self::Going),
+			"NotGoing" => Ok(Self::NotGoing),
+			_ => Err(()),
+		}
+	}
+}
+
+impl ToDropdown for RSVPStatus {
+	fn to_dropdown(&self) -> &'static str {
+		match self {
+			Self::Unknown => "Unknown",
+			Self::Going => "Going",
+			Self::NotGoing => "NotGoing",
+		}
+	}
+}
+
+impl Display for RSVPStatus {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				Self::Unknown => "Unknown",
+				Self::Going => "Going",
+				Self::NotGoing => "Not Going",
 			}
 		)
 	}

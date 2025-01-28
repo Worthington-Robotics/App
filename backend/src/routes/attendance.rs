@@ -6,8 +6,9 @@ use tracing::{error, span, warn, Level};
 use crate::{
 	attendance::get_attendable_events,
 	db::Database,
-	events::{get_relevant_events, Event},
+	events::{get_relevant_events, Event, RSVPStatus},
 	member::Member,
+	util::ToDropdown,
 	State,
 };
 
@@ -68,25 +69,23 @@ pub async fn create_attendance_panel(
 
 	let mut items = String::new();
 	for event in events {
-		let is_attending = current_attendance.iter().any(|x| x.event == event.event.id);
-		let (action, button_message) = if event.is_rsvp {
-			if event.event.rsvp.contains(&member.id) {
-				("unrsvp", "Remove RSVP")
-			} else {
-				("rsvp", "RSVP")
-			}
+		let interactable = if event.is_rsvp {
+			let rsvp = event.event.get_rsvp(&member.id);
+			let options = RSVPStatus::create_options(Some(&rsvp));
+			format!("<select class=rsvp-select>{options}</select>")
 		} else {
-			if is_attending {
+			let is_attending = current_attendance.iter().any(|x| x.event == event.event.id);
+			let (action, button_message) = if is_attending {
 				("unattend", "Leave")
 			} else {
 				("attend", "Attend")
-			}
+			};
+			format!("<button class=\"attend-button {action}\">{button_message}</button>")
 		};
 
 		let elem = include_str!("components/attendance_item.min.html");
-		let elem = elem.replace("{{action}}", action);
-		let elem = elem.replace("{{button-message}}", button_message);
 		let elem = elem.replace("{{name}}", &event.event.name);
+		let elem = elem.replace("{{interactable}}", &interactable);
 		let elem = elem.replace("{{id}}", &event.event.id);
 		items.push_str(&elem);
 	}
