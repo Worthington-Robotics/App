@@ -52,10 +52,7 @@ impl StatboticsClient {
 
 		let mut lock = self.epa_cache.write().await;
 		for team in teams {
-			let Ok(number) = team.team.parse::<TeamNumber>() else {
-				continue;
-			};
-			lock.insert(number, team.epa.total_points.mean.unwrap_or_default());
+			lock.insert(team.team, team.epa.total_points.mean.unwrap_or_default());
 		}
 
 		Ok(())
@@ -79,7 +76,7 @@ impl StatboticsClient {
 /// A team from the Statbotics API
 #[derive(Deserialize)]
 struct StatboticsTeam {
-	team: String,
+	team: TeamNumber,
 	epa: EPA,
 }
 

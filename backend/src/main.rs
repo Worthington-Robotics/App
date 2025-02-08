@@ -23,6 +23,7 @@ use rocket::{
 use rocket_async_compression::CachedCompression;
 use routes::{scouting::populate_teams, Ratelimit};
 use scouting::{autos::AutoStats, stats::CombinedTeamStats, stats::UpdateStats, TeamNumber};
+use tracing::error;
 
 mod announcements;
 mod api;
@@ -68,10 +69,9 @@ async fn rocket() -> _ {
 	let statbotics_task = async {
 		let statbotics_client = StatboticsClient::new(&req_client);
 		if std::env::var("POPULATE_EPA").is_ok_and(|x| x == "1") {
-			statbotics_client
-				.get_stats(Some(2024))
-				.await
-				.expect("Failed to get Statbotics stats");
+			if let Err(e) = statbotics_client.get_stats(None).await {
+				error!("Failed to get Statbotics stats: {e}");
+			}
 		}
 
 		statbotics_client
