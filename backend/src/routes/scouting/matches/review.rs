@@ -11,7 +11,10 @@ use tracing::{error, span, Level};
 use crate::{
 	db::Database,
 	routes::{create_page, OptionalSessionID, PageOrRedirect, Scope},
-	scouting::{matches::MatchStats, TeamNumber},
+	scouting::{
+		matches::{MatchStats, MatchStatsID},
+		TeamNumber,
+	},
 	State,
 };
 
@@ -85,4 +88,61 @@ async fn render_match_stats(m: MatchStats) -> String {
 	let out = out.replace("{{notes}}", &notes);
 
 	out
+}
+
+#[rocket::get("/scouting/edit_match/<stats_id>")]
+pub async fn edit_match(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+	stats_id: &str,
+) -> Result<PageOrRedirect, Status> {
+	let span = span!(Level::DEBUG, "Match review");
+	let _enter = span.enter();
+
+	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let Some(session_id) = session_id.to_session_id() else {
+		return Ok(redirect);
+	};
+
+	if session_id.get_requesting_member(state).await.is_err() {
+		return Ok(redirect);
+	};
+
+	let lock = state.db.read().await;
+	let Some(m) = lock
+		.get_match_stats(&MatchStatsID::from_str(stats_id.to_string()))
+		.await
+		.map_err(|e| {
+			error!("Failed to get match stats from database: {e}");
+			Status::InternalServerError
+		})?
+	else {
+		error!("Tried to get non-existent match stats {stats_id}");
+		return Err(Status::NotFound);
+	};
+
+	let page = include_str!("../../pages/scouting/edit_match.min.html");
+
+	let Ok(match_data) = serde_json::to_string_pretty(&m) else {
+		error!("Failed to serialize match data");
+		return Err(Status::InternalServerError);
+	};
+	let page = page.replace("{{match-json}}", &match_data);
+
+	let page = page.replace("{{team}}", &m.team_number.to_string());
+	let page = page.replace(
+		"{{match-number}}",
+		&m.match_number.map(|x| x.to_string()).unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{competition}}",
+		&m.competition
+			.map(|x| x.to_string())
+			.unwrap_or("Unknown".into()),
+	);
+	let page = page.replace("{{stats-id}}", stats_id);
+
+	let page = create_page("Match Review", &page, Some(Scope::Scouting));
+
+	Ok(PageOrRedirect::Page(RawHtml(page)))
 }

@@ -1,0 +1,50 @@
+{{worbots-header}}{{error}}
+<div id="edit-match" class="cont col">
+	<h1>Edit Match</h1>
+	<h3 class="details-subtitle">{{team}}-{{match-number}}-{{competition}}</h3>
+	<div class="cont">
+		<a href="/scouting/review/{{team}}"><button>Back</button></a>
+	</div>
+	<form id="edit-form" class="cont col">
+		<textarea id="match-json">
+			{{match-json}}
+		</textarea>
+
+		<input type="submit" value="Submit" />
+	</form>
+</div>
+<style>
+	#edit-form {
+		width: 100%;
+	}
+
+	#match-json {
+		width: 90%;
+		height: 40rem;
+	}
+</style>
+<script>
+	document.getElementById("edit-form").addEventListener("submit", (e) => {
+		e.preventDefault();
+
+		let dataRaw = document.getElementById("match-json").value;
+		try {
+			JSON.parse(dataRaw);
+		} catch (err) {
+			setError("Failed to parse match data: " + err);
+		}
+
+		fetch("/api/post_match_stats", {
+			method: "POST",
+			body: `data=${dataRaw}&stats_id={{stats-id}}`,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to update match results: " + response.statusText);
+				return;
+			}
+			window.location.href = "/scouting/review/{{team}}";
+		});
+	})
+</script>
+{{footer}}

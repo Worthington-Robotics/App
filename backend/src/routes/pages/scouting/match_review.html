@@ -1,5 +1,5 @@
 {{worbots-header}}{{error}}{{prompt}}
-<div id="schedule" class="cont col">
+<div id="match-review" class="cont col">
 	<h1>Matches</h1>
 	<h3 class="details-subtitle">{{team}}</h3>
 	<div class="cont">
@@ -16,6 +16,7 @@
 			<div class="cont">
 				<button id="popup-close">Close</button>
 				<a href="" id="popup-rescout"><button>Rescout</button></a>
+				<a href="" id="popup-edit"><button>Edit</button></a>
 				<button id="popup-delete">Delete</button>
 			</div>
 		</div>
@@ -116,6 +117,8 @@
 		popupStatsID = event.target.dataset.id;
 		popupMatchNumber = event.target.dataset.number;
 		document.getElementById("popup-rescout").href = `/scouting/report?team_number={{team}}&match_number=${popupMatchNumber}&stats_id=${encodeURIComponent(popupStatsID)}`;
+
+		document.getElementById("popup-edit").href = `/scouting/edit_match/${encodeURIComponent(popupStatsID)}`;
 
 		document.getElementById("popup-header").innerHTML = `Match ${popupMatchNumber}`;
 

@@ -204,6 +204,7 @@ async fn rocket() -> _ {
 				routes::scouting::matches::schedule::clear_match_schedule,
 				routes::scouting::matches::schedule::upload_match_schedule,
 				routes::scouting::matches::review::match_review,
+				routes::scouting::matches::review::edit_match,
 				routes::scouting::matchup::matchup,
 				routes::scouting::autos::autos_page,
 				routes::scouting::autos::create_auto,
