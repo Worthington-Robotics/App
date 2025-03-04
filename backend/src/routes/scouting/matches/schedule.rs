@@ -1,9 +1,6 @@
-use std::cmp::Reverse;
-
 use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Utc};
 use itertools::Itertools;
 use rocket::{
-	form::{Form, FromForm},
 	http::Status,
 	response::{content::RawHtml, Redirect},
 	serde::json::Json,
@@ -15,187 +12,12 @@ use crate::{
 	events::get_season,
 	routes::{create_page, OptionalSessionID, PageOrRedirect, Scope, SessionID},
 	scouting::{
-		matches::{Match, MatchNumber, MatchStats, MatchStatsID, MatchType},
-		status::{RobotStatus, StatusUpdate},
+		matches::{Match, MatchNumber, MatchType},
 		Competition, TeamNumber,
 	},
-	util::{date_from_js, render_time, ToDropdown, TIMEZONE},
+	util::{date_from_js, render_time, TIMEZONE},
 	State,
 };
-
-#[rocket::post("/api/post_match_stats", data = "<stats>")]
-pub async fn create_match_stats(
-	state: &State,
-	session_id: SessionID<'_>,
-	stats: Form<StatsForm>,
-) -> Result<(), Status> {
-	let span = span!(Level::DEBUG, "Creating match stats");
-	let _enter = span.enter();
-
-	let requesting_member = session_id.get_requesting_member(state).await?;
-
-	let stats_id = stats.stats_id.clone().filter(|x| !x.is_empty());
-
-	let mut stats: MatchStats = serde_json::from_str(&stats.data).map_err(|e| {
-		error!("Invalid match stats data: {e}");
-		error!("{}", &stats.data);
-		Status::BadRequest
-	})?;
-
-	let now = Utc::now().to_rfc2822();
-
-	let mut lock = state.db.write().await;
-
-	// Fill out record info
-	stats.recorder = Some(requesting_member.id.clone());
-	stats.record_time = Some(now.clone());
-	if stats.competition.is_none() {
-		let global_data = lock.get_global_data().await.map_err(|e| {
-			error!("Failed to get global data from database: {e}");
-			Status::InternalServerError
-		})?;
-		stats.competition = global_data.current_competition;
-	}
-
-	// If the report was posted live, then update robot status. We only add a good status update if the robot wasn't good before
-	if stats.recorded_live {
-		let status_updates = lock.get_team_status(stats.team_number).await.map_err(|e| {
-			error!("Failed to get status updates from database: {e}");
-			Status::InternalServerError
-		})?;
-		let current_status = RobotStatus::get_from_updates(status_updates.iter());
-		if stats.status != RobotStatus::Good || current_status != RobotStatus::Good {
-			let update = StatusUpdate {
-				team: stats.team_number,
-				date: now,
-				status: stats.status,
-				details: stats.notes.clone(),
-				member: requesting_member.id.clone(),
-				competition: stats.competition.clone(),
-			};
-
-			// Not a super bad error, it's more important that the stats get posted
-			if let Err(e) = lock.update_team_status(update).await {
-				error!("Failed to create status update in database: {e}");
-			}
-		}
-	}
-
-	// If there is a stats ID, we are replacing an existing stats report and need to remove it
-	if let Some(stats_id) = stats_id {
-		let id = MatchStatsID::from_str(stats_id);
-		if let Err(e) = lock.delete_match_stats(&id).await {
-			error!("Failed to delete existing match stats with id {id} in database: {e}");
-			return Err(Status::InternalServerError);
-		}
-	}
-
-	if let Err(e) = lock.create_match_stats(stats).await {
-		error!("Failed to create match stats in database: {e}");
-		return Err(Status::InternalServerError);
-	}
-
-	Ok(())
-}
-
-#[derive(FromForm)]
-pub struct StatsForm {
-	data: String,
-	stats_id: Option<String>,
-}
-
-#[rocket::delete("/api/delete_match_stats/<id>")]
-pub async fn delete_match_stats(
-	state: &State,
-	session_id: SessionID<'_>,
-	id: &str,
-) -> Result<(), Status> {
-	let span = span!(Level::DEBUG, "Deleting event");
-	let _enter = span.enter();
-
-	session_id.get_requesting_member(state).await?;
-
-	let mut lock = state.db.write().await;
-
-	if let Err(e) = lock
-		.delete_match_stats(&MatchStatsID::from_str(id.to_string()))
-		.await
-	{
-		error!("Failed to delete match stats {id} in database: {e}");
-		return Err(Status::InternalServerError);
-	}
-
-	Ok(())
-}
-
-/// Form for match reporting will all the bells and whistles
-#[rocket::get("/scouting/report?<team_number>&<match_number>&<stats_id>")]
-pub async fn match_report_main(
-	session_id: OptionalSessionID<'_>,
-	state: &State,
-	team_number: Option<TeamNumber>,
-	match_number: Option<&str>,
-	stats_id: Option<&str>,
-) -> Result<PageOrRedirect, Status> {
-	let span = span!(Level::DEBUG, "Match report");
-	let _enter = span.enter();
-
-	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.to_session_id() else {
-		return Ok(redirect);
-	};
-
-	if session_id.get_requesting_member(state).await.is_err() {
-		return Ok(redirect);
-	};
-
-	let page = include_str!("../pages/scouting/report/main.min.html");
-	let page = page.replace(
-		"{team-number}",
-		&if let Some(team_number) = team_number {
-			team_number.to_string()
-		} else {
-			String::new()
-		},
-	);
-	let page = page.replace("{match-number}", match_number.unwrap_or_default());
-
-	let options = Competition::create_options(None);
-	let options = format!("<option value=none>None</option>{options}");
-	let page = page.replace("{{competition-options}}", &options);
-
-	let stats_id = stats_id.filter(|x| !x.is_empty());
-	let page = page.replace("{{stats-id}}", stats_id.unwrap_or_default());
-
-	let page = create_page("Match Report", &page, Some(Scope::Scouting));
-
-	Ok(PageOrRedirect::Page(RawHtml(page)))
-}
-
-/// Raw form for match reporting without any fancy features like timing, video, or auto drawing
-#[rocket::get("/scouting/report/raw")]
-pub async fn match_report_raw(
-	session_id: OptionalSessionID<'_>,
-	state: &State,
-) -> Result<PageOrRedirect, Status> {
-	let span = span!(Level::DEBUG, "Raw match report");
-	let _enter = span.enter();
-
-	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.to_session_id() else {
-		return Ok(redirect);
-	};
-
-	if session_id.get_requesting_member(state).await.is_err() {
-		return Ok(redirect);
-	};
-
-	let page = include_str!("../pages/scouting/report/raw.min.html");
-
-	let page = create_page("Raw Match Report", &page, Some(Scope::Scouting));
-
-	Ok(PageOrRedirect::Page(RawHtml(page)))
-}
 
 #[rocket::get("/scouting/schedule")]
 pub async fn match_schedule(
@@ -214,7 +36,7 @@ pub async fn match_schedule(
 		return Ok(redirect);
 	};
 
-	let page = include_str!("../pages/scouting/schedule.min.html");
+	let page = include_str!("../../pages/scouting/schedule.min.html");
 
 	let lock = state.db.read().await;
 	let matches = lock
@@ -264,7 +86,7 @@ pub async fn match_schedule(
 }
 
 async fn render_match(m: Match, now: &DateTime<Utc>, next_chosen: &mut bool) -> String {
-	let out = include_str!("../components/scouting/match.min.html");
+	let out = include_str!("../../components/scouting/match.min.html");
 	let out = out.replace("{{number}}", &m.num.num.to_string());
 
 	let is_our_match = m.red_alliance.contains(&4145) || m.blue_alliance.contains(&4145);
@@ -473,76 +295,4 @@ pub async fn upload_match_schedule(
 	}
 
 	Ok(())
-}
-
-#[rocket::get("/scouting/review/<team>")]
-pub async fn match_review(
-	session_id: OptionalSessionID<'_>,
-	state: &State,
-	team: TeamNumber,
-) -> Result<PageOrRedirect, Status> {
-	let span = span!(Level::DEBUG, "Match review");
-	let _enter = span.enter();
-
-	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
-	let Some(session_id) = session_id.to_session_id() else {
-		return Ok(redirect);
-	};
-
-	if session_id.get_requesting_member(state).await.is_err() {
-		return Ok(redirect);
-	};
-
-	let page = include_str!("../pages/scouting/match_review.min.html");
-
-	let lock = state.db.read().await;
-	let match_stats = lock.get_all_match_stats().await.map_err(|e| {
-		error!("Failed to get match stats from database: {e}");
-		Status::InternalServerError
-	})?;
-
-	let match_stats = match_stats.filter(|x| x.team_number == team);
-
-	let match_stats = match_stats.sorted_by_cached_key(|x| {
-		Reverse(
-			x.record_time
-				.as_ref()
-				.and_then(|x| DateTime::parse_from_rfc2822(&x).ok())
-				.unwrap_or_default(),
-		)
-	});
-
-	let mut matches_string = String::new();
-
-	for m in match_stats {
-		matches_string.push_str(&render_match_stats(m).await);
-	}
-	let page = page.replace("{{matches}}", &matches_string);
-
-	let page = page.replace("{{team}}", &team.to_string());
-
-	let page = create_page("Match Review", &page, Some(Scope::Scouting));
-
-	Ok(PageOrRedirect::Page(RawHtml(page)))
-}
-
-async fn render_match_stats(m: MatchStats) -> String {
-	let out = include_str!("../components/scouting/match_stats.min.html");
-	let out = out.replace("{{stats-id}}", &m.get_id().to_string());
-	let out = out.replace(
-		"{{number}}",
-		&m.match_number.map(|x| x.to_string()).unwrap_or_default(),
-	);
-	let out = out.replace(
-		"{{competition}}",
-		&m.competition.map(|x| x.get_abbr()).unwrap_or_default(),
-	);
-	let out = out.replace("{{recorder}}", &m.recorder.unwrap_or_default());
-
-	let notes = m.notes.replace("<", "");
-	let notes = notes.replace(">", "");
-	let notes = notes.replace("/", "");
-	let out = out.replace("{{notes}}", &notes);
-
-	out
 }
