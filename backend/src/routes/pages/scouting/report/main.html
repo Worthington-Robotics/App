@@ -597,8 +597,95 @@
 	function onSubmit(event) {
 		event.preventDefault();
 
-		// Calculate stats from all the events
+		let stats = calculateStats();
 
+		// Get the match number
+		let matchNumberString = document.getElementById("match-number").value;
+		let matchNumber = null;
+		if (matchNumberString.length >= 2) {
+			let type = null;
+			if (matchNumberString[0] == "Q") {
+				type = "Qualification";
+			} else if (matchNumberString[0] == "P") {
+				type = "Playoff";
+			}
+			if (type == null) {
+				setError("Invalid match type in match number");
+				return;
+			}
+			let number = matchNumberString.substring(1);
+			if (isNaN(number) || isNaN(parseFloat(number))) {
+				setError("Invalid match number");
+				return;
+			}
+			number = number * 1;
+			matchNumber = {
+				ty: type,
+				num: number,
+			};
+		}
+
+		let auto = document.getElementById("auto").value;
+		if (auto == "none") {
+			auto = null;
+		}
+
+		let competition = document.getElementById("competition").value;
+		if (competition == "none") {
+			competition = null;
+		} else {
+			competition = competition.split(/\.?(?=[A-Z])/).join('_').toLowerCase();
+		}
+
+		const data = {
+			team_number: document.getElementById("team-number").value * 1,
+			match_id: "",
+			match_number: matchNumber,
+			competition: competition,
+			recorded_live: document.getElementById("recorded-live").checked,
+			auto: auto,
+			auto_collision: document.getElementById("collision").checked,
+			auto_coral_attempts: stats.autoCoralAttempts,
+			auto_algae_attempts: stats.autoAlgaeAttempts,
+			auto_algae_scores: stats.autoAlgaeScores,
+			auto_intake_attempts: stats.autoIntakeAttempts,
+			auto_intake_successes: stats.autoIntakeSuccesses,
+			teleop_coral_attempts: stats.teleopCoralAttempts,
+			teleop_intake_attempts: stats.teleopIntakeAttempts,
+			teleop_intake_successes: stats.teleopIntakeSuccesses,
+			agitations: stats.agitations,
+			processor_attempts: stats.processorAttempts,
+			processor_scores: stats.processorScores,
+			net_shots: stats.netShots,
+			climb_attempted: M.climbType,
+			climb_result: M.climbResult,
+			climb_time: M.climbEnd - M.climbStart,
+			points_scored: stats.totalScore,
+			defenses: stats.defenses,
+			penalties: stats.penalties,
+			cycle_time: stats.cycleTime,
+			cycle_times: stats.cycleTimes,
+			status: document.getElementById("status").value,
+			showed_up: document.getElementById("showed-up").checked,
+			won: document.getElementById("won").checked,
+			notes: document.getElementById("notes").value,
+		};
+		const dataReady = encodeURIComponent(JSON.stringify(data));
+
+		fetch("/api/post_match_stats", {
+			method: "POST",
+			body: `data=${dataReady}&stats_id={{stats-id}}`,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to post match results: " + response.statusText);
+				return;
+			}
+			window.location.href = "/scouting";
+		});
+	}
+
+	function calculateStats() {
 		let isReverseCycle = false;
 		let cycleStartTime = null;
 		let cycleTimes = [];
@@ -725,91 +812,25 @@
 			cycleTime = cycleTimeSum / (cycleTimes.length - 1);
 		}
 
-		// Get the match number
-		let matchNumberString = document.getElementById("match-number").value;
-		let matchNumber = null;
-		if (matchNumberString.length >= 2) {
-			let type = null;
-			if (matchNumberString[0] == "Q") {
-				type = "Qualification";
-			} else if (matchNumberString[0] == "P") {
-				type = "Playoff";
-			}
-			if (type == null) {
-				setError("Invalid match type in match number");
-				return;
-			}
-			let number = matchNumberString.substring(1);
-			if (isNaN(number) || isNaN(parseFloat(number))) {
-				setError("Invalid match number");
-				return;
-			}
-			number = number * 1;
-			matchNumber = {
-				ty: type,
-				num: number,
-			};
-		}
-
-		let auto = document.getElementById("auto").value;
-		if (auto == "none") {
-			auto = null;
-		}
-
-		let competition = document.getElementById("competition").value;
-		if (competition == "none") {
-			competition = null;
-		} else {
-			competition = competition.split(/\.?(?=[A-Z])/).join('_').toLowerCase();
-		}
-
-		const data = {
-			team_number: document.getElementById("team-number").value * 1,
-			match_id: "",
-			match_number: matchNumber,
-			competition: competition,
-			recorded_live: document.getElementById("recorded-live").checked,
-			auto: auto,
-			auto_collision: document.getElementById("collision").checked,
-			auto_coral_attempts: autoCoralAttempts,
-			auto_algae_attempts: autoAlgaeAttempts,
-			auto_algae_scores: autoAlgaeScores,
-			auto_intake_attempts: autoIntakeAttempts,
-			auto_intake_successes: autoIntakeSuccesses,
-			teleop_coral_attempts: teleopCoralAttempts,
-			teleop_intake_attempts: teleopIntakeAttempts,
-			teleop_intake_successes: teleopIntakeSuccesses,
+		return {
+			cycleTimes: cycleTimes,
+			cycleTime: cycleTime,
+			autoCoralAttempts: autoCoralAttempts,
+			autoAlgaeAttempts: autoAlgaeAttempts,
+			autoAlgaeScores: autoAlgaeScores,
+			autoIntakeAttempts: autoIntakeAttempts,
+			autoIntakeSuccesses: autoIntakeSuccesses,
+			teleopCoralAttempts: teleopCoralAttempts,
+			teleopIntakeAttempts: teleopIntakeAttempts,
+			teleopIntakeSuccesses: teleopIntakeSuccesses,
 			agitations: agitations,
-			processor_attempts: processorAttempts,
-			processor_scores: processorScores,
-			net_shots: netShots,
-			climb_attempted: M.climbType,
-			climb_result: M.climbResult,
-			climb_time: M.climbEnd - M.climbStart,
-			points_scored: totalScore,
+			processorAttempts: processorAttempts,
+			processorScores: processorScores,
+			netShots: netShots,
 			defenses: defenses,
 			penalties: penalties,
-			cycle_time: cycleTime,
-			cycle_times: cycleTimes,
-			status: document.getElementById("status").value,
-			showed_up: document.getElementById("showed-up").checked,
-			won: document.getElementById("won").checked,
-			notes: document.getElementById("notes").value,
-			match_report_data: M,
-		};
-		const dataReady = encodeURIComponent(JSON.stringify(data));
-
-		fetch("/api/post_match_stats", {
-			method: "POST",
-			body: `data=${dataReady}&stats_id={{stats-id}}`,
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-		}).then((response) => {
-			if (response.status != 200) {
-				setError("Failed to post match results: " + response.statusText);
-				return;
-			}
-			window.location.href = "/scouting";
-		});
+			totalScore: totalScore
+		}
 	}
 
 	document.getElementById("submit").addEventListener("click", onSubmit);
