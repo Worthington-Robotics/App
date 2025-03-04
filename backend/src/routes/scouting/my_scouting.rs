@@ -262,5 +262,5 @@ enum BubbleStyle {
 }
 
 fn render_team(team: TeamNumber) -> String {
-	format!("<div class=\"cont round team\">{team}</div>")
+	format!("<a class=\"cont round team nolink\" href=\"/scouting/team/{team}\">{team}</a>")
 }
