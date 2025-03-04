@@ -599,8 +599,19 @@
 
 		let stats = calculateStats();
 
+		let team = document.getElementById("team-number").value * 1;
+		if (team == null || team == 0) {
+			setError("Team number missing");
+			return;
+		}
+
 		// Get the match number
 		let matchNumberString = document.getElementById("match-number").value;
+		if (matchNumberString == null || matchNumberString == "") {
+			setError("Match number missing");
+			return;
+		}
+
 		let matchNumber = null;
 		if (matchNumberString.length >= 2) {
 			let type = null;
