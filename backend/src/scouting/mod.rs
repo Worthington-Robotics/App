@@ -202,13 +202,13 @@ pub struct TeamInfo {
 	pub team: TeamNumber,
 	/// The max speed of the robot, in feet per second
 	pub max_speed: Option<f32>,
-	/// The height of the robot, in feet, when fully extended
+	/// The height of the robot, in inches, when fully extended
 	pub height: Option<f32>,
 	/// The weight of the robot, in pounds
 	pub weight: Option<f32>,
-	/// The length of the robot, from front to back, in feet
+	/// The length of the robot, from front to back, in inches
 	pub length: Option<f32>,
-	/// The width of the robot, from left to right, in feet
+	/// The width of the robot, from left to right, in inches
 	pub width: Option<f32>,
 	/// The drivetrain type of the robot
 	pub drivetrain_type: Option<DriveTrainType>,

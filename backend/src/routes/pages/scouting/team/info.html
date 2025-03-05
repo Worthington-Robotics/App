@@ -5,32 +5,32 @@
 	<h2>Basic Stats</h2>
 	<label for="max-speed">Max Speed</label>
 	<div class="cont">
-		<input type="number" name="max-speed" id="max-speed" class="field" placeholder="0.00" step=any
+		<input type="number" name="max-speed" id="max-speed" class="field" placeholder="0.00ft/s" step=any
 			value="{{max-speed}}" />
 		<button id="max-speed-convert">m/s</button>
 	</div>
 	<label for="height">Height</label>
 	<div class="cont">
-		<input type="number" name="height" id="height" class="field" placeholder="0.00" step=any value="{{height}}" />
+		<input type="number" name="height" id="height" class="field" placeholder="0.00in" step=any value="{{height}}" />
 		<button id="height-convert-m">m</button>
-		<button id="height-convert-in">in</button>
+		<button id="height-convert-ft">ft</button>
 	</div>
 	<label for="weight">Weight</label>
 	<div class="cont">
-		<input type="number" name="weight" id="weight" class="field" placeholder="0.00" step=any value="{{weight}}" />
+		<input type="number" name="weight" id="weight" class="field" placeholder="0.00lb" step=any value="{{weight}}" />
 		<button id="weight-convert">kg</button>
 	</div>
 	<label for="length">Length</label>
 	<div class="cont">
-		<input type="number" name="length" id="length" class="field" placeholder="0.00" step=any value="{{length}}" />
+		<input type="number" name="length" id="length" class="field" placeholder="0.00in" step=any value="{{length}}" />
 		<button id="length-convert-m">m</button>
-		<button id="length-convert-in">in</button>
+		<button id="length-convert-ft">ft</button>
 	</div>
 	<label for="width">Width</label>
 	<div class="cont">
-		<input type="number" name="width" id="width" class="field" placeholder="0.00" step=any value="{{width}}" />
+		<input type="number" name="width" id="width" class="field" placeholder="0.00in" step=any value="{{width}}" />
 		<button id="width-convert-m">m</button>
-		<button id="width-convert-in">in</button>
+		<button id="width-convert-ft">ft</button>
 	</div>
 	<label for="drivetrain-type">Drivetrain Type</label>
 	<select name="drivetrain-type" id="drivetrain-type" class="field">
@@ -145,11 +145,11 @@
 
 		// We do lots of conversions to numbers with * 1 here
 		const data = {
-			max_speed: document.getElementById("max-speed").value * 1,
-			height: document.getElementById("height").value * 1,
-			weight: document.getElementById("weight").value * 1,
-			length: document.getElementById("length").value * 1,
-			width: document.getElementById("width").value * 1,
+			max_speed: document.getElementById("max-speed").value.replace("ft/s", "") * 1,
+			height: document.getElementById("height").value.replace("in", "") * 1,
+			weight: document.getElementById("weight").value.replace("kg", "") * 1,
+			length: document.getElementById("length").value.replace("in", "") * 1,
+			width: document.getElementById("width").value.replace("in", "") * 1,
 			drivetrain_type: drivetrainType,
 			can_pickup_algae: document.getElementById("can-pickup-algae").checked,
 			can_pickup_coral: document.getElementById("can-pickup-coral").checked,
@@ -211,10 +211,10 @@
 		let elem = document.getElementById("height");
 		elem.value = elem.value * 3.281;
 	});
-	document.getElementById("height-convert-in").addEventListener("click", (e) => {
+	document.getElementById("height-convert-ft").addEventListener("click", (e) => {
 		e.preventDefault();
 		let elem = document.getElementById("height");
-		elem.value = elem.value / 12;
+		elem.value = elem.value * 12;
 	});
 	document.getElementById("weight-convert").addEventListener("click", (e) => {
 		e.preventDefault();
@@ -226,20 +226,20 @@
 		let elem = document.getElementById("length");
 		elem.value = elem.value * 3.281;
 	});
-	document.getElementById("length-convert-in").addEventListener("click", (e) => {
+	document.getElementById("length-convert-ft").addEventListener("click", (e) => {
 		e.preventDefault();
 		let elem = document.getElementById("length");
-		elem.value = elem.value / 12;
+		elem.value = elem.value * 12;
 	});
 	document.getElementById("width-convert-m").addEventListener("click", (e) => {
 		e.preventDefault();
 		let elem = document.getElementById("width");
 		elem.value = elem.value * 3.281;
 	});
-	document.getElementById("width-convert-in").addEventListener("click", (e) => {
+	document.getElementById("width-convert-ft").addEventListener("click", (e) => {
 		e.preventDefault();
 		let elem = document.getElementById("width");
-		elem.value = elem.value / 12;
+		elem.value = elem.value * 12;
 	});
 	document.getElementById("cycle-time-convert").addEventListener("click", (e) => {
 		e.preventDefault();
