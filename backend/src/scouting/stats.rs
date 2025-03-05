@@ -86,6 +86,7 @@ pub struct TeamStats {
 	pub auto_algae: f32,
 	pub auto_coral_accuracy: f32,
 	pub auto_algae_accuracy: f32,
+	pub auto_intake_accuracy: f32,
 	pub auto_collisions: u8,
 	/// Average number of offensive moves per match
 	pub offense_average: f32,
@@ -141,6 +142,7 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		epa: 0.0,
 		apa: ctx.points_scored as f32 / match_count_f32,
 		win_rate: ctx.wins as f32 / match_count_f32,
+		intake_accuracy: ctx.intake_successes as f32 / fix_zero(ctx.intake_attempts as f32),
 		coral_score: ctx.coral_score_total as f32 / match_count_f32,
 		coral_average: ctx.coral_scores as f32 / match_count_f32,
 		coral_accuracy: ctx.coral_scores as f32 / fix_zero(ctx.coral_attempts as f32),
@@ -156,6 +158,8 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		auto_algae: ctx.auto_algae_scores as f32 / match_count_f32,
 		auto_algae_accuracy: ctx.auto_algae_scores as f32
 			/ fix_zero(ctx.auto_algae_attempts as f32),
+		auto_intake_accuracy: ctx.auto_intake_successes as f32
+			/ fix_zero(ctx.auto_intake_attempts as f32),
 		auto_collisions: ctx.auto_collisions,
 		offense_average: (ctx.coral_scores as f32
 			+ ctx.processor_scores as f32
@@ -182,6 +186,8 @@ struct StatsContext {
 	auto_coral_scores: u16,
 	auto_algae_attempts: u16,
 	auto_algae_scores: u16,
+	auto_intake_attempts: u16,
+	auto_intake_successes: u16,
 	auto_collisions: u8,
 	coral_attempts: u16,
 	coral_scores: u16,
@@ -220,6 +226,8 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		.count() as u16;
 	ctx.auto_algae_attempts += stats.auto_algae_attempts as u16;
 	ctx.auto_algae_scores += stats.auto_algae_scores as u16;
+	ctx.auto_intake_attempts += stats.auto_intake_attempts as u16;
+	ctx.auto_intake_successes += stats.auto_intake_successes as u16;
 
 	if stats.auto_collision {
 		ctx.auto_collisions += 1;

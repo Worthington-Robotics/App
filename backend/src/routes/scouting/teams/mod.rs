@@ -299,6 +299,16 @@ pub async fn team_details(
 		),
 	);
 	let page = page.replace(
+		"{{auto-intake-accuracy}}",
+		stat_card_pct!(
+			team_stats,
+			&format!("Intake Acc"),
+			auto_intake_accuracy,
+			"auto_intake_accuracy",
+			false
+		),
+	);
+	let page = page.replace(
 		"{{auto-collisions}}",
 		stat_card_other!(
 			team_stats,
