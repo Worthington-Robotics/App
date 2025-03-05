@@ -168,6 +168,11 @@
 		<div id="events-container" class="cont col item-cont"></div>
 	</div>
 	<br />
+	<div id="breakdown" class="cont col">
+		<h3>Breakdown</h3>
+		<div id="points">0 Points</div>
+	</div>
+	<br />
 	<label for="notes">Match Notes</label>
 	<textarea name="notes" id="notes" class="round border" placeholder="Enter extra match notes here..."></textarea>
 	<div class="cont">
@@ -294,6 +299,7 @@
 	function createEvent(event) {
 		M.matchEvents.push(event);
 		updateEvents();
+		updateBreakdown();
 	}
 
 	function updateEvents() {
@@ -322,6 +328,7 @@
 	function eventRemove(event) {
 		M.matchEvents.splice(event.target.dataset.index, 1);
 		updateEvents();
+		updateBreakdown();
 	}
 
 	// Event buttons
@@ -580,18 +587,21 @@
 		if (M.climbStart != null) {
 			M.climbResult = "failed";
 			M.climbEnd = M.time;
+			updateBreakdown();
 		}
 	});
 	document.getElementById("climb-fall").addEventListener("click", () => {
 		if (M.climbStart != null) {
 			M.climbResult = "fell";
 			M.climbEnd = M.time;
+			updateBreakdown();
 		}
 	});
 	document.getElementById("climb-successful").addEventListener("click", () => {
 		if (M.climbStart != null) {
 			M.climbResult = "succeeded";
 			M.climbEnd = M.time;
+			updateBreakdown();
 		}
 	});
 	document.getElementById("climb-refresh").addEventListener("click", () => {
@@ -599,6 +609,7 @@
 		M.climbStart = null;
 		M.climbType = "none";
 		M.climbResult = "failed";
+		updateBreakdown();
 	});
 
 	function onSubmit(event) {
@@ -808,13 +819,13 @@
 		}
 
 		// Climb points
-		if (M.climb_attempted != "none") {
+		if (M.climbType != "none") {
 			totalScore += 2;
 		}
-		if (M.climb_result == "succeeded") {
-			if (M.climb_attempted == "shallow") {
+		if (M.climbResult == "succeeded") {
+			if (M.climbType == "shallow") {
 				totalScore += 6;
-			} else if (M.climb_attempted == "deep") {
+			} else if (M.climbType == "deep") {
 				totalScore += 12;
 			}
 		}
@@ -995,6 +1006,16 @@
 		});
 	});
 
+	function updateBreakdown() {
+		let stats = calculateStats();
+		document.getElementById("points").innerHTML = `${stats.totalScore} Points`;
+	}
+
+	document.getElementById("points").addEventListener("click", (e) => {
+		e.preventDefault();
+		updateBreakdown();
+	});
+
 	// Creates an option element
 	function createOption(value, name) {
 		let out = document.createElement("option");
@@ -1155,6 +1176,10 @@
 
 	.event-remove>img {
 		pointer-events: none;
+	}
+
+	#points {
+		font-size: calc(2.0vw * var(--scale));
 	}
 </style>
 {{footer}}
