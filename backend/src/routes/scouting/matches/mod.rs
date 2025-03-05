@@ -11,6 +11,7 @@ use tracing::{error, span, Level};
 
 use crate::{
 	db::Database,
+	events::get_season,
 	routes::{create_page, OptionalSessionID, PageOrRedirect, Scope, SessionID},
 	scouting::{
 		matches::{MatchStats, MatchStatsID},
@@ -165,6 +166,8 @@ pub async fn match_report_main(
 	let stats_id = stats_id.filter(|x| !x.is_empty());
 	let page = page.replace("{{stats-id}}", stats_id.unwrap_or_default());
 
+	let page = page.replace("{{frc-season}}", &get_season(&Utc::now()).to_string());
+
 	let page = create_page("Match Report", &page, Some(Scope::Scouting));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
@@ -193,4 +196,23 @@ pub async fn match_report_raw(
 	let page = create_page("Raw Match Report", &page, Some(Scope::Scouting));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
+}
+
+/// Workaround for CORS
+#[rocket::delete("/api/check_tba_match/<match>")]
+pub async fn check_tba_match(state: &State, r#match: &str) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Checking TBA match");
+	let _enter = span.enter();
+
+	let url = format!("https://www.thebluealliance.com/match/{match}");
+
+	let result = state.req_client.get(url).send().await;
+	let Ok(result) = result else {
+		return Err(Status::InternalServerError);
+	};
+	if result.error_for_status().is_err() {
+		return Err(Status::NotFound);
+	}
+
+	Ok(())
 }

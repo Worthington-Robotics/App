@@ -16,12 +16,13 @@ use std::time::Duration;
 
 use attendance::create_attendance_panel;
 use rocket::fairing::{Fairing, Info, Kind};
-use rocket::http::ContentType;
+use rocket::http::{ContentType, Header};
 use rocket::response::{content::RawHtml, Redirect};
 use rocket::tokio::sync::Mutex;
 use rocket::{
 	http::Status,
 	request::{FromRequest, Outcome},
+	response::Responder as ResponderTrait,
 	Request, Responder,
 };
 use rocket::{Data, Orbit, Response, Rocket};
@@ -39,13 +40,13 @@ use crate::State;
 pub async fn index(
 	session_id: OptionalSessionID<'_>,
 	state: &State,
-) -> Result<PageOrRedirect, Status> {
+) -> Result<CORSAllow<PageOrRedirect>, Status> {
 	let span = span!(Level::DEBUG, "Index");
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
 	let Some(session_id) = session_id.id else {
-		return Ok(redirect);
+		return Ok(CORSAllow(redirect));
 	};
 
 	let Some(requesting_member_id) = ({
@@ -53,7 +54,7 @@ pub async fn index(
 		lock.get(session_id).map(|x| x.member.clone())
 	}) else {
 		error!("Unknown session ID {}", session_id);
-		return Ok(redirect);
+		return Ok(CORSAllow(redirect));
 	};
 
 	let lock = state.db.read().await;
@@ -65,7 +66,7 @@ pub async fn index(
 		})?
 	}) else {
 		error!("Unknown requesting member ID {}", requesting_member_id);
-		return Ok(redirect);
+		return Ok(CORSAllow(redirect));
 	};
 
 	let page = create_page(
@@ -92,7 +93,7 @@ pub async fn index(
 	let notices = render_notices(&member, lock.deref()).await;
 	let page = page.replace("{{notices}}", &notices);
 
-	Ok(PageOrRedirect::Page(RawHtml(page)))
+	Ok(CORSAllow(PageOrRedirect::Page(RawHtml(page))))
 }
 
 async fn render_notices(member: &Member, db: &DatabaseImpl) -> String {
@@ -401,5 +402,19 @@ impl Fairing for Ratelimit {
 			response.set_streamed_body(std::io::Cursor::new("IP address is missing in request"));
 			error!("Client did not have an IP address");
 		}
+	}
+}
+
+/// Simple responder to set CORS allow header
+pub struct CORSAllow<R>(pub R);
+
+impl<'r, 'o: 'r, R: ResponderTrait<'r, 'o>> ResponderTrait<'r, 'o> for CORSAllow<R> {
+	fn respond_to(self, request: &'r rocket::Request<'_>) -> rocket::response::Result<'o> {
+		let mut out = self.0.respond_to(request);
+		if let Ok(out) = &mut out {
+			out.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+		}
+
+		out
 	}
 }

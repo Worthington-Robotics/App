@@ -199,6 +199,7 @@ async fn rocket() -> _ {
 				routes::scouting::matches::delete_match_stats,
 				routes::scouting::matches::match_report_main,
 				routes::scouting::matches::match_report_raw,
+				routes::scouting::matches::check_tba_match,
 				routes::scouting::matches::schedule::match_schedule,
 				routes::scouting::matches::schedule::import_match_schedule,
 				routes::scouting::matches::schedule::clear_match_schedule,

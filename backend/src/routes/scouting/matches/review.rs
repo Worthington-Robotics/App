@@ -96,7 +96,7 @@ pub async fn edit_match(
 	state: &State,
 	stats_id: &str,
 ) -> Result<PageOrRedirect, Status> {
-	let span = span!(Level::DEBUG, "Match review");
+	let span = span!(Level::DEBUG, "Editing match");
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
