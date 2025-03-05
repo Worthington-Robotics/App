@@ -45,9 +45,13 @@ pub async fn create_match_stats(
 
 	let mut lock = state.db.write().await;
 
-	// Fill out record info
-	stats.recorder = Some(requesting_member.id.clone());
-	stats.record_time = Some(now.clone());
+	// Fill out record info if it's empty
+	if stats.recorder.is_none() {
+		stats.recorder = Some(requesting_member.id.clone());
+	}
+	if stats.record_time.is_none() {
+		stats.record_time = Some(now.clone());
+	}
 	if stats.competition.is_none() {
 		let global_data = lock.get_global_data().await.map_err(|e| {
 			error!("Failed to get global data from database: {e}");
@@ -58,24 +62,28 @@ pub async fn create_match_stats(
 
 	// If the report was posted live, then update robot status. We only add a good status update if the robot wasn't good before
 	if stats.recorded_live {
-		let status_updates = lock.get_team_status(stats.team_number).await.map_err(|e| {
-			error!("Failed to get status updates from database: {e}");
-			Status::InternalServerError
-		})?;
-		let current_status = RobotStatus::get_from_updates(status_updates.iter());
-		if stats.status != RobotStatus::Good || current_status != RobotStatus::Good {
-			let update = StatusUpdate {
-				team: stats.team_number,
-				date: now,
-				status: stats.status,
-				details: stats.notes.clone(),
-				member: requesting_member.id.clone(),
-				competition: stats.competition.clone(),
-			};
+		let status_updates = lock.get_team_status(stats.team_number).await;
+		match status_updates {
+			Ok(status_updates) => {
+				let current_status = RobotStatus::get_from_updates(status_updates.iter());
+				if stats.status != RobotStatus::Good || current_status != RobotStatus::Good {
+					let update = StatusUpdate {
+						team: stats.team_number,
+						date: now,
+						status: stats.status,
+						details: stats.notes.clone(),
+						member: requesting_member.id.clone(),
+						competition: stats.competition.clone(),
+					};
 
-			// Not a super bad error, it's more important that the stats get posted
-			if let Err(e) = lock.update_team_status(update).await {
-				error!("Failed to create status update in database: {e}");
+					// Not a super bad error, it's more important that the stats get posted
+					if let Err(e) = lock.update_team_status(update).await {
+						error!("Failed to create status update in database: {e}");
+					}
+				}
+			}
+			Err(e) => {
+				error!("Failed to get status updates from database: {e}");
 			}
 		}
 	}
