@@ -308,6 +308,16 @@ pub async fn team_details(
 		),
 	);
 	let page = page.replace(
+		"{{time-to-first-cycle}}",
+		stat_card_float!(
+			team_stats,
+			"TTFC",
+			time_to_first_cycle,
+			"time_to_first_cycle",
+			false
+		),
+	);
+	let page = page.replace(
 		"{{climb-accuracy}}",
 		stat_card_pct!(
 			team_stats,
@@ -320,6 +330,16 @@ pub async fn team_details(
 	let page = page.replace(
 		"{{climb-time}}",
 		stat_card_float!(team_stats, "Avg Time", climb_time, "climb_time", true),
+	);
+	let page = page.replace(
+		"{{climb-fall-percent}}",
+		stat_card_pct!(
+			team_stats,
+			"Fall Pct",
+			climb_fall_percent,
+			"climb_fall_percent",
+			false
+		),
 	);
 
 	// Team info

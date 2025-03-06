@@ -82,6 +82,7 @@ pub struct TeamStats {
 	pub intake_accuracy: f32,
 	pub climb_accuracy: f32,
 	pub climb_time: f32,
+	pub climb_fall_percent: f32,
 	pub auto_coral: f32,
 	pub auto_algae: f32,
 	pub auto_coral_accuracy: f32,
@@ -98,6 +99,8 @@ pub struct TeamStats {
 	pub cycle_time_consistency: f32,
 	/// Standard deviation for cycle time
 	pub cycle_time_devation: f32,
+	/// Average time to the first teleop cycle
+	pub time_to_first_cycle: f32,
 	/// Total number of penalties
 	pub penalties: u8,
 	/// Rate that the team shows up to the match with a working robot (0-1)
@@ -151,8 +154,9 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		processor_accuracy: ctx.processor_scores as f32 / fix_zero(ctx.processor_attempts as f32),
 		net_average: ctx.net_scores as f32 / match_count_f32,
 		climb_accuracy: ctx.climb_successes as f32 / fix_zero(ctx.climb_attempts as f32),
-		climb_time: ctx.climb_time_total / fix_zero(ctx.climb_attempts as f32),
+		climb_time: ctx.climb_time_total / fix_zero(ctx.climb_successes as f32),
 		auto_coral: ctx.auto_coral_scores as f32 / match_count_f32,
+		climb_fall_percent: ctx.climb_falls as f32 / fix_zero(ctx.climb_attempts as f32),
 		auto_coral_accuracy: ctx.auto_coral_scores as f32
 			/ fix_zero(ctx.auto_coral_attempts as f32),
 		auto_algae: ctx.auto_algae_scores as f32 / match_count_f32,
@@ -170,6 +174,8 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		cycle_time_consistency: ctx.cycle_time_consistency_sum as f32
 			/ fix_zero(ctx.cycle_time_consistency_count as f32),
 		cycle_time_devation,
+		time_to_first_cycle: ctx.time_to_first_cycle_sum
+			/ fix_zero(ctx.time_to_first_cycle_count as f32),
 		penalties: ctx.penalties,
 		reliability,
 		matches: ctx.total_matches as u16,
@@ -201,6 +207,7 @@ struct StatsContext {
 	climb_attempts: u16,
 	climb_successes: u16,
 	climb_time_total: f32,
+	climb_falls: u8,
 	defenses: u16,
 	penalties: u8,
 	cycle_time_sum: f32,
@@ -209,6 +216,8 @@ struct StatsContext {
 	cycle_time_consistency_count: u16,
 	/// All cycle times
 	cycle_times: Vec<f32>,
+	time_to_first_cycle_sum: f32,
+	time_to_first_cycle_count: u16,
 	breaks: u8,
 	/// Total number of times the team showed up for the match
 	attendance: u16,
@@ -260,9 +269,12 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	if stats.climb_attempted != ClimbAbility::None {
 		ctx.climb_attempts += 1;
 	}
-	if stats.climb_result == ClimbResult::Succeeded {
+	if stats.climb_result == ClimbResult::Succeeded && stats.climb_time > 0.0 {
 		ctx.climb_successes += 1;
 		ctx.climb_time_total += stats.climb_time;
+	}
+	if stats.climb_result == ClimbResult::Fell {
+		ctx.climb_falls += 1;
 	}
 
 	ctx.defenses += stats.defenses as u16;
@@ -281,6 +293,13 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	}
 
 	ctx.cycle_times.extend(cycle_deltas);
+
+	if let Some(first) = stats.cycle_times.first() {
+		if *first > 15.0 {
+			ctx.time_to_first_cycle_count += 1;
+			ctx.time_to_first_cycle_sum += *first - 15.0;
+		}
+	}
 
 	if stats.status != RobotStatus::Good {
 		ctx.breaks += 1;
@@ -448,5 +467,9 @@ fn calculate_cycle_consistency(cycle_times: &[f32]) -> Option<f32> {
 
 	let r_2 = 1.0 - (ssr / sst);
 
-	Some(r_2)
+	if r_2.is_nan() {
+		None
+	} else {
+		Some(r_2)
+	}
 }
