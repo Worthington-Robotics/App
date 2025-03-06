@@ -42,7 +42,7 @@ pub async fn checklists(
 			error!("Failed to get checklists from database: {e}");
 			Status::InternalServerError
 		})?
-		.sorted_by_key(|x| x.tasks.len())
+		.sorted_by_key(|x| x.name.clone())
 		.rev();
 	let mut checklists_string = String::new();
 
