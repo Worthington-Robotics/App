@@ -40,7 +40,7 @@ pub async fn teams(
 		return Ok(Compress(redirect, CompressionLevel::Fastest));
 	};
 
-	if session_id.get_requesting_member(state).await.is_err() {
+	let Ok(requesting_member) = session_id.get_requesting_member(state).await else {
 		return Ok(Compress(redirect, CompressionLevel::Fastest));
 	};
 
@@ -80,7 +80,15 @@ pub async fn teams(
 				continue;
 			}
 		}
-		teams_string.push_str(&render_team(team, &state.statbotics_client, lock.deref()).await);
+		teams_string.push_str(
+			&render_team(
+				team,
+				&requesting_member.id,
+				&state.statbotics_client,
+				lock.deref(),
+			)
+			.await,
+		);
 	}
 	let page = page.replace("{{teams}}", &teams_string);
 
@@ -116,9 +124,22 @@ pub async fn teams(
 	))
 }
 
-async fn render_team(team: Team, stat_client: &StatboticsClient, db: &DatabaseImpl) -> String {
+async fn render_team(
+	team: Team,
+	requesting_member: &str,
+	stat_client: &StatboticsClient,
+	db: &DatabaseImpl,
+) -> String {
 	let out = include_str!("../../components/scouting/team_row.min.html");
 	let out = out.replace("{{number}}", &team.number.to_string());
+
+	let number_class = if team.followers.contains(requesting_member) {
+		"fave"
+	} else {
+		""
+	};
+	let out = out.replace("{{number-class}}", number_class);
+
 	let out = out.replace("{{name}}", &team.sanitized_name());
 	let out = out.replace("{{data-name}}", &format!("\"{}\"", team.sanitized_name()));
 	let epa = stat_client.get_epa(team.number).await.unwrap_or(0.0);
