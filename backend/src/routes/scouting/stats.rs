@@ -77,11 +77,16 @@ pub fn render_stat_card(
 	let out = include_str!("../components/scouting/stat_card.min.html");
 	let out = out.replace("{{stat}}", &stat.to_string());
 	let out = out.replace("{{id}}", fix_empty_string(id));
+
 	let out = out.replace("{{title}}", title);
-	let fixed_title = title
-		.replace(STAT_ALGAE, "Algae")
-		.replace(STAT_CORAL, "Coral");
-	let fixed_title = format!("\"{}\"", escape_html(&fixed_title));
+	let long_title = if let Some(result) = get_team_stat_display_name(id) {
+		result.1.to_string()
+	} else {
+		title
+			.replace(STAT_CORAL, "Coral")
+			.replace(STAT_ALGAE, "Algae")
+	};
+	let fixed_title = format!("\"{}\"", escape_html(&long_title));
 	let out = out.replace("{{data-title}}", &fixed_title);
 
 	let stat_class = if strong { "strong" } else { "" };
@@ -154,3 +159,37 @@ pub static STAT_CORAL: &str =
 /// Icon for algae in stat cards
 pub static STAT_ALGAE: &str =
 	"<img src=\"/assets/icons/algae.svg\" style=\"width:1.2rem;margin-right:-0.5rem\" />";
+
+/// Gets the display name of a team stat, returning both the short and long version
+pub fn get_team_stat_display_name(stat: &str) -> Option<(&'static str, &'static str)> {
+	match stat {
+		"apa" => Some(("APA", "Actual Points Added")),
+		"win_rate" => Some(("WR", "Win Rate")),
+		"coral_score" => Some(("CSCO", "Coral Score")),
+		"coral_average" => Some(("CAVG", "Coral Average")),
+		"coral_accuracy" => Some(("CACC", "Coral Accuracy")),
+		"algae_score" => Some(("ASCO", "Algae Score")),
+		"processor_average" => Some(("PAVG", "Processor Average")),
+		"processor_accuracy" => Some(("PACC", "Processor Accuracy")),
+		"net_average" => Some(("NAVG", "Net Average")),
+		"intake_accuracy" => Some(("IACC", "Intake Accuracy")),
+		"climb_accuracy" => Some(("CACC", "Climb Accuracy")),
+		"climb_time" => Some(("CLT", "Climb Time")),
+		"climb_fall_percent" => Some(("CFP", "Climb Fall Percent")),
+		"auto_coral" => Some(("AC", "Auto Coral")),
+		"auto_algae" => Some(("AA", "Auto Algae")),
+		"auto_coral_accuracy" => Some(("ACA", "Auto Coral Accuracy")),
+		"auto_algae_accuracy" => Some(("AAA", "Auto Algae Accuracy")),
+		"auto_collisions" => Some(("ACOL", "Auto Collisions")),
+		"offense_average" => Some(("OA", "Offense Average")),
+		"defense_average" => Some(("DA", "Defense Average")),
+		"cycle_time" => Some(("CT", "Cycle Time")),
+		"cycle_time_consistency" => Some(("CTC", "Cycle Time Consistency")),
+		"cycle_time_deviation" => Some(("CTD", "Cycle Time Deviation")),
+		"time_to_first_cycle" => Some(("TTFC", "Time To First Cycle")),
+		"penalties" => Some(("Pen", "Penalties")),
+		"reliability" => Some(("RB", "Reliability")),
+		"matches" => Some(("Matches", "Matches")),
+		_ => None,
+	}
+}
