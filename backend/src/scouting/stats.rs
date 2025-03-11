@@ -313,7 +313,9 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	for attempt in &stats.teleop_coral_attempts {
 		if attempt.successful {
 			coral_score_total += get_coral_points(attempt.level, false) as u16;
+			ctx.coral_level_scores[attempt.level as usize] += 1;
 		}
+		ctx.coral_level_attempts[attempt.level as usize] += 1;
 	}
 	ctx.coral_score_total += coral_score_total;
 
