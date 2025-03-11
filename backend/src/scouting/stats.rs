@@ -134,7 +134,7 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 	let cycle_time_average = ctx.cycle_time_sum as f32 / match_count_f32;
 	let cycle_time_devation = standard_deviation(&ctx.cycle_times, cycle_time_average);
 
-	let reliability = if ctx.breaks as u16 <= ctx.attendance {
+	let reliability = if ctx.breaks as u16 >= ctx.attendance {
 		0.0
 	} else {
 		(ctx.attendance - ctx.breaks as u16) as f32 / match_count_f32
