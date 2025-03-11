@@ -16,7 +16,7 @@ use crate::{
 
 use super::{
 	autos::{calculate_auto_stats, AutoStats},
-	game::{get_coral_points, ClimbAbility, ClimbResult},
+	game::{get_coral_points, ClimbAbility, ClimbResult, ReefLevel},
 	matches::MatchStats,
 	status::RobotStatus,
 	Competition, TeamNumber,
@@ -80,15 +80,30 @@ pub struct TeamStats {
 	pub processor_accuracy: f32,
 	pub net_average: f32,
 	pub intake_accuracy: f32,
+	pub teleop_score: f32,
 	pub climb_accuracy: f32,
 	pub climb_time: f32,
 	pub climb_fall_percent: f32,
+	pub climb_score: f32,
 	pub auto_coral: f32,
 	pub auto_algae: f32,
 	pub auto_coral_accuracy: f32,
 	pub auto_algae_accuracy: f32,
 	pub auto_intake_accuracy: f32,
 	pub auto_collisions: u8,
+	pub auto_score: f32,
+	pub l1_accuracy: f32,
+	pub l2_accuracy: f32,
+	pub l3_accuracy: f32,
+	pub l4_accuracy: f32,
+	pub l1_value: f32,
+	pub l2_value: f32,
+	pub l3_value: f32,
+	pub l4_value: f32,
+	pub l1_count: u16,
+	pub l2_count: u16,
+	pub l3_count: u16,
+	pub l4_count: u16,
 	/// Average number of offensive moves per match
 	pub offense_average: f32,
 	/// Average number of defensive moves per match
@@ -140,6 +155,15 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		(ctx.attendance - ctx.breaks as u16) as f32 / match_count_f32
 	};
 
+	let l1_accuracy =
+		ctx.coral_level_scores[0] as f32 / fix_zero(ctx.coral_level_attempts[0] as f32);
+	let l2_accuracy =
+		ctx.coral_level_scores[1] as f32 / fix_zero(ctx.coral_level_attempts[1] as f32);
+	let l3_accuracy =
+		ctx.coral_level_scores[2] as f32 / fix_zero(ctx.coral_level_attempts[2] as f32);
+	let l4_accuracy =
+		ctx.coral_level_scores[3] as f32 / fix_zero(ctx.coral_level_attempts[3] as f32);
+
 	TeamStats {
 		number: team,
 		epa: 0.0,
@@ -179,6 +203,21 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		penalties: ctx.penalties,
 		reliability,
 		matches: ctx.total_matches as u16,
+		auto_score: ctx.auto_score_total as f32 / match_count_f32,
+		teleop_score: ctx.teleop_score_total as f32 / match_count_f32,
+		climb_score: ctx.climb_score_total as f32 / match_count_f32,
+		l1_accuracy,
+		l2_accuracy,
+		l3_accuracy,
+		l4_accuracy,
+		l1_value: l1_accuracy * get_coral_points(ReefLevel::L1, false) as f32,
+		l2_value: l2_accuracy * get_coral_points(ReefLevel::L2, false) as f32,
+		l3_value: l3_accuracy * get_coral_points(ReefLevel::L3, false) as f32,
+		l4_value: l4_accuracy * get_coral_points(ReefLevel::L4, false) as f32,
+		l1_count: ctx.coral_level_scores[0],
+		l2_count: ctx.coral_level_scores[1],
+		l3_count: ctx.coral_level_scores[2],
+		l4_count: ctx.coral_level_scores[3],
 		..Default::default()
 	}
 }
@@ -195,19 +234,24 @@ struct StatsContext {
 	auto_intake_attempts: u16,
 	auto_intake_successes: u16,
 	auto_collisions: u8,
+	auto_score_total: u16,
 	coral_attempts: u16,
 	coral_scores: u16,
 	coral_score_total: u16,
+	coral_level_attempts: [u16; 4],
+	coral_level_scores: [u16; 4],
 	processor_attempts: u16,
 	processor_scores: u16,
 	net_scores: u16,
 	algae_score_total: u16,
 	intake_attempts: u16,
 	intake_successes: u16,
+	teleop_score_total: u16,
 	climb_attempts: u16,
 	climb_successes: u16,
 	climb_time_total: f32,
 	climb_falls: u8,
+	climb_score_total: u16,
 	defenses: u16,
 	penalties: u8,
 	cycle_time_sum: f32,
@@ -242,6 +286,16 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		ctx.auto_collisions += 1;
 	}
 
+	for attempt in &stats.auto_coral_attempts {
+		if attempt.successful {
+			ctx.auto_score_total += get_coral_points(attempt.level, true) as u16;
+		}
+	}
+
+	if stats.auto_algae_attempts > 0 || !stats.auto_coral_attempts.is_empty() {
+		ctx.auto_score_total += 3;
+	}
+
 	ctx.points_scored += stats.points_scored as u16;
 	ctx.coral_attempts += stats.teleop_coral_attempts.len() as u16;
 	ctx.coral_scores += stats
@@ -263,15 +317,24 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	}
 	ctx.coral_score_total += coral_score_total;
 
-	ctx.algae_score_total += stats.processor_scores as u16 * 6;
-	ctx.algae_score_total += stats.net_shots as u16 * 4;
+	let algae_score_total = stats.processor_scores as u16 * 6 + stats.net_shots as u16 * 4;
+	ctx.algae_score_total += algae_score_total;
+
+	ctx.teleop_score_total += coral_score_total;
+	ctx.teleop_score_total += algae_score_total;
 
 	if stats.climb_attempted != ClimbAbility::None {
 		ctx.climb_attempts += 1;
+		ctx.climb_score_total += 2;
 	}
 	if stats.climb_result == ClimbResult::Succeeded && stats.climb_time > 0.0 {
 		ctx.climb_successes += 1;
 		ctx.climb_time_total += stats.climb_time;
+		if stats.climb_attempted == ClimbAbility::Shallow {
+			ctx.climb_score_total += 6;
+		} else if stats.climb_attempted == ClimbAbility::Deep {
+			ctx.climb_score_total += 12;
+		}
 	}
 	if stats.climb_result == ClimbResult::Fell {
 		ctx.climb_falls += 1;

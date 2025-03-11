@@ -142,6 +142,10 @@ pub async fn team_details(
 		stat_card_other!(team_stats, "Penalties", penalties, "penalties", false),
 	);
 	let page = page.replace(
+		"{{auto-score}}",
+		stat_card_float!(team_stats, "Score", auto_score, "auto_score", true),
+	);
+	let page = page.replace(
 		"{{auto-coral}}",
 		stat_card_float!(team_stats, STAT_CORAL, auto_coral, "auto_coral", true),
 	);
@@ -212,6 +216,10 @@ pub async fn team_details(
 			"cycle_time_deviation",
 			true
 		),
+	);
+	let page = page.replace(
+		"{{teleop-score}}",
+		stat_card_float!(team_stats, "Score", teleop_score, "teleop_score", true),
 	);
 	let page = page.replace(
 		"{{coral-score}}",
@@ -318,6 +326,54 @@ pub async fn team_details(
 		),
 	);
 	let page = page.replace(
+		"{{l1-count}}",
+		stat_card_other!(team_stats, "L1 #", l1_count, "l1_count", false),
+	);
+	let page = page.replace(
+		"{{l2-count}}",
+		stat_card_other!(team_stats, "L2 #", l2_count, "l2_count", false),
+	);
+	let page = page.replace(
+		"{{l3-count}}",
+		stat_card_other!(team_stats, "L3 #", l3_count, "l3_count", false),
+	);
+	let page = page.replace(
+		"{{l4-count}}",
+		stat_card_other!(team_stats, "L4 #", l4_count, "l4_count", false),
+	);
+	let page = page.replace(
+		"{{l1-accuracy}}",
+		stat_card_pct!(team_stats, "L1 Acc", l1_accuracy, "l1_accuracy", false),
+	);
+	let page = page.replace(
+		"{{l2-accuracy}}",
+		stat_card_pct!(team_stats, "L2 Acc", l2_accuracy, "l2_accuracy", false),
+	);
+	let page = page.replace(
+		"{{l3-accuracy}}",
+		stat_card_pct!(team_stats, "L3 Acc", l3_accuracy, "l3_accuracy", false),
+	);
+	let page = page.replace(
+		"{{l4-accuracy}}",
+		stat_card_pct!(team_stats, "L4 Acc", l4_accuracy, "l4_accuracy", false),
+	);
+	let page = page.replace(
+		"{{l1-value}}",
+		stat_card_float!(team_stats, "L1 Value", l1_value, "l1_value", false),
+	);
+	let page = page.replace(
+		"{{l2-value}}",
+		stat_card_float!(team_stats, "L2 Value", l2_value, "l2_value", false),
+	);
+	let page = page.replace(
+		"{{l3-value}}",
+		stat_card_float!(team_stats, "L3 Value", l3_value, "l3_value", false),
+	);
+	let page = page.replace(
+		"{{l4-value}}",
+		stat_card_float!(team_stats, "L4 Value", l4_value, "l4_value", false),
+	);
+	let page = page.replace(
 		"{{climb-accuracy}}",
 		stat_card_pct!(
 			team_stats,
@@ -330,6 +386,10 @@ pub async fn team_details(
 	let page = page.replace(
 		"{{climb-time}}",
 		stat_card_float!(team_stats, "Avg Time", climb_time, "climb_time", true),
+	);
+	let page = page.replace(
+		"{{climb-score}}",
+		stat_card_float!(team_stats, "Score", climb_score, "climb_score", true),
 	);
 	let page = page.replace(
 		"{{climb-fall-percent}}",

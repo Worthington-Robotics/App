@@ -43,6 +43,7 @@
 			</div>
 			<div class="stats-section" id="auto-section" style="display: none;">
 				<div class="stats-grid">
+					{{auto-score}}
 					{{auto-coral}}
 					{{auto-algae}}
 					{{auto-coral-accuracy}}
@@ -56,6 +57,9 @@
 					{{cycle-time}}
 					{{cycle-time-consistency}}
 					{{cycle-time-deviation}}
+					{{teleop-score}}
+					{{offense-average}}
+					{{defense-average}}
 					{{coral-score}}
 					{{coral-average}}
 					{{coral-accuracy}}
@@ -64,15 +68,26 @@
 					{{processor-accuracy}}
 					{{net-average}}
 					{{intake-accuracy}}
-					{{offense-average}}
-					{{defense-average}}
 					{{time-to-first-cycle}}
+					{{l1-count}}
+					{{l1-accuracy}}
+					{{l1-value}}
+					{{l2-count}}
+					{{l2-accuracy}}
+					{{l2-value}}
+					{{l3-count}}
+					{{l3-accuracy}}
+					{{l3-value}}
+					{{l4-count}}
+					{{l4-accuracy}}
+					{{l4-value}}
 				</div>
 			</div>
 			<div class="stats-section" id="endgame-section" style="display: none;">
 				<div class="stats-grid">
 					{{climb-accuracy}}
 					{{climb-time}}
+					{{climb-score}}
 					{{climb-fall-percent}}
 				</div>
 			</div>
@@ -188,6 +203,10 @@
 
 	.stats-tab.selected {
 		background-color: var(--wbblue);
+	}
+
+	.stats-section {
+		width: 23.5rem;
 	}
 
 	.stats-grid {
