@@ -88,13 +88,22 @@ pub async fn my_scouting(
 	let page = page.replace("{{matches}}", &matches_string);
 
 	// Scouting progress
+	let global_data = lock.get_global_data().await.map_err(|e| {
+		error!("Failed to get global data from database: {e}");
+		Status::InternalServerError
+	})?;
+
 	let match_stats = lock.get_all_match_stats().await.map_err(|e| {
 		error!("Failed to get match stats from database: {e}");
 		Status::InternalServerError
 	})?;
 	let match_stats: Vec<_> = match_stats.collect();
 
-	let matches_scouted = count_matches_scouted(&requesting_member.id, &match_stats);
+	let matches_scouted = count_matches_scouted(
+		&requesting_member.id,
+		&match_stats,
+		global_data.current_competition.as_ref(),
+	);
 	let completion_amount = matches_scouted as f32 / 15.0;
 	let page = page.replace("{{completed-matches}}", &matches_scouted.to_string());
 	let page = page.replace(

@@ -234,9 +234,17 @@ pub struct CoralAttempt {
 }
 
 /// Count how many matches a member has scouted
-pub fn count_matches_scouted(member: &str, matches: &[MatchStats]) -> usize {
+pub fn count_matches_scouted(
+	member: &str,
+	matches: &[MatchStats],
+	current_competition: Option<&Competition>,
+) -> usize {
 	matches
 		.iter()
-		.filter(|x| x.recorder.as_ref().is_some_and(|x| x == member))
+		.filter(|x| {
+			x.recorder.as_ref().is_some_and(|x| x == member)
+				&& x.competition.is_some()
+				&& x.competition.as_ref() == current_competition
+		})
 		.count()
 }
