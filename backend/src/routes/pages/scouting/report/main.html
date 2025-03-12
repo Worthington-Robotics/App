@@ -178,6 +178,7 @@
 	<div class="cont">
 		<button id="clear">Clear</button>
 		<button id="submit">Submit</button>
+		<button id="download">Download</button>
 	</div>
 </div>
 <script>
@@ -615,43 +616,81 @@
 	function onSubmit(event) {
 		event.preventDefault();
 
+		let matchStats = createMatchStats();
+		if (matchStats == null) {
+			return;
+		}
+
+		let data = encodeURIComponent(JSON.stringify(matchStats));
+
+		fetch("/api/post_match_stats", {
+			method: "POST",
+			body: `data=${data}&stats_id={{stats-id}}`,
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		}).then((response) => {
+			if (response.status != 200) {
+				setError("Failed to post match results: " + response.statusText);
+				return;
+			}
+			window.location.href = "/scouting";
+		});
+	}
+
+	function download(event) {
+		event.preventDefault();
+
+		let matchStats = createMatchStats();
+		if (matchStats == null) {
+			return;
+		}
+
+		let team = document.getElementById("team-number").value * 1;
+		if (team == null || team == 0) {
+			setError("Team number missing");
+			return null;
+		}
+
+		let matchNumberString = document.getElementById("match-number").value;
+		if (matchNumberString == null || matchNumberString == "") {
+			setError("Match number missing");
+			return null;
+		}
+
+		let competitionString = document.getElementById("competition").value;
+		let competition = parseCompetition(competitionString);
+
+		let data = JSON.stringify(matchStats);
+
+		const blob = new Blob([data], { type: "application/json" });
+
+		let link = document.createElement("a");
+		link.href = URL.createObjectURL(blob);
+		link.download = `${team}-${matchNumberString}-${competition}.json`;
+
+		link.click();
+
+		// Clean up the URL object
+		URL.revokeObjectURL(link.href);
+	}
+
+	function createMatchStats() {
 		let stats = calculateStats();
 
 		let team = document.getElementById("team-number").value * 1;
 		if (team == null || team == 0) {
 			setError("Team number missing");
-			return;
+			return null;
 		}
 
 		// Get the match number
 		let matchNumberString = document.getElementById("match-number").value;
 		if (matchNumberString == null || matchNumberString == "") {
 			setError("Match number missing");
-			return;
+			return null;
 		}
-
-		let matchNumber = null;
-		if (matchNumberString.length >= 2) {
-			let type = null;
-			if (matchNumberString[0] == "Q") {
-				type = "Qualification";
-			} else if (matchNumberString[0] == "P") {
-				type = "Playoff";
-			}
-			if (type == null) {
-				setError("Invalid match type in match number");
-				return;
-			}
-			let number = matchNumberString.substring(1);
-			if (isNaN(number) || isNaN(parseFloat(number))) {
-				setError("Invalid match number");
-				return;
-			}
-			number = number * 1;
-			matchNumber = {
-				ty: type,
-				num: number,
-			};
+		let matchNumber = parseMatchNumber(matchNumberString);
+		if (matchNumber == null) {
+			return null;
 		}
 
 		let auto = document.getElementById("auto").value;
@@ -659,12 +698,8 @@
 			auto = null;
 		}
 
-		let competition = document.getElementById("competition").value;
-		if (competition == "none") {
-			competition = null;
-		} else {
-			competition = competition.split(/\.?(?=[A-Z])/).join('_').toLowerCase();
-		}
+		let competitionString = document.getElementById("competition").value;
+		let competition = parseCompetition(competitionString);
 
 		const data = {
 			team_number: document.getElementById("team-number").value * 1,
@@ -699,19 +734,8 @@
 			won: document.getElementById("won").checked,
 			notes: document.getElementById("notes").value,
 		};
-		const dataReady = encodeURIComponent(JSON.stringify(data));
 
-		fetch("/api/post_match_stats", {
-			method: "POST",
-			body: `data=${dataReady}&stats_id={{stats-id}}`,
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-		}).then((response) => {
-			if (response.status != 200) {
-				setError("Failed to post match results: " + response.statusText);
-				return;
-			}
-			window.location.href = "/scouting";
-		});
+		return data;
 	}
 
 	function calculateStats() {
@@ -863,6 +887,7 @@
 	}
 
 	document.getElementById("submit").addEventListener("click", onSubmit);
+	document.getElementById("download").addEventListener("click", download);
 
 	function parseMatchNumber(string) {
 		let matchNumber = null;
@@ -890,6 +915,14 @@
 			ty: type,
 			num: number * 1,
 		};
+	}
+
+	function parseCompetition(string) {
+		if (string == "none") {
+			return null;
+		} else {
+			return string.split(/\.?(?=[A-Z])/).join('_').toLowerCase();
+		}
 	}
 
 	document.getElementById("clear").addEventListener("click", () => {
