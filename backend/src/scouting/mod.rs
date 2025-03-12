@@ -37,7 +37,13 @@ pub struct Team {
 impl Team {
 	/// Get this team's sanitized name with things like emojis removed
 	pub fn sanitized_name(&self) -> String {
-		let out = self.name.replace(|x: char| !x.is_ascii(), "");
+		let mut out = self.name.replace(|x: char| !x.is_ascii(), "");
+
+		// Remove parenthesized sections
+		if let Some(idx) = out.find(" (") {
+			out = out[0..idx].to_string();
+		}
+
 		if out.is_empty() {
 			self.name.clone()
 		} else {
