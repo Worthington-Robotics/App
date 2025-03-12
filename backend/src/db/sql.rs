@@ -719,6 +719,10 @@ impl Database for SqlDatabase {
 	}
 
 	async fn create_match_stats(&mut self, stats: MatchStats) -> anyhow::Result<()> {
+		self.delete_match_stats(&stats.get_id())
+			.await
+			.context("Failed to delete existing match stats")?;
+
 		let serialized =
 			serde_json::to_string(&stats).context("Failed to serialize match stats")?;
 		sqlx::query("INSERT INTO match_stats (Id, Team, Data) VALUES ($1, $2, $3)")
