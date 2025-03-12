@@ -62,6 +62,9 @@ macro_rules! stat_card_other {
 	};
 }
 
+use itertools::Itertools;
+
+use crate::scouting::stats::TeamStats;
 use crate::util::{escape_html, fix_empty_string};
 pub(crate) use {stat_card, stat_card_float, stat_card_other, stat_card_pct};
 
@@ -171,66 +174,101 @@ pub struct StatInfo {
 }
 
 macro_rules! stat_info {
-	($stat:expr, $($id:literal => $abbr:literal, $name:literal, $description:literal);+$(;)?) => {
-		match $stat {
+	($($ident:ident, $id:literal => $abbr:literal, $name:literal, $description:literal);+$(;)?) => {
+		pub static ALL_STATS: &'static [&'static str] = &[
 			$(
-				$id => Some(StatInfo {
-					name: $name,
-					abbreviation: $abbr,
-					description: $description,
-				}),
+				$id,
 			)+
-			_ => None,
+		];
+
+		impl StatInfo {
+			pub fn get(stat: &str) -> Option<StatInfo> {
+				match stat {
+					$(
+						$id => Some(StatInfo {
+							name: $name,
+							abbreviation: $abbr,
+							description: $description,
+						}),
+					)+
+					_ => None,
+				}
+			}
+
+			pub fn get_stat_value(stats: &TeamStats, stat: &str) -> Option<f32> {
+				match stat {
+					$(
+						$id => Some(stats.$ident as f32),
+					)+
+					_ => None,
+				}
+			}
 		}
 	};
 }
 
-impl StatInfo {
-	/// Gets info about a team stat
-	pub fn get(stat: &str) -> Option<Self> {
-		stat_info! {stat,
-			"apa" => "APA", "Average Points Added", "The average number of points that this team scores";
-			"win_rate" => "WR", "Win Rate", "How often this team wins";
-			"coral_score" => "CSCO", "Coral Score", "Average points from coral in teleop";
-			"coral_average" => "CAVG", "Coral Average", "Average number of coral scored in teleop";
-			"coral_accuracy" => "CACC", "Coral Accuracy", "Success rate for scoring coral";
-			"algae_score" => "ASCO", "Algae Score", "Average points from algae in teleop";
-			"processor_average" => "PAVG", "Processor Average", "Average number of teleop algae scored in the processor";
-			"processor_accuracy" => "PACC", "Processor Accuracy", "Success rate for the processor";
-			"net_average" => "NAVG", "Net Average", "Average number of net scores";
-			"intake_accuracy" => "IACC", "Intake Accuracy", "Intake success rate in teleop";
-			"climb_accuracy" => "CACC", "Climb Accuracy", "Climb success rate";
-			"climb_time" => "CLT", "Climb Time", "Average time to climb";
-			"climb_fall_percent" => "CFP", "Climb Fall Percent", "Rate at which the team falls when climbing";
-			"auto_coral" => "AC", "Auto Coral", "Average number of coral scored in auto";
-			"auto_algae" => "AA", "Auto Algae", "Average number of algae scored in auto";
-			"auto_coral_accuracy" => "ACA", "Auto Coral Accuracy", "Success rate for scoring coral in auto";
-			"auto_algae_accuracy" => "AAA", "Auto Algae Accuracy", "Success rate for scoring algae in auto";
-			"auto_collisions" => "ACOL", "Auto Collisions", "Total times this team hit another robot during auto";
-			"offense_average" => "OA", "Offense Average", "Average number of offensive moves";
-			"defense_average" => "DA", "Defense Average", "Average number of defensive moves";
-			"cycle_time" => "CT", "Cycle Time", "Average time between intake, score, and the next intake";
-			"cycle_time_consistency" => "CTC", "Cycle Time Consistency", "How close to a linear fit this team's cycles are";
-			"cycle_time_deviation" => "CTD", "Cycle Time Deviation", "Standard deviation of this team's cycle times";
-			"time_to_first_cycle" => "TTFC", "Time To First Cycle", "Average time before the first score in teleop";
-			"penalties" => "Pen", "Penalties", "Total number of penalties across all matches";
-			"reliability" => "RB", "Reliability", "How often this team plays a match without breaking";
-			"matches" => "Matches", "Matches", "How many matches have been scouted for this team";
-			"auto_score" => "ATSCO", "Auto Score", "Average number of points scored in auto";
-			"teleop_score" => "TESCO", "Teleop Score", "Average number of points scored in teleop";
-			"climb_score" => "CLSCO", "Climb Score", "Average number of points scored from climbing";
-			"l1_accuracy" => "L1ACC", "L1 Accuracy", "Success rate scoring on L1";
-			"l2_accuracy" => "L2ACC", "L2 Accuracy", "Success rate scoring on L2";
-			"l3_accuracy" => "L3ACC", "L3 Accuracy", "Success rate scoring on L3";
-			"l4_accuracy" => "L4ACC", "L4 Accuracy", "Success rate scoring on L4";
-			"l1_value" => "L1VAL", "L1 Value", "Average points gained from a single L1 score attempt";
-			"l2_value" => "L2VAL", "L2 Value", "Average points gained from a single L2 score attempt";
-			"l3_value" => "L3VAL", "L3 Value", "Average points gained from a single L3 score attempt";
-			"l4_value" => "L4VAL", "L4 Value", "Average points gained from a single L4 score attempt";
-			"l1_count" => "L1CNT", "L1 Count", "Total times this team has scored on L1";
-			"l2_count" => "L2CNT", "L2 Count", "Total times this team has scored on L2";
-			"l3_count" => "L3CNT", "L3 Count", "Total times this team has scored on L3";
-			"l4_count" => "L4CNT", "L4 Count", "Total times this team has scored on L4";
-		}
+stat_info! {
+	apa, "apa" => "APA", "Average Points Added", "The average number of points that this team scores";
+	win_rate, "win_rate" => "WR", "Win Rate", "How often this team wins";
+	coral_score, "coral_score" => "CSCO", "Coral Score", "Average points from coral in teleop";
+	coral_average, "coral_average" => "CAVG", "Coral Average", "Average number of coral scored in teleop";
+	coral_accuracy, "coral_accuracy" => "CACC", "Coral Accuracy", "Success rate for scoring coral";
+	algae_score, "algae_score" => "ASCO", "Algae Score", "Average points from algae in teleop";
+	processor_average, "processor_average" => "PAVG", "Processor Average", "Average number of teleop algae scored in the processor";
+	processor_accuracy, "processor_accuracy" => "PACC", "Processor Accuracy", "Success rate for the processor";
+	net_average, "net_average" => "NAVG", "Net Average", "Average number of net scores";
+	intake_accuracy, "intake_accuracy" => "IACC", "Intake Accuracy", "Intake success rate in teleop";
+	climb_accuracy, "climb_accuracy" => "CACC", "Climb Accuracy", "Climb success rate";
+	climb_time, "climb_time" => "CLT", "Climb Time", "Average time to climb";
+	climb_fall_percent, "climb_fall_percent" => "CFP", "Climb Fall Percent", "Rate at which the team falls when climbing";
+	auto_coral, "auto_coral" => "AC", "Auto Coral", "Average number of coral scored in auto";
+	auto_algae, "auto_algae" => "AA", "Auto Algae", "Average number of algae scored in auto";
+	auto_coral_accuracy, "auto_coral_accuracy" => "ACA", "Auto Coral Accuracy", "Success rate for scoring coral in auto";
+	auto_algae_accuracy, "auto_algae_accuracy" => "AAA", "Auto Algae Accuracy", "Success rate for scoring algae in auto";
+	auto_intake_accuracy, "auto_intake_accuracy" => "AINTK", "Auto Intake Accuracy", "Success rate for intaking in auto";
+	auto_collisions, "auto_collisions" => "ACOL", "Auto Collisions", "Total times this team hit another robot during auto";
+	offense_average, "offense_average" => "OA", "Offense Average", "Average number of offensive moves";
+	defense_average, "defense_average" => "DA", "Defense Average", "Average number of defensive moves";
+	cycle_time, "cycle_time" => "CT", "Cycle Time", "Average time between intake, score, and the next intake";
+	cycle_time_consistency, "cycle_time_consistency" => "CTC", "Cycle Time Consistency", "How close to a linear fit this team's cycles are";
+	cycle_time_deviation, "cycle_time_deviation" => "CTD", "Cycle Time Deviation", "Standard deviation of this team's cycle times";
+	time_to_first_cycle, "time_to_first_cycle" => "TTFC", "Time To First Cycle", "Average time before the first score in teleop";
+	penalties, "penalties" => "Pen", "Penalties", "Total number of penalties across all matches";
+	reliability, "reliability" => "RB", "Reliability", "How often this team plays a match without breaking";
+	matches, "matches" => "Matches", "Matches", "How many matches have been scouted for this team";
+	auto_score, "auto_score" => "ATSCO", "Auto Score", "Average number of points scored in auto";
+	teleop_score, "teleop_score" => "TESCO", "Teleop Score", "Average number of points scored in teleop";
+	climb_score, "climb_score" => "CLSCO", "Climb Score", "Average number of points scored from climbing";
+	l1_accuracy, "l1_accuracy" => "L1ACC", "L1 Accuracy", "Success rate scoring on L1";
+	l2_accuracy, "l2_accuracy" => "L2ACC", "L2 Accuracy", "Success rate scoring on L2";
+	l3_accuracy, "l3_accuracy" => "L3ACC", "L3 Accuracy", "Success rate scoring on L3";
+	l4_accuracy, "l4_accuracy" => "L4ACC", "L4 Accuracy", "Success rate scoring on L4";
+	l1_value, "l1_value" => "L1VAL", "L1 Value", "Average points gained from a single L1 score attempt";
+	l2_value, "l2_value" => "L2VAL", "L2 Value", "Average points gained from a single L2 score attempt";
+	l3_value, "l3_value" => "L3VAL", "L3 Value", "Average points gained from a single L3 score attempt";
+	l4_value, "l4_value" => "L4VAL", "L4 Value", "Average points gained from a single L4 score attempt";
+	l1_count, "l1_count" => "L1CNT", "L1 Count", "Total times this team has scored on L1";
+	l2_count, "l2_count" => "L2CNT", "L2 Count", "Total times this team has scored on L2";
+	l3_count, "l3_count" => "L3CNT", "L3 Count", "Total times this team has scored on L3";
+	l4_count, "l4_count" => "L4CNT", "L4 Count", "Total times this team has scored on L4";
+}
+
+/// Creates a dropdown of team stat options
+pub fn create_stat_dropdown_options() -> String {
+	let mut out = String::new();
+	for stat in std::iter::once(&"none").chain(ALL_STATS.into_iter().sorted()) {
+		let info = StatInfo::get(stat).unwrap_or(StatInfo {
+			name: "None",
+			abbreviation: "",
+			description: "",
+		});
+		let selected_str = if *stat == "none" { " selected" } else { "" };
+		let option = format!(
+			"<option value=\"{}\"{selected_str}>{}</option>",
+			stat, info.name,
+		);
+		out.push_str(&option);
 	}
+
+	out
 }

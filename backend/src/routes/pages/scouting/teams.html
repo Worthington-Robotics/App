@@ -1,4 +1,4 @@
-{{worbots-header}}
+{{worbots-header}}{{error}}
 <script src="/assets/sortable.min.js" defer></script>
 <h1>Teams</h1>
 <div id="teams" class="cont col">
@@ -7,6 +7,9 @@
 	</div>
 	<div class="cont">
 		<input type="search" id="search" placeholder="Search for teams..." />
+	</div>
+	<div class="cont">
+		<select id="stat">{{stat-options}}</select>
 	</div>
 	<br />
 	<div id="pages" class="cont">
@@ -20,9 +23,9 @@
 		<thead>
 			<tr>
 				<th class="r" data-sortable="false" style="width:3.2rem"></th>
-				<th class="n" style="width: 3.5rem;">#</th>
+				<th class="n" style="width: 3.9rem;">#</th>
 				<th>Name</th>
-				<th class="e" style="width: 3.2rem;">EPA</th>
+				<th class="e" id="stat-header" style="width: 3.7rem;">EPA</th>
 			</tr>
 		</thead>
 		<tbody id="teams-cont-body">
@@ -39,9 +42,17 @@
 	}
 
 	#search {
-		margin-top: 0.7rem;
+		margin-top: 0.2rem;
 		background-color: var(--bg2);
 		color: var(--fg);
+	}
+
+	#stat {
+		width: 10rem;
+	}
+
+	#pages {
+		margin-top: -0.75rem;
 	}
 
 	.status {
@@ -272,5 +283,45 @@
 	});
 
 	document.getElementById("teams-cont").addEventListener("Sortable.sorted", updateRows);
+
+	// Stats logic
+	let statsRegistry = {};
+
+	document.getElementById("stat").addEventListener("change", async (e) => {
+		e.preventDefault();
+
+		let stat = e.target.value;
+		if (stat == "none") {
+			return;
+		}
+		let data = statsRegistry[stat];
+		if (data == undefined) {
+			let response = await fetch(`/api/get_teams_stat//${stat}?competition={{competition}}`);
+			if (response.status != 200) {
+				setError("Failed to get data for stat: " + response.statusText);
+				return;
+			}
+
+			let text = await response.text();
+			try {
+				let newData = JSON.parse(text);
+				statsRegistry[stat] = newData;
+				data = newData;
+			} catch (e) {
+				setError("Failed to parse data for stat: " + e);
+			}
+		}
+
+		for (let row of rows) {
+			let teamNumber = row.children[1].innerHTML * 1;
+			let stat = data.data[teamNumber];
+			if (stat == undefined) {
+				stat = 0;
+			}
+
+			row.children[3].innerHTML = stat;
+		}
+		document.getElementById("stat-header").innerHTML = data.abbreviation;
+	});
 </script>
 {{footer}}

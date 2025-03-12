@@ -24,7 +24,11 @@ use crate::{
 	State,
 };
 
-use super::{create_page, stats::StatInfo, PageOrRedirect, Scope};
+use super::{
+	create_page,
+	stats::{create_stat_dropdown_options, StatInfo},
+	PageOrRedirect, Scope,
+};
 
 #[rocket::get("/scouting/teams?<competition>")]
 pub async fn teams(
@@ -114,6 +118,10 @@ pub async fn teams(
 	let page = page.replace("{{comp-options}}", &comps_string);
 
 	let page = page.replace("{{competition}}", &competition);
+
+	// Stat dropdown
+	let dropdown_options = create_stat_dropdown_options();
+	let page = page.replace("{{stat-options}}", &dropdown_options);
 
 	let page = create_page("Teams", &page, Some(Scope::Scouting));
 
@@ -259,25 +267,15 @@ pub async fn get_historical_stat(
 	/* We do this by converting the stats to a HashMap using serde, then looking for the field we want */
 
 	// Ensure that this is a field in the stats
-	let serialized_default =
-		serde_json::to_string(&default_stats.all_time).expect("Failed to serialize default stats");
-	let deserialized_default: HashMap<String, serde_json::Value> =
-		serde_json::from_str(&serialized_default).expect("Failed to deserialize default stats");
-	if !deserialized_default.contains_key(stat) {
+	let Some(stat_info) = StatInfo::get(stat) else {
+		error!("Stat not found: {stat}");
 		return Err(Status::NotFound);
-	}
+	};
 
 	let mut data = Vec::new();
-	for (i, m) in team_stats.historical.iter().enumerate() {
-		let serialized = serde_json::to_string(m).expect("Failed to serialize match stats");
-		let deserialized: HashMap<String, serde_json::Value> =
-			serde_json::from_str(&serialized).expect("Failed to deserialize match stats");
-		let value = deserialized
-			.get(stat)
+	for (i, stats) in team_stats.historical.iter().enumerate() {
+		let value = StatInfo::get_stat_value(stats, stat)
 			.expect("Should have already errored out if the field didn't exist");
-		let Some(value) = value.as_f64() else {
-			continue;
-		};
 
 		data.push(HistoricalPoint {
 			r#match: i as u16,
@@ -285,12 +283,8 @@ pub async fn get_historical_stat(
 		});
 	}
 
-	let description = StatInfo::get(stat)
-		.map(|x| x.description)
-		.unwrap_or_default();
-
 	let out = HistoricalStatResult {
-		stat_description: description,
+		stat_description: stat_info.description,
 		data,
 	};
 
@@ -311,5 +305,85 @@ pub struct HistoricalStatResult {
 #[derive(Serialize)]
 pub struct HistoricalPoint {
 	r#match: u16,
-	value: f64,
+	value: f32,
+}
+
+/// Get the chartsjs consumable list of historical data points for a stat
+#[rocket::get("/api/get_teams_stat/<stat>?<competition>")]
+pub async fn get_teams_stat(
+	state: &State,
+	session_id: SessionID<'_>,
+	competition: &str,
+	stat: &str,
+) -> Result<Compress<RawJson<String>>, Status> {
+	let span = span!(Level::DEBUG, "Getting stats for all teams");
+	let _enter = span.enter();
+
+	session_id.get_requesting_member(state).await?;
+
+	let lock = state.db.read().await;
+
+	let mut competition = competition.to_string();
+	// If the competition is "current", replace it with whatever the current competition is
+	if competition == "Current" {
+		let global_data = lock.get_global_data().await.map_err(|e| {
+			error!("Failed to get global data from database: {e}");
+			Status::InternalServerError
+		})?;
+		competition = global_data
+			.current_competition
+			.unwrap_or(Competition::Pittsburgh)
+			.to_string();
+	}
+
+	let parsed_competition = Competition::from_db(&competition);
+
+	let teams = lock.get_teams().await.map_err(|e| {
+		error!("Failed to get all teams from database: {e}");
+		Status::InternalServerError
+	})?;
+
+	let teams = teams.filter(|x| {
+		if let Some(competition) = parsed_competition {
+			x.competitions.contains(&competition)
+		} else {
+			true
+		}
+	});
+
+	let stats_lock = state.team_stats.read().await;
+
+	let mut data = HashMap::with_capacity(2000);
+	let default_stats = CombinedTeamStats::default();
+	for team in teams {
+		let team_stats = stats_lock.get(&team.number).unwrap_or(&default_stats);
+		let team_stats = if competition == "Current" {
+			&team_stats.current_competition
+		} else {
+			&team_stats.all_time
+		};
+		let stat = StatInfo::get_stat_value(team_stats, stat).unwrap_or_default();
+		let stat = format!("{stat:.2}");
+		data.insert(team.number, stat);
+	}
+
+	#[derive(Serialize)]
+	struct Out {
+		abbreviation: &'static str,
+		data: HashMap<TeamNumber, String>,
+	}
+
+	let out = Out {
+		abbreviation: StatInfo::get(stat)
+			.map(|x| x.abbreviation)
+			.unwrap_or("Stat"),
+		data,
+	};
+
+	let out = serde_json::to_string(&out).map_err(|e| {
+		error!("Failed to serialize output: {e}");
+		Status::InternalServerError
+	})?;
+
+	Ok(Compress(RawJson(out), CompressionLevel::Fastest))
 }

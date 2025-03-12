@@ -17,7 +17,7 @@ pub fn main_css() -> RawCss<&'static str> {
 	RawCss(include_str!("../assets/main.min.css"))
 }
 
-#[rocket::get("/assets/static16.css")]
+#[rocket::get("/assets/static17.css")]
 pub fn static_css() -> CacheFor<RawCss<&'static str>> {
 	CacheFor(RawCss(include_str!("../assets/static.min.css")), ONE_WEEK)
 }
