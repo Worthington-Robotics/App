@@ -39,8 +39,16 @@ impl CombinedTeamStats {
 		current_competition: Option<Competition>,
 	) -> Self {
 		let mut historical = Vec::new();
+
+		let matches: Vec<_> = matches
+			.into_iter()
+			.filter(|x| x.team_number == team)
+			.cloned()
+			.collect();
+		// Calculate the moving average
 		for i in 1..matches.len() {
-			historical.push(calculate_team_stats(team, &matches[i - 1..i]));
+			let start = (i as isize - 3).max(0) as usize;
+			historical.push(calculate_team_stats(team, &matches[start..i]));
 		}
 
 		let all_time = calculate_team_stats(team, &matches);
@@ -49,7 +57,6 @@ impl CombinedTeamStats {
 			let current_competition_matches: Vec<_> = matches
 				.into_iter()
 				.filter(|x| x.competition.is_some_and(|x| x == current_competition))
-				.cloned()
 				.collect();
 
 			calculate_team_stats(team, &current_competition_matches)
