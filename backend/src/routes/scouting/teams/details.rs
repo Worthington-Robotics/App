@@ -212,7 +212,7 @@ pub async fn team_details(
 		stat_card_float!(
 			team_stats,
 			"CTD",
-			cycle_time_devation,
+			cycle_time_deviation,
 			"cycle_time_deviation",
 			true
 		),
