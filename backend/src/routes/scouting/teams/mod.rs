@@ -94,9 +94,8 @@ pub async fn teams(
 
 	let mut comps_string = String::new();
 	// Loop over all competitions along with the option for all teams and the current competition
-	for (data, disp) in Competition::iter()
-		.map(|x| (x.into(), x.get_abbr()))
-		.chain(std::iter::once(("", "All")))
+	for (data, disp) in
+		std::iter::once(("", "All")).chain(Competition::iter().map(|x| (x.into(), x.get_abbr())))
 	{
 		let is_selected = if data.is_empty() {
 			competition.is_empty()
