@@ -227,9 +227,16 @@ impl Database for JSONDatabase {
 		self.write()
 	}
 
-	async fn update_task(&mut self, task: &str) -> anyhow::Result<()> {
+	async fn toggle_task(&mut self, task: &str) -> anyhow::Result<()> {
 		if let Some(task) = self.contents.tasks.get_mut(task) {
 			task.done = !task.done;
+		}
+		self.write()
+	}
+
+	async fn update_task(&mut self, task: &str, done: bool) -> anyhow::Result<()> {
+		if let Some(task) = self.contents.tasks.get_mut(task) {
+			task.done = done;
 		}
 		self.write()
 	}

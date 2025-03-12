@@ -181,6 +181,7 @@ async fn rocket() -> _ {
 				routes::tasks::checklists,
 				routes::tasks::create_checklist_page,
 				routes::tasks::checklist_page,
+				routes::tasks::undo_all_tasks,
 				routes::settings::settings,
 				routes::scouting::index,
 				routes::scouting::admin,

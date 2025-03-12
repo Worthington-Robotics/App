@@ -574,13 +574,27 @@ impl Database for SqlDatabase {
 		Ok(())
 	}
 
-	async fn update_task(&mut self, task: &str) -> anyhow::Result<()> {
+	async fn toggle_task(&mut self, task: &str) -> anyhow::Result<()> {
 		let result = sqlx::query(
 			"UPDATE tasks SET Done = (CASE WHEN Done = TRUE THEN FALSE ELSE TRUE END) WHERE Id = $1",
 		)
 		.bind(task)
 		.execute(&self.pool)
 		.await;
+		if let Err(e) = result {
+			error!("Failed to update task from database: {e}");
+			Err(anyhow!("Failed to update task from database"))
+		} else {
+			Ok(())
+		}
+	}
+
+	async fn update_task(&mut self, task: &str, done: bool) -> anyhow::Result<()> {
+		let result = sqlx::query("UPDATE tasks SET Done = $2 WHERE Id = $1")
+			.bind(task)
+			.bind(done)
+			.execute(&self.pool)
+			.await;
 		if let Err(e) = result {
 			error!("Failed to update task from database: {e}");
 			Err(anyhow!("Failed to update task from database"))

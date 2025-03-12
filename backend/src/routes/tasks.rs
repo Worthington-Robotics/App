@@ -405,9 +405,42 @@ pub async fn update_task(state: &State, session_id: SessionID<'_>, id: &str) -> 
 
 	let mut lock = state.db.write().await;
 
-	if let Err(e) = lock.update_task(id).await {
+	if let Err(e) = lock.toggle_task(id).await {
 		error!("Failed to update task {id} in database: {e}");
 		return Err(Status::InternalServerError);
+	}
+
+	Ok(())
+}
+
+#[rocket::post("/api/undo_all_tasks/<checklist>")]
+pub async fn undo_all_tasks(
+	state: &State,
+	session_id: SessionID<'_>,
+	checklist: &str,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Undoing all tasks");
+	let _enter = span.enter();
+
+	session_id.get_requesting_member(state).await?;
+
+	let mut lock = state.db.write().await;
+
+	let checklist = lock.get_checklist(checklist).await.map_err(|e| {
+		error!("Failed to get checklist from database: {e}");
+		Status::InternalServerError
+	})?;
+
+	let Some(checklist) = checklist else {
+		error!("Checklist not found");
+		return Err(Status::NotFound);
+	};
+
+	for task in checklist.tasks {
+		if let Err(e) = lock.update_task(&task, false).await {
+			error!("Failed to update task {task} in database: {e}");
+			return Err(Status::InternalServerError);
+		}
 	}
 
 	Ok(())

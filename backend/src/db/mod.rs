@@ -122,7 +122,10 @@ pub trait Database {
 	async fn create_task(&mut self, task: Task) -> anyhow::Result<()>;
 
 	/// Do / undo a task
-	async fn update_task(&mut self, task: &str) -> anyhow::Result<()>;
+	async fn toggle_task(&mut self, task: &str) -> anyhow::Result<()>;
+
+	/// Do / undo a task
+	async fn update_task(&mut self, task: &str, done: bool) -> anyhow::Result<()>;
 
 	/// Delete a task
 	async fn delete_task(&mut self, task: &str) -> anyhow::Result<()>;

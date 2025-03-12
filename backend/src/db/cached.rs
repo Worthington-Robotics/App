@@ -309,8 +309,17 @@ impl Database for CacheDatabase {
 		Ok(())
 	}
 
-	async fn update_task(&mut self, task: &str) -> anyhow::Result<()> {
-		try_join!(self.sql.update_task(task), self.cache.update_task(task))?;
+	async fn toggle_task(&mut self, task: &str) -> anyhow::Result<()> {
+		try_join!(self.sql.toggle_task(task), self.cache.toggle_task(task))?;
+
+		Ok(())
+	}
+
+	async fn update_task(&mut self, task: &str, done: bool) -> anyhow::Result<()> {
+		try_join!(
+			self.sql.update_task(task, done),
+			self.cache.update_task(task, done)
+		)?;
 
 		Ok(())
 	}
