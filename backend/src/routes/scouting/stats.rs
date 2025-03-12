@@ -79,8 +79,8 @@ pub fn render_stat_card(
 	let out = out.replace("{{id}}", fix_empty_string(id));
 
 	let out = out.replace("{{title}}", title);
-	let long_title = if let Some(result) = get_team_stat_display_name(id) {
-		result.1.to_string()
+	let long_title = if let Some(result) = StatInfo::get(id) {
+		result.name.to_string()
 	} else {
 		title
 			.replace(STAT_CORAL, "Coral")
@@ -160,51 +160,77 @@ pub static STAT_CORAL: &str =
 pub static STAT_ALGAE: &str =
 	"<img src=\"/assets/icons/algae.svg\" style=\"width:1.2rem;margin-right:-0.5rem\" />";
 
-/// Gets the display name of a team stat, returning both the short and long version
-pub fn get_team_stat_display_name(stat: &str) -> Option<(&'static str, &'static str)> {
-	match stat {
-		"apa" => Some(("APA", "Actual Points Added")),
-		"win_rate" => Some(("WR", "Win Rate")),
-		"coral_score" => Some(("CSCO", "Coral Score")),
-		"coral_average" => Some(("CAVG", "Coral Average")),
-		"coral_accuracy" => Some(("CACC", "Coral Accuracy")),
-		"algae_score" => Some(("ASCO", "Algae Score")),
-		"processor_average" => Some(("PAVG", "Processor Average")),
-		"processor_accuracy" => Some(("PACC", "Processor Accuracy")),
-		"net_average" => Some(("NAVG", "Net Average")),
-		"intake_accuracy" => Some(("IACC", "Intake Accuracy")),
-		"climb_accuracy" => Some(("CACC", "Climb Accuracy")),
-		"climb_time" => Some(("CLT", "Climb Time")),
-		"climb_fall_percent" => Some(("CFP", "Climb Fall Percent")),
-		"auto_coral" => Some(("AC", "Auto Coral")),
-		"auto_algae" => Some(("AA", "Auto Algae")),
-		"auto_coral_accuracy" => Some(("ACA", "Auto Coral Accuracy")),
-		"auto_algae_accuracy" => Some(("AAA", "Auto Algae Accuracy")),
-		"auto_collisions" => Some(("ACOL", "Auto Collisions")),
-		"offense_average" => Some(("OA", "Offense Average")),
-		"defense_average" => Some(("DA", "Defense Average")),
-		"cycle_time" => Some(("CT", "Cycle Time")),
-		"cycle_time_consistency" => Some(("CTC", "Cycle Time Consistency")),
-		"cycle_time_deviation" => Some(("CTD", "Cycle Time Deviation")),
-		"time_to_first_cycle" => Some(("TTFC", "Time To First Cycle")),
-		"penalties" => Some(("Pen", "Penalties")),
-		"reliability" => Some(("RB", "Reliability")),
-		"matches" => Some(("Matches", "Matches")),
-		"auto_score" => Some(("ATSCO", "Auto Score")),
-		"teleop_score" => Some(("TESCO", "Teleop Score")),
-		"climb_score" => Some(("CLSCO", "Climb Score")),
-		"l1_accuracy" => Some(("L1ACC", "L1 Accuracy")),
-		"l2_accuracy" => Some(("L2ACC", "L2 Accuracy")),
-		"l3_accuracy" => Some(("L3ACC", "L3 Accuracy")),
-		"l4_accuracy" => Some(("L4ACC", "L4 Accuracy")),
-		"l1_value" => Some(("L1VAL", "L1 Value")),
-		"l2_value" => Some(("L2VAL", "L2 Value")),
-		"l3_value" => Some(("L3VAL", "L3 Value")),
-		"l4_value" => Some(("L4VAL", "L4 Value")),
-		"l1_count" => Some(("L1CNT", "L1 Count")),
-		"l2_count" => Some(("L2CNT", "L2 Count")),
-		"l3_count" => Some(("L3CNT", "L3 Count")),
-		"l4_count" => Some(("L4CNT", "L4 Count")),
-		_ => None,
+/// Info about a team stat
+pub struct StatInfo {
+	/// The full name of the stat
+	pub name: &'static str,
+	/// The short abbreviation for the stat
+	pub abbreviation: &'static str,
+	/// A short description of the stat
+	pub description: &'static str,
+}
+
+macro_rules! stat_info {
+	($stat:expr, $($id:literal => $abbr:literal, $name:literal, $description:literal);+$(;)?) => {
+		match $stat {
+			$(
+				$id => Some(StatInfo {
+					name: $name,
+					abbreviation: $abbr,
+					description: $description,
+				}),
+			)+
+			_ => None,
+		}
+	};
+}
+
+impl StatInfo {
+	/// Gets info about a team stat
+	pub fn get(stat: &str) -> Option<Self> {
+		stat_info! {stat,
+			"apa" => "APA", "Average Points Added", "The average number of points that this team scores";
+			"win_rate" => "WR", "Win Rate", "How often this team wins";
+			"coral_score" => "CSCO", "Coral Score", "Average points from coral in teleop";
+			"coral_average" => "CAVG", "Coral Average", "Average number of coral scored in teleop";
+			"coral_accuracy" => "CACC", "Coral Accuracy", "Success rate for scoring coral";
+			"algae_score" => "ASCO", "Algae Score", "Average points from algae in teleop";
+			"processor_average" => "PAVG", "Processor Average", "Average number of teleop algae scored in the processor";
+			"processor_accuracy" => "PACC", "Processor Accuracy", "Success rate for the processor";
+			"net_average" => "NAVG", "Net Average", "Average number of net scores";
+			"intake_accuracy" => "IACC", "Intake Accuracy", "Intake success rate in teleop";
+			"climb_accuracy" => "CACC", "Climb Accuracy", "Climb success rate";
+			"climb_time" => "CLT", "Climb Time", "Average time to climb";
+			"climb_fall_percent" => "CFP", "Climb Fall Percent", "Rate at which the team falls when climbing";
+			"auto_coral" => "AC", "Auto Coral", "Average number of coral scored in auto";
+			"auto_algae" => "AA", "Auto Algae", "Average number of algae scored in auto";
+			"auto_coral_accuracy" => "ACA", "Auto Coral Accuracy", "Success rate for scoring coral in auto";
+			"auto_algae_accuracy" => "AAA", "Auto Algae Accuracy", "Success rate for scoring algae in auto";
+			"auto_collisions" => "ACOL", "Auto Collisions", "Total times this team hit another robot during auto";
+			"offense_average" => "OA", "Offense Average", "Average number of offensive moves";
+			"defense_average" => "DA", "Defense Average", "Average number of defensive moves";
+			"cycle_time" => "CT", "Cycle Time", "Average time between intake, score, and the next intake";
+			"cycle_time_consistency" => "CTC", "Cycle Time Consistency", "How close to a linear fit this team's cycles are";
+			"cycle_time_deviation" => "CTD", "Cycle Time Deviation", "Standard deviation of this team's cycle times";
+			"time_to_first_cycle" => "TTFC", "Time To First Cycle", "Average time before the first score in teleop";
+			"penalties" => "Pen", "Penalties", "Total number of penalties across all matches";
+			"reliability" => "RB", "Reliability", "How often this team plays a match without breaking";
+			"matches" => "Matches", "Matches", "How many matches have been scouted for this team";
+			"auto_score" => "ATSCO", "Auto Score", "Average number of points scored in auto";
+			"teleop_score" => "TESCO", "Teleop Score", "Average number of points scored in teleop";
+			"climb_score" => "CLSCO", "Climb Score", "Average number of points scored from climbing";
+			"l1_accuracy" => "L1ACC", "L1 Accuracy", "Success rate scoring on L1";
+			"l2_accuracy" => "L2ACC", "L2 Accuracy", "Success rate scoring on L2";
+			"l3_accuracy" => "L3ACC", "L3 Accuracy", "Success rate scoring on L3";
+			"l4_accuracy" => "L4ACC", "L4 Accuracy", "Success rate scoring on L4";
+			"l1_value" => "L1VAL", "L1 Value", "Average points gained from a single L1 score attempt";
+			"l2_value" => "L2VAL", "L2 Value", "Average points gained from a single L2 score attempt";
+			"l3_value" => "L3VAL", "L3 Value", "Average points gained from a single L3 score attempt";
+			"l4_value" => "L4VAL", "L4 Value", "Average points gained from a single L4 score attempt";
+			"l1_count" => "L1CNT", "L1 Count", "Total times this team has scored on L1";
+			"l2_count" => "L2CNT", "L2 Count", "Total times this team has scored on L2";
+			"l3_count" => "L3CNT", "L3 Count", "Total times this team has scored on L3";
+			"l4_count" => "L4CNT", "L4 Count", "Total times this team has scored on L4";
+		}
 	}
 }

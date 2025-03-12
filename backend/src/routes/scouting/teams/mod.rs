@@ -24,7 +24,7 @@ use crate::{
 	State,
 };
 
-use super::{create_page, PageOrRedirect, Scope};
+use super::{create_page, stats::StatInfo, PageOrRedirect, Scope};
 
 #[rocket::get("/scouting/teams?<competition>")]
 pub async fn teams(
@@ -268,13 +268,7 @@ pub async fn get_historical_stat(
 		return Err(Status::NotFound);
 	}
 
-	#[derive(Serialize)]
-	struct Point {
-		r#match: u16,
-		value: f64,
-	}
-
-	let mut out = Vec::new();
+	let mut data = Vec::new();
 	for (i, m) in team_stats.historical.iter().enumerate() {
 		let serialized = serde_json::to_string(m).expect("Failed to serialize match stats");
 		let deserialized: HashMap<String, serde_json::Value> =
@@ -286,11 +280,20 @@ pub async fn get_historical_stat(
 			continue;
 		};
 
-		out.push(Point {
+		data.push(HistoricalPoint {
 			r#match: i as u16,
 			value,
 		});
 	}
+
+	let description = StatInfo::get(stat)
+		.map(|x| x.description)
+		.unwrap_or_default();
+
+	let out = HistoricalStatResult {
+		stat_description: description,
+		data,
+	};
 
 	let out = serde_json::to_string(&out).map_err(|e| {
 		error!("Failed to serialize output: {e}");
@@ -298,4 +301,16 @@ pub async fn get_historical_stat(
 	})?;
 
 	Ok(RawJson(out))
+}
+
+#[derive(Serialize)]
+pub struct HistoricalStatResult {
+	pub stat_description: &'static str,
+	pub data: Vec<HistoricalPoint>,
+}
+
+#[derive(Serialize)]
+pub struct HistoricalPoint {
+	r#match: u16,
+	value: f64,
 }

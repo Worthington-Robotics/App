@@ -4,6 +4,7 @@
 <div id="stat-popup-container" class="cont" style="display:none">
 	<div id="stat-popup" class="cont col round">
 		<h3 id="stat-popup-title"></h3>
+		<p id="stat-popup-description"></p>
 		<div id="stat-popup-graph" class="cont">
 			<div class="cont round" id="stat-popup-graph-cont" style="width: 18rem; position:relative"><canvas
 					id="stat-popup-canvas"></canvas></div>
@@ -29,7 +30,7 @@
 						{
 							label: "Stat per match",
 							data: [],
-							tension: 0.1,
+							tension: 0.3,
 							borderColor: "#3849d9"
 						}
 					]
@@ -44,6 +45,7 @@
 
 	let popupContainer = document.getElementById("stat-popup-container");
 	let popupTitle = document.getElementById("stat-popup-title");
+	let popupDescription = document.getElementById("stat-popup-description");
 
 	document.getElementById("stat-popup-close").addEventListener("click", () => {
 		popupContainer.style.display = "none";
@@ -85,12 +87,15 @@
 			}
 		}
 
-		chart.data.labels = data.map(row => row.match);
-		chart.data.datasets[0].data = data.map(row => row.value);
+		let statData = data.data;
+
+		chart.data.labels = statData.map(row => row.match);
+		chart.data.datasets[0].data = statData.map(row => row.value);
 		chart.data.datasets[0].label = statTitle;
 		chart.update();
 
 		popupContainer.style.display = "";
+		popupDescription.innerHTML = data.stat_description;
 	}
 
 	for (let card of cards) {
@@ -114,6 +119,10 @@
 		width: 80%;
 	}
 
+	#stat-popup-description {
+		color: var(--fg2);
+	}
+
 	#stat-popup-graph-cont {
 		padding: 1rem;
 		background-color: var(--bg);
@@ -122,5 +131,6 @@
 	.card-stat,
 	.card-title {
 		pointer-events: none;
+		cursor: pointer;
 	}
 </style>
