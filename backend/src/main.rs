@@ -193,6 +193,7 @@ async fn rocket() -> _ {
 				routes::scouting::teams::details::team_details,
 				routes::scouting::teams::info::create_team_info,
 				routes::scouting::teams::info::team_info_page,
+				routes::scouting::teams::info::reset_team_info,
 				routes::scouting::teams::update_team_competition,
 				routes::scouting::teams::update_team_following,
 				routes::scouting::teams::get_historical_stat,

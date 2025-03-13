@@ -332,3 +332,34 @@ pub struct TeamInfoForm {
 	team: TeamNumber,
 	data: String,
 }
+
+#[rocket::post("/api/scouting/reset_team_info")]
+pub async fn reset_team_info(state: &State, session_id: SessionID<'_>) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Resetting all team info");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	let mut lock = state.db.write().await;
+	let infos: Vec<_> = lock
+		.get_all_team_info()
+		.await
+		.map_err(|e| {
+			error!("Failed to get all team info from database: {e}");
+			Status::InternalServerError
+		})?
+		.collect();
+
+	for mut info in infos {
+		// Move already scouted teams to needing update, and keep non-scouted teams the same
+		if info.progress == PitScoutingProgress::Finished {
+			info.progress = PitScoutingProgress::NeedsRefresh;
+
+			if let Err(e) = lock.create_team_info(info.team, info).await {
+				error!("Failed to create team info in database: {e}");
+			}
+		}
+	}
+
+	Ok(())
+}
