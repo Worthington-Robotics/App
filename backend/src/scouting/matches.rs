@@ -31,6 +31,7 @@ impl Display for MatchNumber {
 			match self.ty {
 				MatchType::Qualification => "Q",
 				MatchType::Playoff => "P",
+				MatchType::Finals => "F",
 			},
 			self.num
 		)
@@ -48,7 +49,8 @@ impl FromStr for MatchNumber {
 		let ty = &s[0..1];
 		let ty = match ty {
 			"Q" => MatchType::Qualification,
-			"P" | "F" => MatchType::Playoff,
+			"P" => MatchType::Playoff,
+			"F" => MatchType::Finals,
 			_ => return Err(()),
 		};
 
@@ -66,6 +68,7 @@ pub enum MatchType {
 	#[default]
 	Qualification,
 	Playoff,
+	Finals,
 }
 
 impl Display for MatchType {
@@ -76,6 +79,7 @@ impl Display for MatchType {
 			match self {
 				Self::Qualification => "Qualification",
 				Self::Playoff => "Playoff",
+				Self::Finals => "Finals",
 			}
 		)
 	}
@@ -88,6 +92,7 @@ impl FromStr for MatchType {
 		match s {
 			"Qualification" | "Q" => Ok(Self::Qualification),
 			"Playoff" | "P" => Ok(Self::Playoff),
+			"Finals" | "F" => Ok(Self::Finals),
 			_ => Err(()),
 		}
 	}

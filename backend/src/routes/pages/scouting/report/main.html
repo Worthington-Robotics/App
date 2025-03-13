@@ -900,6 +900,8 @@
 			type = "Qualification";
 		} else if (string[0] == "P") {
 			type = "Playoff";
+		} else if (string[0] == "F") {
+			type = "Finals";
 		}
 		if (type == null) {
 			setError("Invalid match type in match number");
@@ -981,15 +983,17 @@
 			if (!(await checkTBAMatch(num, competition))) {
 				return;
 			}
-		} else {
+		} else if (matchNumber.ty == "Playoff") {
 			let num = "sf" + matchNumber.num + "m1";
 			url = formatTBAMatchURL(num, competition);
 			if (!(await checkTBAMatch(num, competition))) {
-				let num = "fm1m" + matchNumber.num;
-				url = formatTBAMatchURL(num, competition);
-				if (!(await checkTBAMatch(num, competition))) {
-					return;
-				}
+				return;
+			}
+		} else if (matchNumber.ty == "Finals") {
+			let num = "fm1m" + matchNumber.num;
+			url = formatTBAMatchURL(num, competition);
+			if (!(await checkTBAMatch(num, competition))) {
+				return;
 			}
 		}
 
