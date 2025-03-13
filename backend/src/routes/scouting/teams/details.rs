@@ -142,6 +142,30 @@ pub async fn team_details(
 		stat_card_other!(team_stats, "Penalties", penalties, "penalties", false),
 	);
 	let page = page.replace(
+		"{{coral-rp-contribution}}",
+		stat_card_pct!(
+			team_stats,
+			"Coral RP",
+			coral_rp_contribution,
+			"coral_rp_contribution",
+			false
+		),
+	);
+	let page = page.replace(
+		"{{barge-rp-contribution}}",
+		stat_card_pct!(
+			team_stats,
+			"Barge RP",
+			barge_rp_contribution,
+			"barge_rp_contribution",
+			false
+		),
+	);
+	let page = page.replace(
+		"{{litter}}",
+		stat_card_float!(team_stats, "Litter", litter, "litter", false),
+	);
+	let page = page.replace(
 		"{{auto-score}}",
 		stat_card_float!(team_stats, "Score", auto_score, "auto_score", true),
 	);

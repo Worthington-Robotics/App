@@ -123,6 +123,12 @@ pub struct TeamStats {
 	pub cycle_time_deviation: f32,
 	/// Average time to the first teleop cycle
 	pub time_to_first_cycle: f32,
+	/// Average amount of litter left on the field, with algae worth more than coral
+	pub litter: f32,
+	/// Contribution out of 1 that this team provides to the coral RP
+	pub coral_rp_contribution: f32,
+	/// Contribution out of 1 that this team provides to the barge RP
+	pub barge_rp_contribution: f32,
 	/// Total number of penalties
 	pub penalties: u8,
 	/// Rate that the team shows up to the match with a working robot (0-1)
@@ -170,6 +176,15 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		ctx.coral_level_scores[2] as f32 / fix_zero(ctx.coral_level_attempts[2] as f32);
 	let l4_accuracy =
 		ctx.coral_level_scores[3] as f32 / fix_zero(ctx.coral_level_attempts[3] as f32);
+
+	// Calculate contribution to coral RP. Each level is how much of 5 coral is contributed
+	let l1_contribution = (ctx.coral_level_scores[0] as f32 / match_count_f32 / 5.0).min(1.0);
+	let l2_contribution = (ctx.coral_level_scores[1] as f32 / match_count_f32 / 5.0).min(1.0);
+	let l3_contribution = (ctx.coral_level_scores[2] as f32 / match_count_f32 / 5.0).min(1.0);
+	let l4_contribution = (ctx.coral_level_scores[3] as f32 / match_count_f32 / 5.0).min(1.0);
+	// Get average contribution
+	let coral_rp_contribution =
+		(l1_contribution + l2_contribution + l3_contribution + l4_contribution) / 4.0;
 
 	TeamStats {
 		number: team,
@@ -225,6 +240,9 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		l2_count: ctx.coral_level_scores[1],
 		l3_count: ctx.coral_level_scores[2],
 		l4_count: ctx.coral_level_scores[3],
+		litter: ctx.total_litter as f32 / match_count_f32,
+		coral_rp_contribution,
+		barge_rp_contribution: ctx.climb_score_total as f32 / match_count_f32 / 14.0,
 		..Default::default()
 	}
 }
@@ -269,6 +287,7 @@ struct StatsContext {
 	cycle_times: Vec<f32>,
 	time_to_first_cycle_sum: f32,
 	time_to_first_cycle_count: u16,
+	total_litter: u16,
 	breaks: u8,
 	/// Total number of times the team showed up for the match
 	attendance: u16,
@@ -296,6 +315,8 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	for attempt in &stats.auto_coral_attempts {
 		if attempt.successful {
 			ctx.auto_score_total += get_coral_points(attempt.level, true) as u16;
+		} else {
+			ctx.total_litter += 1;
 		}
 	}
 
@@ -321,6 +342,8 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		if attempt.successful {
 			coral_score_total += get_coral_points(attempt.level, false) as u16;
 			ctx.coral_level_scores[attempt.level as usize] += 1;
+		} else {
+			ctx.total_litter += 1;
 		}
 		ctx.coral_level_attempts[attempt.level as usize] += 1;
 	}
@@ -348,6 +371,20 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	if stats.climb_result == ClimbResult::Fell {
 		ctx.climb_falls += 1;
 	}
+
+	if stats.auto_algae_scores < stats.auto_algae_attempts {
+		ctx.total_litter += (stats.auto_algae_attempts - stats.auto_algae_scores) as u16 * 3;
+	}
+	if stats.auto_intake_successes < stats.auto_intake_attempts {
+		ctx.total_litter += (stats.auto_intake_attempts - stats.auto_intake_successes) as u16;
+	}
+	if stats.teleop_intake_successes < stats.teleop_intake_attempts {
+		ctx.total_litter += (stats.teleop_intake_attempts - stats.teleop_intake_successes) as u16;
+	}
+	if stats.processor_scores < stats.processor_attempts {
+		ctx.total_litter += (stats.processor_attempts - stats.processor_scores) as u16 * 3;
+	}
+	ctx.total_litter += stats.agitations as u16 * 3;
 
 	ctx.defenses += stats.defenses as u16;
 	ctx.penalties += stats.penalties;

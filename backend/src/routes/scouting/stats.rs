@@ -251,6 +251,9 @@ stat_info! {
 	l2_count, "l2_count" => "L2CNT", "L2 Count", "Total times this team has scored on L2";
 	l3_count, "l3_count" => "L3CNT", "L3 Count", "Total times this team has scored on L3";
 	l4_count, "l4_count" => "L4CNT", "L4 Count", "Total times this team has scored on L4";
+	litter, "litter" => "LTTR", "Litter", "The amount of pieces dropped, with algae being worth 3 coral";
+	coral_rp_contribution, "coral_rp_contribution" => "CRP", "Coral RP Contribution", "How much of the coral RP this team contributes";
+	barge_rp_contribution, "barge_rp_contribution" => "BRP", "Barge RP Contribution", "How much of the barge RP this team contributes";
 }
 
 /// Creates a dropdown of team stat options
