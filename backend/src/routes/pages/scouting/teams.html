@@ -321,7 +321,9 @@
 
 			row.children[3].innerHTML = stat;
 		}
-		document.getElementById("stat-header").innerHTML = data.abbreviation;
+		let header = document.getElementById("stat-header");
+		header.innerHTML = data.abbreviation;
+		header.dataset.sorted = false;
 	});
 </script>
 {{footer}}
