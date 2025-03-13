@@ -142,6 +142,24 @@ pub async fn team_details(
 		stat_card_other!(team_stats, "Penalties", penalties, "penalties", false),
 	);
 	let page = page.replace(
+		"{{total-points}}",
+		stat_card_other!(
+			team_stats,
+			"Total Points",
+			total_points,
+			"total_points",
+			false
+		),
+	);
+	let page = page.replace(
+		"{{total-coral}}",
+		stat_card_other!(team_stats, "Total Coral", total_coral, "total_coral", false),
+	);
+	let page = page.replace(
+		"{{total-algae}}",
+		stat_card_other!(team_stats, "Total Algae", total_algae, "total_algae", false),
+	);
+	let page = page.replace(
 		"{{coral-rp-contribution}}",
 		stat_card_pct!(
 			team_stats,

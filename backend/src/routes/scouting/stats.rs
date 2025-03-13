@@ -254,6 +254,9 @@ stat_info! {
 	litter, "litter" => "LTTR", "Litter", "The amount of pieces dropped, with algae being worth 3 coral";
 	coral_rp_contribution, "coral_rp_contribution" => "CRP", "Coral RP Contribution", "How much of the coral RP this team contributes";
 	barge_rp_contribution, "barge_rp_contribution" => "BRP", "Barge RP Contribution", "How much of the barge RP this team contributes";
+	total_points, "total_points" => "TP", "Total Points", "How many points this team has scored in all matches";
+	total_coral, "total_coral" => "TC", "Total Coral", "How many coral this team has scored in all matches";
+	total_algae, "total_algae" => "TA", "Total Algae", "How many algae this team has scored in all matches";
 }
 
 /// Creates a dropdown of team stat options

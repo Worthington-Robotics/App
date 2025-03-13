@@ -129,6 +129,12 @@ pub struct TeamStats {
 	pub coral_rp_contribution: f32,
 	/// Contribution out of 1 that this team provides to the barge RP
 	pub barge_rp_contribution: f32,
+	/// Total number of points scored
+	pub total_points: u16,
+	/// Total number of coral scored
+	pub total_coral: u16,
+	/// Total number of algae scored
+	pub total_algae: u16,
 	/// Total number of penalties
 	pub penalties: u8,
 	/// Rate that the team shows up to the match with a working robot (0-1)
@@ -243,6 +249,9 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		litter: ctx.total_litter as f32 / match_count_f32,
 		coral_rp_contribution,
 		barge_rp_contribution: ctx.climb_score_total as f32 / match_count_f32 / 14.0,
+		total_points: ctx.points_scored,
+		total_coral: ctx.coral_scores + ctx.auto_coral_scores,
+		total_algae: ctx.auto_algae_scores + ctx.processor_scores + ctx.net_scores,
 		..Default::default()
 	}
 }
