@@ -775,28 +775,32 @@
 					level: `l${event.level + 1}`,
 				}
 				if (event.teleop) {
-					totalScore += event.level;
-					totalScore += 2;
+					if (event.successful) {
+						totalScore += event.level;
+						totalScore += 2;
+					}
 					teleopCoralAttempts.push(attempt);
 				} else {
-					totalScore += event.level;
-					totalScore += 3;
-					if (event.level > 1) {
-						totalScore += 1;
+					if (event.successful) {
+						totalScore += event.level;
+						totalScore += 3;
+						if (event.level > 1) {
+							totalScore += 1;
+						}
 					}
 					autoCoralAttempts.push(attempt);
 				}
 			} else if (event.id == "algae") {
-				totalScore += 4;
 				autoAlgaeAttempts++;
 				if (event.successful) {
 					autoAlgaeScores++;
+					totalScore += 4;
 				}
 			} else if (event.id == "processor") {
-				totalScore += 4;
 				processorAttempts++;
 				if (event.successful) {
 					processorScores++;
+					totalScore += 4;
 				}
 			} else if (event.id == "net") {
 				totalScore += 4;

@@ -194,10 +194,15 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 	// This just makes it more accurate
 	let coral_rp_contribution = coral_rp_contribution * 2.0;
 
+	let auto_score_total = ctx.auto_score_total;
+	let teleop_score_total = ctx.teleop_score_total;
+	let climb_score_total = ctx.climb_score_total;
+	let points_scored = auto_score_total + teleop_score_total + climb_score_total;
+
 	TeamStats {
 		number: team,
 		epa: 0.0,
-		apa: ctx.points_scored as f32 / match_count_f32,
+		apa: points_scored as f32 / match_count_f32,
 		win_rate: ctx.wins as f32 / match_count_f32,
 		intake_accuracy: ctx.intake_successes as f32 / fix_zero(ctx.intake_attempts as f32),
 		coral_score: ctx.coral_score_total as f32 / match_count_f32,
@@ -233,9 +238,9 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		penalties: ctx.penalties,
 		reliability,
 		matches: ctx.total_matches as u16,
-		auto_score: ctx.auto_score_total as f32 / match_count_f32,
-		teleop_score: ctx.teleop_score_total as f32 / match_count_f32,
-		climb_score: ctx.climb_score_total as f32 / match_count_f32,
+		auto_score: auto_score_total as f32 / match_count_f32,
+		teleop_score: teleop_score_total as f32 / match_count_f32,
+		climb_score: climb_score_total as f32 / match_count_f32,
 		l1_accuracy,
 		l2_accuracy,
 		l3_accuracy,
@@ -251,7 +256,7 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		litter: ctx.total_litter as f32 / match_count_f32,
 		coral_rp_contribution,
 		barge_rp_contribution: ctx.climb_score_total as f32 / match_count_f32 / 14.0,
-		total_points: ctx.points_scored,
+		total_points: points_scored,
 		total_coral: ctx.coral_scores + ctx.auto_coral_scores,
 		total_algae: ctx.auto_algae_scores + ctx.processor_scores + ctx.net_scores,
 		..Default::default()
