@@ -1003,6 +1003,27 @@ impl Database for SqlDatabase {
 		}
 	}
 
+	async fn get_match(&self, num: &MatchNumber) -> anyhow::Result<Option<Match>> {
+		let mut result = sqlx::query("SELECT * FROM matches WHERE Number = $1")
+			.bind(num.num as i32)
+			.fetch(&self.pool);
+		let row = result.try_next().await;
+		match row {
+			Ok(row) => {
+				let Some(row) = row else {
+					return Ok(None);
+				};
+				let m = read_match(row).context("Failed to read match")?;
+
+				Ok(Some(m))
+			}
+			Err(e) => {
+				error!("Failed to get match {num} from database: {e}");
+				Err(anyhow!("Failed to get match from database"))
+			}
+		}
+	}
+
 	async fn get_matches(&self) -> anyhow::Result<impl Iterator<Item = Match>> {
 		let result = sqlx::query("SELECT * FROM matches")
 			.fetch_all(&self.pool)

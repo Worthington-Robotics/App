@@ -190,6 +190,9 @@ pub trait Database {
 	/// Get the list of all status updates
 	async fn get_all_status(&self) -> anyhow::Result<Vec<StatusUpdate>>;
 
+	/// Gets a single match from the schedule
+	async fn get_match(&self, num: &MatchNumber) -> anyhow::Result<Option<Match>>;
+
 	/// Get the match schedule
 	async fn get_matches(&self) -> anyhow::Result<impl Iterator<Item = Match>>;
 

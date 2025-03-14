@@ -364,6 +364,15 @@ impl Database for JSONDatabase {
 		Ok(self.contents.team_status.clone())
 	}
 
+	async fn get_match(&self, num: &MatchNumber) -> anyhow::Result<Option<Match>> {
+		Ok(self
+			.contents
+			.matches
+			.iter()
+			.find(|x| &x.num == num)
+			.cloned())
+	}
+
 	async fn get_matches(&self) -> anyhow::Result<impl Iterator<Item = Match>> {
 		Ok(self.contents.matches.iter().cloned())
 	}

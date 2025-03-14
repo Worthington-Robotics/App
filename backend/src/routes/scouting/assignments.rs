@@ -361,8 +361,6 @@ pub async fn claim_best(
 		ty: MatchType::Qualification,
 	};
 
-	// TODO: Make this actually pick the best team
-
 	let claims = lock
 		.get_match_claims(&match_number)
 		.await
@@ -375,22 +373,61 @@ pub async fn claim_best(
 			..Default::default()
 		});
 
-	let slot = &[
+	let Some(m) = lock.get_match(&claims.m).await.map_err(|e| {
+		error!("Failed to get match from database: {e}");
+		Status::InternalServerError
+	})?
+	else {
+		error!("Match {} does not exist", &claims.m);
+		return Err(Status::InternalServerError);
+	};
+
+	let slots_slice = &[
 		claims.red_1,
 		claims.red_2,
 		claims.red_3,
 		claims.blue_1,
 		claims.blue_2,
 		claims.blue_3,
-	]
-	.iter()
-	.position(|x| x.is_none());
+	];
+
+	const MEAN_EPA: f32 = 25.0;
+
+	let mut lowest_distance = f32::INFINITY;
+	let mut lowest_index = 0;
+	for (i, slot) in slots_slice.iter().enumerate() {
+		if slot.is_some() {
+			continue;
+		}
+
+		let team = if i < 3 {
+			m.red_alliance.get(i)
+		} else {
+			m.blue_alliance.get(i - 3)
+		};
+		let Some(team) = team else {
+			continue;
+		};
+
+		let epa = state.statbotics_client.get_epa(*team).await;
+		let Some(epa) = epa else {
+			continue;
+		};
+
+		let distance = (MEAN_EPA - epa).abs();
+		if distance < lowest_distance {
+			lowest_index = i;
+			lowest_distance = distance;
+		}
+	}
+
+	dbg!(&lowest_distance, &lowest_index);
 
 	// Prevent deadlock since we will now call this other API method
 	std::mem::drop(lock);
 
-	if let Some(slot) = slot {
-		claim_match(state, session_id, m, *slot as u8).await?;
+	if lowest_distance != f32::INFINITY {
+		claim_match(state, session_id, m.num.num, lowest_index as u8).await?;
 	}
 
 	Ok(())

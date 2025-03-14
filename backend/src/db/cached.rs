@@ -489,6 +489,13 @@ impl Database for CacheDatabase {
 		self.cache.get_all_status().await
 	}
 
+	async fn get_match(
+		&self,
+		num: &MatchNumber,
+	) -> anyhow::Result<Option<crate::scouting::matches::Match>> {
+		self.cache.get_match(num).await
+	}
+
 	async fn get_matches(
 		&self,
 	) -> anyhow::Result<impl Iterator<Item = crate::scouting::matches::Match>> {
