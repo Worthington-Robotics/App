@@ -191,6 +191,8 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 	// Get average contribution
 	let coral_rp_contribution =
 		(l1_contribution + l2_contribution + l3_contribution + l4_contribution) / 4.0;
+	// This just makes it more accurate
+	let coral_rp_contribution = coral_rp_contribution * 2.0;
 
 	TeamStats {
 		number: team,
