@@ -316,7 +316,7 @@
 			elem.className = "item round event";
 			elem.dataset.index = i;
 
-			let period = `<div class="cont round event-period">${event.teleop ? "T" : "A"}</div>`;
+			let period = `<div class="cont round event-period" onclick="eventUpdatePeriod(event);">${event.teleop ? "T" : "A"}</div>`;
 			let time = `<div class="cont event-time">${renderTime(event.timestamp)}</div>`;
 			let nameUppercase = event.id.charAt(0).toUpperCase() + event.id.slice(1);
 			let name = `<div class="cont event-name">${event.id}</div>`;
@@ -332,6 +332,16 @@
 			return;
 		}
 		M.matchEvents.splice(index, 1);
+		updateEvents();
+		updateBreakdown();
+	}
+
+	function eventUpdatePeriod(event) {
+		index = event.target.parentElement.dataset.index;
+		if (index == undefined) {
+			return;
+		}
+		M.matchEvents[index].teleop = !M.matchEvents[index].teleop;
 		updateEvents();
 		updateBreakdown();
 	}
@@ -1211,6 +1221,7 @@
 	.event-period {
 		padding: 0.1rem;
 		background-color: var(--bg4);
+		user-select: none;
 	}
 
 	.event-remove {
