@@ -916,6 +916,7 @@
 	function parseMatchNumber(string) {
 		let matchNumber = null;
 		if (string.length < 2) {
+			setError("Invalid match number");
 			return null;
 		}
 
