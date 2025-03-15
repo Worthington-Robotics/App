@@ -151,17 +151,22 @@
 	</div>
 	<div class="cont col">
 		<h2>Links</h2>
-		<a class="nolink" href="https://www.thebluealliance.com/team/{{number}}" target="_blank"><button class="cont"><img
-					style="width:0.85rem" src="https://www.thebluealliance.com/images/tba_lamp.svg" /> The Blue
-				Alliance</button></a>
-		<a class="nolink" href="https://frc-events.firstinspires.org/team/{{number}}" target="_blank"><button class="cont"
-				style="background-color:var(--bg3)"><img style="width:1.8rem"
-					src="https://www.firstinspires.org/sites/default/files/uploads/resource_library/brand/thumbnails/FIRST-Icon.png" />
-				First Website</button></a>
-		<a class="nolink" href="https://www.statbotics.io/team/{{number}}" target="_blank"><button class="cont"
-				style="background-color:var(--bg3)"><img style="width:1.8rem"
-					src="https://www.statbotics.io/circ_favicon.ico" />
-				Statbotics</button></a>
+		<div style="display:grid;grid-template-columns: repeat(2, minmax(0, 1fr));width:20rem;gap:1rem">
+			<a class="nolink" href="https://www.thebluealliance.com/team/{{number}}" target="_blank"><button class="cont"><img
+						style="width:0.85rem" src="https://www.thebluealliance.com/images/tba_lamp.svg" /> The Blue
+					Alliance</button></a>
+			<a class="nolink" href="https://frc-events.firstinspires.org/team/{{number}}" target="_blank"><button class="cont"
+					style="background-color:var(--bg3)"><img style="width:1.8rem"
+						src="https://www.firstinspires.org/sites/default/files/uploads/resource_library/brand/thumbnails/FIRST-Icon.png" />
+					First Website</button></a>
+			<a class="nolink" href="https://www.statbotics.io/team/{{number}}" target="_blank"><button class="cont"
+					style="background-color:var(--bg3)"><img style="width:1.8rem"
+						src="https://www.statbotics.io/circ_favicon.ico" />
+					Statbotics Page</button></a>
+			<a class="nolink" href="/scouting/report?team_number={{number}}"><button class="cont"
+					style="background-color:var(--bg3)"><img style="width:0.85rem" src="/assets/icons/edit.svg" /> Scout a
+					Match</button></a>
+		</div>
 	</div>
 	<div class="cont col">
 		<h2>Competitions</h2>

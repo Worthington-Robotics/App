@@ -117,7 +117,7 @@ pub async fn delete_match_stats(
 	session_id: SessionID<'_>,
 	id: &str,
 ) -> Result<(), Status> {
-	let span = span!(Level::DEBUG, "Deleting event");
+	let span = span!(Level::DEBUG, "Deleting match stats");
 	let _enter = span.enter();
 
 	session_id.get_requesting_member(state).await?;
