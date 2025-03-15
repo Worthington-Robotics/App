@@ -49,7 +49,7 @@ impl FromStr for MatchNumber {
 		let ty = &s[0..1];
 		let ty = match ty {
 			"Q" => MatchType::Qualification,
-			"P" => MatchType::Playoff,
+			"P" | "S" => MatchType::Playoff,
 			"F" => MatchType::Finals,
 			_ => return Err(()),
 		};
@@ -91,7 +91,7 @@ impl FromStr for MatchType {
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"Qualification" | "Q" => Ok(Self::Qualification),
-			"Playoff" | "P" => Ok(Self::Playoff),
+			"Playoff" | "P" | "S" => Ok(Self::Playoff),
 			"Finals" | "F" => Ok(Self::Finals),
 			_ => Err(()),
 		}
