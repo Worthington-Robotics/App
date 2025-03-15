@@ -213,6 +213,12 @@ pub struct MatchStats {
 	/// Team weaknesses during the match
 	#[serde(default)]
 	pub weaknesses: String,
+	/// Whether the team left in auto
+	#[serde(default)]
+	pub auto_leave: bool,
+	/// Whether the team parked
+	#[serde(default)]
+	pub park: bool,
 	/// Data from the match report
 	#[serde(default)]
 	pub match_report_data: Option<serde_json::Map<String, serde_json::Value>>,

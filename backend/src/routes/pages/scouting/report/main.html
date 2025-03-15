@@ -56,7 +56,7 @@
 		<label for="recorded-live">Recording Live?</label>
 	</div>
 	<div class="cont">
-		<input type="checkbox" name="showed-up" id="showed-up" class="field" />
+		<input type="checkbox" name="showed-up" id="showed-up" class="field" checked />
 		<label for="showed-up">Team Showed Up to Match?</label>
 	</div>
 	<h2>Auto</h2>
@@ -157,9 +157,13 @@
 		<option value="Questionable">Questionable</option>
 		<option value="Broken">Broken</option>
 	</select>
-	<div class="cont">
+	<div class="cont col">
+		<input type="checkbox" name="auto-leave" id="auto-leave" class="field" />
+		<label for="auto-leave">Left Line During Auto?</label>
 		<input type="checkbox" name="collision" id="collision" class="field" />
 		<label for="collision">Collision During Auto?</label>
+		<input type="checkbox" name="park" id="park" class="field" />
+		<label for="park">Parked In Barge Zone?</label>
 	</div>
 	<h2>Review</h2>
 	<div id="events">
@@ -743,6 +747,8 @@
 			penalties: stats.penalties,
 			cycle_time: stats.cycleTime,
 			cycle_times: stats.cycleTimes,
+			auto_leave: document.getElementById("auto-leave").checked,
+			park: document.getElementById("park").checked,
 			status: document.getElementById("status").value,
 			showed_up: document.getElementById("showed-up").checked,
 			won: document.getElementById("won").checked,
@@ -856,12 +862,12 @@
 		}
 
 		// Auto cross line points
-		if (autoAlgaeAttempts > 0 || autoCoralAttempts.length > 0 || autoIntakeAttempts > 0) {
+		if (document.getElementById("auto-leave").checked || autoAlgaeAttempts > 0 || autoCoralAttempts.length > 0 || autoIntakeAttempts > 0) {
 			totalScore += 3;
 		}
 
 		// Climb points
-		if (M.climbType != "none") {
+		if (M.climbType != "none" || document.getElementById("park").checked) {
 			totalScore += 2;
 		}
 		if (M.climbResult == "succeeded") {

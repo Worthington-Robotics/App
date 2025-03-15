@@ -336,7 +336,11 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		}
 	}
 
-	if stats.auto_algae_attempts > 0 || !stats.auto_coral_attempts.is_empty() {
+	if stats.auto_algae_attempts > 0
+		|| !stats.auto_coral_attempts.is_empty()
+		|| stats.auto_intake_attempts > 0
+		|| stats.auto_collision
+	{
 		ctx.auto_score_total += 3;
 	}
 
@@ -375,6 +379,10 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		ctx.climb_attempts += 1;
 		ctx.climb_score_total += 2;
 	}
+	if stats.climb_attempted != ClimbAbility::None || stats.park {
+		ctx.climb_score_total += 2;
+	}
+
 	if stats.climb_result == ClimbResult::Succeeded && stats.climb_time > 0.0 {
 		ctx.climb_successes += 1;
 		ctx.climb_time_total += stats.climb_time;
