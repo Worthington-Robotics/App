@@ -41,6 +41,7 @@
 	<ul>
 		<li>Use the timer, starting it when the announcer says "Go" or "Reefscape"</li>
 		<li>Look over the report when you are done to make sure you didn't miss anything</li>
+		<li>Remember to track intakes</li>
 	</ul>
 	<h2>Pre-Match</h2>
 	<label for="team-number">Team Number</label>
@@ -87,6 +88,8 @@
 				src="/assets/icons/check.svg" class="grid-icon" /></button>
 		<button class="grid-button auto-confirm failure" id="auto-failure" style="display:none"><img
 				src="/assets/icons/error.svg" class="grid-icon" /></button>
+		<button class="grid-button auto-confirm" id="auto-cancel"
+			style="display:none;background-color:var(--bg2);">Cancel</button>
 	</div>
 	<label for="auto">Auto</label>
 	<select name="auto" id="auto" class="field">
@@ -132,6 +135,8 @@
 				src="/assets/icons/check.svg" class="grid-icon" /></button>
 		<button class="grid-button teleop-confirm failure" id="teleop-failure" style="display:none"><img
 				src="/assets/icons/error.svg" class="grid-icon" /></button>
+		<button class="grid-button teleop-confirm" id="teleop-cancel"
+			style="display:none;background-color:var(--bg2);">Cancel</button>
 	</div>
 	<h2>Climb</h2>
 	<div class="section-grid">
@@ -145,7 +150,7 @@
 			Fell Down</button>
 		<button id="climb-successful" class="cont grid-button"><img src="/assets/icons/check.svg" class="grid-icon" />
 			Successful</button>
-		<button id="climb-refresh" class="cont grid-button miss"><img src="/assets/icons/refresh.svg" class="grid-icon" />
+		<button id="climb-refresh" class="cont grid-button"><img src="/assets/icons/refresh.svg" class="grid-icon" />
 			Reset</button>
 	</div>
 	<h2>Post-Match</h2>
@@ -160,12 +165,18 @@
 		<option value="Broken">Broken</option>
 	</select>
 	<div class="cont col">
-		<input type="checkbox" name="auto-leave" id="auto-leave" class="field" />
-		<label for="auto-leave">Left Line During Auto?</label>
-		<input type="checkbox" name="collision" id="collision" class="field" />
-		<label for="collision">Collision During Auto?</label>
-		<input type="checkbox" name="park" id="park" class="field" />
-		<label for="park">Parked In Barge Zone?</label>
+		<div class="cont">
+			<input type="checkbox" name="auto-leave" id="auto-leave" class="field" />
+			<label for="auto-leave">Left Line During Auto?</label>
+		</div>
+		<div class="cont">
+			<input type="checkbox" name="collision" id="collision" class="field" />
+			<label for="collision">Collision During Auto?</label>
+		</div>
+		<div class="cont">
+			<input type="checkbox" name="park" id="park" class="field" />
+			<label for="park">Parked In Barge Zone?</label>
+		</div>
 	</div>
 	<h2>Review</h2>
 	<div id="events">
@@ -544,6 +555,10 @@
 		hideAutoConfirm();
 	});
 
+	document.getElementById("auto-cancel").addEventListener("click", () => {
+		hideAutoConfirm();
+	});
+
 	function hideAutoConfirm() {
 		for (let e of document.getElementsByClassName("auto-confirm")) {
 			e.style.display = "none";
@@ -578,6 +593,10 @@
 			createEvent(pendingEvent);
 		}
 		pendingEvent = null;
+		hideTeleopConfirm();
+	});
+
+	document.getElementById("teleop-cancel").addEventListener("click", () => {
 		hideTeleopConfirm();
 	});
 
@@ -1194,7 +1213,7 @@
 		background-color: rgb(143, 91, 225);
 	}
 
-	#defend {
+	#defend, #climb-refresh {
 		background-color: var(--bg3);
 	}
 
