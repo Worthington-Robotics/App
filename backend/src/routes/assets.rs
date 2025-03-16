@@ -55,72 +55,72 @@ pub fn rockwell() -> CacheFor<&'static [u8]> {
 
 #[rocket::get("/assets/icons/home.svg")]
 pub fn icon_home() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/home.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/home.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/clock.svg")]
 pub fn icon_clock() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/clock.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/clock.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/plus.svg")]
 pub fn icon_plus() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/plus.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/plus.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/mail.svg")]
 pub fn icon_mail() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/mail.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/mail.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/edit.svg")]
 pub fn icon_edit() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/edit.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/edit.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/delete2.svg")]
 pub fn icon_delete() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/delete.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/delete.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/check.svg")]
 pub fn icon_check() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/check.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/check.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/box.svg")]
 pub fn icon_box() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/box.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/box.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/eye.svg")]
 pub fn icon_eye() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/eye.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/eye.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/star.svg")]
 pub fn icon_star() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/star.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/star.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/star_outline.svg")]
 pub fn icon_star_outline() -> CacheFor<Svg> {
 	CacheFor(
 		Svg(include_bytes!("../assets/icons/star_outline.svg")),
-		ONE_WEEK,
+		ONE_YEAR,
 	)
 }
 
 #[rocket::get("/assets/icons/user.svg")]
 pub fn icon_user() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/user.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/user.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/calendar.svg")]
 pub fn icon_calendar() -> CacheFor<Svg> {
 	CacheFor(
 		Svg(include_bytes!("../assets/icons/calendar.svg")),
-		ONE_WEEK,
+		ONE_YEAR,
 	)
 }
 
@@ -128,61 +128,66 @@ pub fn icon_calendar() -> CacheFor<Svg> {
 pub fn icon_location() -> CacheFor<Svg> {
 	CacheFor(
 		Svg(include_bytes!("../assets/icons/location.svg")),
-		ONE_WEEK,
+		ONE_YEAR,
 	)
 }
 
 #[rocket::get("/assets/icons/coral.svg")]
 pub fn icon_coral() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/coral.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/coral.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/algae.svg")]
 pub fn icon_algae() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/algae.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/algae.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/error.svg")]
 pub fn icon_error() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/error.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/error.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/window.svg")]
 pub fn icon_window() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/window.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/window.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/hashtag.svg")]
 pub fn icon_hashtag() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/hashtag.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/hashtag.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/download.svg")]
 pub fn icon_download() -> CacheFor<Svg> {
 	CacheFor(
 		Svg(include_bytes!("../assets/icons/download.svg")),
-		ONE_WEEK,
+		ONE_YEAR,
 	)
 }
 
 #[rocket::get("/assets/icons/shield.svg")]
 pub fn icon_shield() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/shield.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/shield.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/upload.svg")]
 pub fn icon_upload() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/upload.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/upload.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/info.svg")]
 pub fn icon_info() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/info.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/info.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/refresh.svg")]
 pub fn icon_refresh() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/refresh.svg")), ONE_WEEK)
+	CacheFor(Svg(include_bytes!("../assets/icons/refresh.svg")), ONE_YEAR)
+}
+
+#[rocket::get("/assets/icons/play.svg")]
+pub fn icon_play() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/play.svg")), ONE_YEAR)
 }
 
 #[derive(Responder)]

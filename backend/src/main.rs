@@ -155,6 +155,7 @@ async fn rocket() -> _ {
 				routes::assets::icon_upload,
 				routes::assets::icon_info,
 				routes::assets::icon_refresh,
+				routes::assets::icon_play,
 				routes::login::login,
 				routes::login::authenticate,
 				routes::login::logout,

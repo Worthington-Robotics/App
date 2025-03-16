@@ -9,8 +9,9 @@
 		<div id="match-time" class="cont round">
 			<div id="match-time-value">0:00.0</div>
 			<button id="time-edit-button">Edit</button>
-			<button id="time-pause-button">Start</button>
-			<select id="time-speed">
+			<button id="time-pause-button" class="cont" style="gap:.5rem"><img src="/assets/icons/play.svg"
+					style="width:1rem" /> Start</button>
+			<select id="time-speed" style="background-color:var(--bg3);">
 				<option value="2" selected>2x</option>
 				<option value="1.5" selected>1.5x</option>
 				<option value="1" selected>1x</option>
@@ -1138,7 +1139,7 @@
 	#match-time {
 		background-color: var(--bg2);
 		padding: 0.8rem;
-		width: 80%;
+		width: 85%;
 	}
 
 	#time-edit-button {
@@ -1213,7 +1214,8 @@
 		background-color: rgb(143, 91, 225);
 	}
 
-	#defend, #climb-refresh {
+	#defend,
+	#climb-refresh {
 		background-color: var(--bg3);
 	}
 
