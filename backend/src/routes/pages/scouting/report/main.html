@@ -754,6 +754,7 @@
 			auto_algae_scores: stats.autoAlgaeScores,
 			auto_intake_attempts: stats.autoIntakeAttempts,
 			auto_intake_successes: stats.autoIntakeSuccesses,
+			auto_intake_events: stats.autoIntakeEvents,
 			teleop_coral_attempts: stats.teleopCoralAttempts,
 			teleop_intake_attempts: stats.teleopIntakeAttempts,
 			teleop_intake_successes: stats.teleopIntakeSuccesses,
@@ -790,6 +791,7 @@
 		let autoAlgaeScores = 0;
 		let autoIntakeAttempts = 0;
 		let autoIntakeSuccesses = 0;
+		let autoIntakeEvents = [];
 
 		let teleopCoralAttempts = [];
 		let teleopIntakeAttempts = 0;
@@ -811,7 +813,8 @@
 				let attempt = {
 					successful: event.successful,
 					level: `l${event.level + 1}`,
-				}
+					timestamp: event.timestamp,
+				};
 				if (event.teleop) {
 					if (event.successful) {
 						totalScore += event.level;
@@ -854,6 +857,11 @@
 					if (event.successful) {
 						autoIntakeSuccesses++;
 					}
+					let attempt = {
+						successful: event.successful,
+						timestamp: event.timestamp,
+					};
+					autoIntakeEvents.push(attempt);
 				}
 			} else if (event.id == "agitate") {
 				agitations++;
@@ -919,6 +927,7 @@
 			autoAlgaeScores: autoAlgaeScores,
 			autoIntakeAttempts: autoIntakeAttempts,
 			autoIntakeSuccesses: autoIntakeSuccesses,
+			autoIntakeEvents: autoIntakeEvents,
 			teleopCoralAttempts: teleopCoralAttempts,
 			teleopIntakeAttempts: teleopIntakeAttempts,
 			teleopIntakeSuccesses: teleopIntakeSuccesses,

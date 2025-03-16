@@ -163,6 +163,9 @@ pub struct MatchStats {
 	pub auto_intake_attempts: u8,
 	/// The number of auto intake successes
 	pub auto_intake_successes: u8,
+	/// All of the auto intake events
+	#[serde(default)]
+	pub auto_intake_events: Vec<IntakeAttempt>,
 	/// Whether or not the robot collided with another during auto
 	pub auto_collision: bool,
 	/// The coral attempts during teleop
@@ -242,6 +245,19 @@ pub struct CoralAttempt {
 	pub successful: bool,
 	/// The reef level of the placement
 	pub level: ReefLevel,
+	/// The timestamp when the event happened
+	#[serde(default)]
+	pub timestamp: f32,
+}
+
+/// A single intake attempt
+#[derive(Serialize, Deserialize, Clone)]
+pub struct IntakeAttempt {
+	/// Whether the attempt was successful
+	pub successful: bool,
+	/// The timestamp when the event happened
+	#[serde(default)]
+	pub timestamp: f32,
 }
 
 /// Count how many matches a member has scouted
