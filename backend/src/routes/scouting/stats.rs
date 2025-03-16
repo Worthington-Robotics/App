@@ -257,6 +257,7 @@ stat_info! {
 	total_points, "total_points" => "TP", "Total Points", "How many points this team has scored in all matches";
 	total_coral, "total_coral" => "TC", "Total Coral", "How many coral this team has scored in all matches";
 	total_algae, "total_algae" => "TA", "Total Algae", "How many algae this team has scored in all matches";
+	high_score, "high_score" => "HS", "High Score", "The highest number of points this team has scored";
 }
 
 /// Creates a dropdown of team stat options

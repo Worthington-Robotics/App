@@ -130,11 +130,13 @@ pub struct TeamStats {
 	/// Contribution out of 1 that this team provides to the barge RP
 	pub barge_rp_contribution: f32,
 	/// Total number of points scored
-	pub total_points: u16,
+	pub total_points: i16,
 	/// Total number of coral scored
 	pub total_coral: u16,
 	/// Total number of algae scored
 	pub total_algae: u16,
+	/// Highest scoring match
+	pub high_score: i16,
 	/// Total number of penalties
 	pub penalties: u8,
 	/// Rate that the team shows up to the match with a working robot (0-1)
@@ -197,7 +199,8 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 	let auto_score_total = ctx.auto_score_total;
 	let teleop_score_total = ctx.teleop_score_total;
 	let climb_score_total = ctx.climb_score_total;
-	let points_scored = auto_score_total + teleop_score_total + climb_score_total;
+	let points_scored = auto_score_total + teleop_score_total + climb_score_total as i16
+		- (ctx.penalties as i16 * 4);
 
 	TeamStats {
 		number: team,
@@ -259,6 +262,7 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		total_points: points_scored,
 		total_coral: ctx.coral_scores + ctx.auto_coral_scores,
 		total_algae: ctx.auto_algae_scores + ctx.processor_scores + ctx.net_scores,
+		high_score: ctx.high_score,
 		..Default::default()
 	}
 }
@@ -267,7 +271,7 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 #[derive(Default)]
 struct StatsContext {
 	total_matches: u16,
-	points_scored: u16,
+	high_score: i16,
 	auto_coral_attempts: u16,
 	auto_coral_scores: u16,
 	auto_algae_attempts: u16,
@@ -275,7 +279,7 @@ struct StatsContext {
 	auto_intake_attempts: u16,
 	auto_intake_successes: u16,
 	auto_collisions: u8,
-	auto_score_total: u16,
+	auto_score_total: i16,
 	coral_attempts: u16,
 	coral_scores: u16,
 	coral_score_total: u16,
@@ -287,7 +291,7 @@ struct StatsContext {
 	algae_score_total: u16,
 	intake_attempts: u16,
 	intake_successes: u16,
-	teleop_score_total: u16,
+	teleop_score_total: i16,
 	climb_attempts: u16,
 	climb_successes: u16,
 	climb_time_total: f32,
@@ -312,6 +316,10 @@ struct StatsContext {
 
 /// Add stats from a match to running stat totals in the context
 fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
+	let mut auto_score = 0;
+	let mut teleop_score = 0;
+	let mut climb_score = 0;
+
 	ctx.total_matches += 1;
 	ctx.auto_coral_attempts += stats.auto_coral_attempts.len() as u16;
 	ctx.auto_coral_scores += stats
@@ -330,7 +338,7 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 
 	for attempt in &stats.auto_coral_attempts {
 		if attempt.successful {
-			ctx.auto_score_total += get_coral_points(attempt.level, true) as u16;
+			auto_score += get_coral_points(attempt.level, true) as i16;
 		} else {
 			ctx.total_litter += 1;
 		}
@@ -341,10 +349,9 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		|| stats.auto_intake_attempts > 0
 		|| stats.auto_collision
 	{
-		ctx.auto_score_total += 3;
+		auto_score += 3;
 	}
 
-	ctx.points_scored += stats.points_scored as u16;
 	ctx.coral_attempts += stats.teleop_coral_attempts.len() as u16;
 	ctx.coral_scores += stats
 		.teleop_coral_attempts
@@ -360,36 +367,35 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	let mut coral_score_total = 0;
 	for attempt in &stats.teleop_coral_attempts {
 		if attempt.successful {
-			coral_score_total += get_coral_points(attempt.level, false) as u16;
+			coral_score_total += get_coral_points(attempt.level, false) as i16;
 			ctx.coral_level_scores[attempt.level as usize] += 1;
 		} else {
 			ctx.total_litter += 1;
 		}
 		ctx.coral_level_attempts[attempt.level as usize] += 1;
 	}
-	ctx.coral_score_total += coral_score_total;
+	ctx.coral_score_total += coral_score_total as u16;
 
 	let algae_score_total = stats.processor_scores as u16 * 6 + stats.net_shots as u16 * 4;
 	ctx.algae_score_total += algae_score_total;
 
-	ctx.teleop_score_total += coral_score_total;
-	ctx.teleop_score_total += algae_score_total;
+	teleop_score += coral_score_total;
+	teleop_score += algae_score_total as i16;
 
 	if stats.climb_attempted != ClimbAbility::None {
 		ctx.climb_attempts += 1;
-		ctx.climb_score_total += 2;
 	}
 	if stats.climb_attempted != ClimbAbility::None || stats.park {
-		ctx.climb_score_total += 2;
+		climb_score += 2;
 	}
 
 	if stats.climb_result == ClimbResult::Succeeded && stats.climb_time > 0.0 {
 		ctx.climb_successes += 1;
 		ctx.climb_time_total += stats.climb_time;
 		if stats.climb_attempted == ClimbAbility::Shallow {
-			ctx.climb_score_total += 6;
+			climb_score += 6;
 		} else if stats.climb_attempted == ClimbAbility::Deep {
-			ctx.climb_score_total += 12;
+			climb_score += 12;
 		}
 	}
 	if stats.climb_result == ClimbResult::Fell {
@@ -443,6 +449,14 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	if stats.won {
 		ctx.wins += 1;
 	}
+
+	let total_score = auto_score + teleop_score + climb_score;
+	if total_score > ctx.high_score {
+		ctx.high_score = total_score;
+	}
+	ctx.auto_score_total += auto_score;
+	ctx.teleop_score_total += teleop_score;
+	ctx.climb_score_total += climb_score as u16;
 }
 
 /// Fairing for periodically updating team stats

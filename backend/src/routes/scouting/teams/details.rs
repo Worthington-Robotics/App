@@ -160,6 +160,10 @@ pub async fn team_details(
 		stat_card_other!(team_stats, "Total Algae", total_algae, "total_algae", false),
 	);
 	let page = page.replace(
+		"{{high-score}}",
+		stat_card_other!(team_stats, "High Score", high_score, "high_score", false),
+	);
+	let page = page.replace(
 		"{{coral-rp-contribution}}",
 		stat_card_pct!(
 			team_stats,
