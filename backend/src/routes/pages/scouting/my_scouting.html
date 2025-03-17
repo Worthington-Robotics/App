@@ -210,7 +210,7 @@
 			popupClaimButton.innerHTML = "Claim";
 		}
 
-		scoutURL = `/scouting/report?match_number=Q${selectedMatch}`;
+		scoutURL = `/scouting/report?match_number=Q${selectedMatch}&competition=current`;
 		if (selectedMatchIsClaimed) {
 			scoutURL += `&team_number=${selectedMatchTeam}`;
 		}

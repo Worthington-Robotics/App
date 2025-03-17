@@ -136,12 +136,13 @@ pub async fn delete_match_stats(
 }
 
 /// Form for match reporting will all the bells and whistles
-#[rocket::get("/scouting/report?<team_number>&<match_number>&<stats_id>")]
+#[rocket::get("/scouting/report?<team_number>&<match_number>&<competition>&<stats_id>")]
 pub async fn match_report_main(
 	session_id: OptionalSessionID<'_>,
 	state: &State,
 	team_number: Option<TeamNumber>,
 	match_number: Option<&str>,
+	competition: Option<&str>,
 	stats_id: Option<&str>,
 ) -> Result<PageOrRedirect, Status> {
 	let span = span!(Level::DEBUG, "Match report");
@@ -167,7 +168,24 @@ pub async fn match_report_main(
 	);
 	let page = page.replace("{match-number}", match_number.unwrap_or_default());
 
-	let options = Competition::create_options(None);
+	let lock = state.db.read().await;
+
+	let mut competition = competition.unwrap_or_default().to_string();
+	// If the competition is "current", replace it with whatever the current competition is
+	if competition == "current" {
+		let global_data = lock.get_global_data().await.map_err(|e| {
+			error!("Failed to get global data from database: {e}");
+			Status::InternalServerError
+		})?;
+		competition = global_data
+			.current_competition
+			.unwrap_or(Competition::Pittsburgh)
+			.to_string();
+	}
+
+	let parsed_competition = Competition::from_db(&competition);
+
+	let options = Competition::create_options(parsed_competition.as_ref());
 	let options = format!("<option value=none>None</option>{options}");
 	let page = page.replace("{{competition-options}}", &options);
 
