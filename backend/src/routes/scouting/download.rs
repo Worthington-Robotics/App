@@ -33,6 +33,36 @@ pub async fn download_team_stats(
 		return Err(Status::Unauthorized);
 	};
 
+	let out = team_stats_to_csv(state, false).await?;
+
+	Ok(Downloadable(out))
+}
+
+#[rocket::get("/api/scouting_download/team_stats_current_competition.csv")]
+pub async fn download_team_stats_current_comp(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<Downloadable, Status> {
+	let span = span!(
+		Level::DEBUG,
+		"Downloading team stats from current competition"
+	);
+	let _enter = span.enter();
+
+	let Some(session_id) = session_id.to_session_id() else {
+		return Err(Status::Unauthorized);
+	};
+
+	if session_id.verify_elevated(state).await.is_err() {
+		return Err(Status::Unauthorized);
+	};
+
+	let out = team_stats_to_csv(state, true).await?;
+
+	Ok(Downloadable(out))
+}
+
+pub async fn team_stats_to_csv(state: &State, current_comp: bool) -> Result<Vec<u8>, Status> {
 	let lock = state.db.read().await;
 	let match_stats = lock.get_all_match_stats().await.map_err(|e| {
 		error!("Failed to get match stats from database: {e}");
@@ -60,7 +90,13 @@ pub async fn download_team_stats(
 
 		let stats = stats_lock.get(&team.number).unwrap_or(&default_stats);
 
-		if let Err(e) = csv_writer.serialize(&stats.all_time) {
+		let stats = if current_comp {
+			&stats.current_competition
+		} else {
+			&stats.all_time
+		};
+
+		if let Err(e) = csv_writer.serialize(stats) {
 			error!("Failed to serialize row: {e}");
 			continue;
 		};
@@ -72,7 +108,7 @@ pub async fn download_team_stats(
 
 	std::mem::drop(csv_writer);
 
-	Ok(Downloadable(buf))
+	Ok(buf)
 }
 
 #[rocket::get("/api/scouting_download/matches.csv")]

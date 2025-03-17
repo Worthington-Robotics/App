@@ -11,6 +11,7 @@
 	<div class="cont col">
 		<h2>Download Scouting Data</h2>
 		<button id="download-team-stats">Team Stats</button>
+		<button id="download-team-stats-current-comp">Team Stats (Current Competition)</button>
 		<button id="download-matches">Matches</button>
 		<button id="download-team-info">Pit Scouting</button>
 		<iframe id="download-iframe" style="display:none;"></iframe>
@@ -48,6 +49,9 @@
 <script>
 	document.getElementById("download-team-stats").addEventListener("click", () => {
 		document.getElementById("download-iframe").src = "/api/scouting_download/team_stats.csv";
+	});
+	document.getElementById("download-team-stats-current-comp").addEventListener("click", () => {
+		document.getElementById("download-iframe").src = "/api/scouting_download/team_stats_current_competition.csv";
 	});
 	document.getElementById("download-matches").addEventListener("click", () => {
 		document.getElementById("download-iframe").src = "/api/scouting_download/matches.csv";
