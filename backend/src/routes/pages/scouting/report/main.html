@@ -248,7 +248,7 @@
 		}
 
 		timerValue.innerHTML = renderTime(M.time);
-	}, 100);
+	}, 50);
 
 	function resetTimeBase() {
 		M.startTime = Date.now() / 1000;
@@ -316,9 +316,24 @@
 	});
 
 	function createEvent(event) {
+		// Only set the timestamp if it isn't already set
+		if (event.timestamp == undefined) {
+			event.timestamp = M.time;
+		}
+		event.timestamp -= calculateReactionTime();
+
 		M.matchEvents.push(event);
 		updateEvents();
 		updateBreakdown();
+	}
+
+	function calculateReactionTime() {
+		let baseReactionTime = 0.75;
+		if (M.timerRunning) {
+			return baseReactionTime * M.timeScale;
+		} else {
+			return 0.0;
+		}
 	}
 
 	function updateEvents() {
@@ -370,7 +385,6 @@
 			teleop: false,
 			id: "coral",
 			level: 3,
-			timestamp: M.time,
 		});
 	});
 	document.getElementById("auto-coral-l3").addEventListener("click", () => {
@@ -378,7 +392,6 @@
 			teleop: false,
 			id: "coral",
 			level: 2,
-			timestamp: M.time,
 		});
 	});
 	document.getElementById("auto-coral-l2").addEventListener("click", () => {
@@ -386,7 +399,6 @@
 			teleop: false,
 			id: "coral",
 			level: 1,
-			timestamp: M.time,
 		});
 	});
 	document.getElementById("auto-coral-l1").addEventListener("click", () => {
@@ -394,14 +406,12 @@
 			teleop: false,
 			id: "coral",
 			level: 0,
-			timestamp: M.time,
 		});
 	});
 	document.getElementById("auto-algae").addEventListener("click", () => {
 		createEvent({
 			teleop: false,
 			id: "algae",
-			timestamp: M.time,
 			successful: true
 		});
 	});
@@ -409,7 +419,6 @@
 		createEvent({
 			teleop: false,
 			id: "algae",
-			timestamp: M.time,
 			successful: false
 		});
 	});
@@ -417,7 +426,6 @@
 		createEvent({
 			teleop: false,
 			id: "intake",
-			timestamp: M.time,
 			successful: true
 		});
 	});
@@ -425,7 +433,6 @@
 		createEvent({
 			teleop: false,
 			id: "intake",
-			timestamp: M.time,
 			successful: false
 		});
 	});
@@ -434,7 +441,6 @@
 			teleop: true,
 			id: "coral",
 			level: 3,
-			timestamp: M.time,
 		});
 	});
 	document.getElementById("coral-l3").addEventListener("click", () => {
@@ -442,7 +448,6 @@
 			teleop: true,
 			id: "coral",
 			level: 2,
-			timestamp: M.time,
 		});
 	});
 	document.getElementById("coral-l2").addEventListener("click", () => {
@@ -450,7 +455,6 @@
 			teleop: true,
 			id: "coral",
 			level: 1,
-			timestamp: M.time,
 		});
 	});
 	document.getElementById("coral-l1").addEventListener("click", () => {
@@ -458,14 +462,12 @@
 			teleop: true,
 			id: "coral",
 			level: 0,
-			timestamp: M.time,
 		});
 	});
 	document.getElementById("processor").addEventListener("click", () => {
 		createEvent({
 			teleop: true,
 			id: "processor",
-			timestamp: M.time,
 			successful: true
 		});
 	});
@@ -473,7 +475,6 @@
 		createEvent({
 			teleop: true,
 			id: "processor",
-			timestamp: M.time,
 			successful: false
 		});
 	});
@@ -481,7 +482,6 @@
 		createEvent({
 			teleop: true,
 			id: "intake",
-			timestamp: M.time,
 			successful: true
 		});
 	});
@@ -489,7 +489,6 @@
 		createEvent({
 			teleop: true,
 			id: "intake",
-			timestamp: M.time,
 			successful: false
 		});
 	});
@@ -497,7 +496,6 @@
 		createEvent({
 			teleop: true,
 			id: "net",
-			timestamp: M.time,
 			successful: true
 		});
 	});
@@ -505,14 +503,12 @@
 		createEvent({
 			teleop: true,
 			id: "agitate",
-			timestamp: M.time
 		});
 	});
 	document.getElementById("defend").addEventListener("click", () => {
 		createEvent({
 			teleop: true,
 			id: "defend",
-			timestamp: M.time
 		});
 	});
 
@@ -523,12 +519,12 @@
 			createEvent({
 				teleop: false,
 				id: penalty,
-				timestamp: M.time
 			});
 		})
 	}
 
 	function setAutoPendingEvent(event) {
+		event.timestamp = M.time;
 		pendingEvent = event;
 		for (let e of document.getElementsByClassName("auto-confirm")) {
 			e.style.display = "";
@@ -570,6 +566,7 @@
 	}
 
 	function setTeleopPendingEvent(event) {
+		event.timestamp = M.time;
 		pendingEvent = event;
 		for (let e of document.getElementsByClassName("teleop-confirm")) {
 			e.style.display = "";
@@ -620,28 +617,28 @@
 	document.getElementById("start-deep").addEventListener("click", () => {
 		M.climbType = "deep";
 		if (M.climbStart == null) {
-			M.climbStart = M.time;
+			M.climbStart = M.time - calculateReactionTime();
 		}
 		M.climbEnd = null;
 	});
 	document.getElementById("climb-fail").addEventListener("click", () => {
 		if (M.climbStart != null) {
 			M.climbResult = "failed";
-			M.climbEnd = M.time;
+			M.climbEnd = M.time - calculateReactionTime();
 			updateBreakdown();
 		}
 	});
 	document.getElementById("climb-fall").addEventListener("click", () => {
 		if (M.climbStart != null) {
 			M.climbResult = "fell";
-			M.climbEnd = M.time;
+			M.climbEnd = M.time - calculateReactionTime();
 			updateBreakdown();
 		}
 	});
 	document.getElementById("climb-successful").addEventListener("click", () => {
 		if (M.climbStart != null) {
 			M.climbResult = "succeeded";
-			M.climbEnd = M.time;
+			M.climbEnd = M.time - calculateReactionTime();
 			updateBreakdown();
 		}
 	});
@@ -1105,6 +1102,8 @@
 		e.preventDefault();
 		updateBreakdown();
 	});
+	document.getElementById("auto-leave").addEventListener("change", () => updateBreakdown());
+	document.getElementById("park").addEventListener("change", () => updateBreakdown());
 
 	// Creates an option element
 	function createOption(value, name) {
