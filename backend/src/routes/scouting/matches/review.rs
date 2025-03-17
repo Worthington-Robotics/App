@@ -87,6 +87,13 @@ async fn render_match_stats(m: MatchStats) -> String {
 	let notes = notes.replace("/", "");
 	let out = out.replace("{{notes}}", &notes);
 
+	let border_color = if m.won {
+		"var(--wbblue)"
+	} else {
+		"var(--wbred)"
+	};
+	let out = out.replace("{{border-color}}", border_color);
+
 	out
 }
 
