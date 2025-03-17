@@ -22,6 +22,8 @@ use crate::{
 	State,
 };
 
+use super::download::Downloadable;
+
 #[rocket::post("/api/post_match_stats", data = "<stats>")]
 pub async fn create_match_stats(
 	state: &State,
@@ -138,6 +140,52 @@ pub async fn delete_match_stats(
 /// Form for match reporting will all the bells and whistles
 #[rocket::get("/scouting/report?<team_number>&<match_number>&<competition>&<stats_id>")]
 pub async fn match_report_main(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+	team_number: Option<TeamNumber>,
+	match_number: Option<&str>,
+	competition: Option<&str>,
+	stats_id: Option<&str>,
+) -> Result<PageOrRedirect, Status> {
+	match_report_main_impl(
+		session_id,
+		state,
+		team_number,
+		match_number,
+		competition,
+		stats_id,
+	)
+	.await
+}
+
+/// Downloadable scouting report
+#[rocket::get("/scouting/report.html")]
+pub async fn match_report_download(
+	session_id: OptionalSessionID<'_>,
+	state: &State,
+) -> Result<Downloadable, Status> {
+	let out = match_report_main_impl(session_id, state, None, None, None, None).await?;
+	let PageOrRedirect::Page(mut data) = out else {
+		return Err(Status::Unauthorized);
+	};
+
+	// Inline stylesheets and scripts
+	let css = include_str!("../../../assets/static.min.css");
+	let css = format!("<style>{css}</style>");
+	data.0.push_str(&css);
+	let js = include_str!("../../../assets/error.js");
+	let js = format!("<script>{js}</script>");
+	data.0.push_str(&js);
+	let js = include_str!("../../../assets/scripts/prompt.js");
+	let js = format!("<script>{js};loadPrompt();</script>");
+	data.0.push_str(&js);
+
+	let out = data.0.as_bytes().to_vec();
+
+	Ok(Downloadable(out))
+}
+
+pub async fn match_report_main_impl(
 	session_id: OptionalSessionID<'_>,
 	state: &State,
 	team_number: Option<TeamNumber>,

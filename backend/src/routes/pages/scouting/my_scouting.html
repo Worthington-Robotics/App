@@ -9,11 +9,15 @@
 	</div>
 	<div class="cont col">
 		<h3>Scout a Match</h3>
-		<div class="cont">
-			<a href="/scouting/report"><button class="cont"><img src="/assets/icons/edit.svg" style="width:1.1rem" /> Scouting
+		<div id="scout-buttons">
+			<a href="/scouting/report" class="nolink"><button class="cont"><img src="/assets/icons/edit.svg"
+						style="width:1.1rem" /> Scouting
 					Report</button></a>
-			<button id="scouting-upload" class="cont"><img src="/assets/icons/upload.svg" style="width:1.3rem" />
-				Upload</button>
+			<button id="scouting-upload" class="cont"><img src="/assets/icons/upload.svg" style="width:1.2rem" />
+				Upload Match</button>
+			<a href="/scouting/report.html" target="_blank" class="nolink"><button class="cont"
+					style="background-color: var(--bg2);"><img src="/assets/icons/download.svg" style="width:1.1rem" /> Download
+					Form</button></a>
 			<!-- <a href="/scouting/report/raw"><button style="background-color: var(--bg2);">Fallback</button></a> -->
 		</div>
 	</div>
@@ -143,6 +147,12 @@
 	.progress-bar {
 		height: 1rem;
 		background-color: var(--wbblue);
+	}
+
+	#scout-buttons {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.5rem;
 	}
 </style>
 <script>

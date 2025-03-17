@@ -371,4 +371,4 @@ pub async fn download_team_info(
 /// won't render it and will download it instead
 #[derive(Responder)]
 #[response(content_type = "application/download-me")]
-pub struct Downloadable(Vec<u8>);
+pub struct Downloadable(pub Vec<u8>);

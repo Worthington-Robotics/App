@@ -1,6 +1,6 @@
 let promptContainer, promptConfirm, promptText;
 
-document.getElementById("prompt-script").addEventListener("load", () => {
+function loadPrompt() {
 	promptContainer = document.getElementById("prompt-container");
 	promptConfirm = document.getElementById("prompt-confirm");
 	promptText = document.getElementById("prompt-text");
@@ -10,6 +10,10 @@ document.getElementById("prompt-script").addEventListener("load", () => {
 		closePrompt();
 		confirmAction();
 	});
+}
+
+document.getElementById("prompt-script").addEventListener("load", () => {
+	loadPrompt();
 });
 
 let confirmAction = () => { };
