@@ -45,7 +45,7 @@
 	.breakdown {
 		padding-bottom: 1.5rem;
 		border: 0.3rem solid;
-		margin: 0.4rem;
+		margin: 0.2rem;
 	}
 
 	.team-input {
@@ -79,6 +79,23 @@
 	.tip.urgent {
 		background-color: var(--bg4);
 		border-color: var(--fg2);
+	}
+
+	.team-coral-breakdown {
+		gap: 0.3rem;
+	}
+
+	.team-coral-breakdown-grid {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		width: 100%;
+		gap: 0.2rem;
+	}
+
+	.coral-score {
+		background-color: var(--bg3);
+		font-size: calc(1.2vw * var(--scale));
+		padding: 0.25rem;
 	}
 </style>
 <script>

@@ -211,12 +211,10 @@ async fn render_alliance_breakdown(
 		}
 	}
 
-	let def_avg = all_stats
-		.iter()
-		.fold(0.0, |acc, x| acc + x.1.current_competition.defense_average)
-		/ 3.0;
-	if def_avg >= 3.0 {
-		tips_string.push_str(&Tip::StrongDefense.render());
+	for (team, stats) in &all_stats {
+		if stats.current_competition.defense_average > 0.25 {
+			tips_string.push_str(&Tip::StrongDefense(*team).render());
+		}
 	}
 
 	if let Some(geezer) = db_teams.values().find(|x| x.rookie_year <= 2008) {
@@ -254,10 +252,35 @@ async fn render_alliance_breakdown(
 
 	let out = out.replace("{{tips}}", &tips_string);
 
+	let coral_breakdown_1 = render_team_coral_breakdown(
+		teams[0].unwrap_or_default(),
+		team_stats
+			.get(&teams[0].unwrap_or_default())
+			.unwrap_or(&default_stats),
+		alliance,
+	);
+	let coral_breakdown_2 = render_team_coral_breakdown(
+		teams[1].unwrap_or_default(),
+		team_stats
+			.get(&teams[1].unwrap_or_default())
+			.unwrap_or(&default_stats),
+		alliance,
+	);
+	let coral_breakdown_3 = render_team_coral_breakdown(
+		teams[2].unwrap_or_default(),
+		team_stats
+			.get(&teams[2].unwrap_or_default())
+			.unwrap_or(&default_stats),
+		alliance,
+	);
+	let out = out.replace("{{coral-breakdown-1}}", &coral_breakdown_1);
+	let out = out.replace("{{coral-breakdown-2}}", &coral_breakdown_2);
+	let out = out.replace("{{coral-breakdown-3}}", &coral_breakdown_3);
+
 	out
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 enum AllianceColor {
 	Red,
 	Blue,
@@ -270,7 +293,7 @@ enum Tip {
 	MecanumBot(TeamNumber),
 	TankBot(TeamNumber),
 	HighSpeed(TeamNumber),
-	StrongDefense,
+	StrongDefense(TeamNumber),
 	CantProcess,
 }
 
@@ -284,7 +307,7 @@ impl Tip {
 			Self::MecanumBot(team) => format!("Mechanum Bot:<br />{team}"),
 			Self::TankBot(team) => format!("Tank Bot:<br />{team}"),
 			Self::HighSpeed(team) => format!("High Speed:<br />{team}"),
-			Self::StrongDefense => "Strong Defense".into(),
+			Self::StrongDefense(team) => format!("Strong Defense:<br />{team}"),
 			Self::CantProcess => "Can't Process".into(),
 		};
 
@@ -308,4 +331,28 @@ fn get_expected_points(stats: &CombinedTeamStats, epa: f32) -> f32 {
 		+ stats.all_time.apa * all_time_weight
 		+ stats.current_competition.apa * current_comp_weight)
 		/ total
+}
+
+fn render_team_coral_breakdown(
+	team: TeamNumber,
+	stats: &CombinedTeamStats,
+	alliance: AllianceColor,
+) -> String {
+	let out = include_str!("../components/scouting/team_coral_breakdown.min.html");
+	let out = out.replace("{{team}}", &team.to_string());
+
+	let out = out.replace(
+		"\"{{bg-color}}\"",
+		match alliance {
+			AllianceColor::Red => "var(--wbredbg)",
+			AllianceColor::Blue => "var(--wbbluebg)",
+		},
+	);
+
+	let out = out.replace("{{l1}}", &format!("{:.2}", stats.all_time.l1_value));
+	let out = out.replace("{{l2}}", &format!("{:.2}", stats.all_time.l2_value));
+	let out = out.replace("{{l3}}", &format!("{:.2}", stats.all_time.l3_value));
+	let out = out.replace("{{l4}}", &format!("{:.2}", stats.all_time.l4_value));
+
+	out
 }
