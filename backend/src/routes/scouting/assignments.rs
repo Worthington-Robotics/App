@@ -391,7 +391,7 @@ pub async fn claim_best(
 		claims.blue_3,
 	];
 
-	const MEAN_EPA: f32 = 25.0;
+	const MEAN_EPA: f32 = 35.0;
 
 	let mut lowest_distance = f32::INFINITY;
 	let mut lowest_index = 0;
