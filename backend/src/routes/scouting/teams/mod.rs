@@ -10,6 +10,7 @@ use rocket::{
 		content::{RawHtml, RawJson},
 		Redirect,
 	},
+	Responder,
 };
 use rocket_async_compression::{Compress, Level as CompressionLevel};
 use serde::Serialize;
@@ -19,7 +20,7 @@ use tracing::{error, span, Level};
 use crate::{
 	api::statbotics::StatboticsClient,
 	db::{Database, DatabaseImpl},
-	routes::{OptionalSessionID, SessionID},
+	routes::{assets::CacheFor, OptionalSessionID, SessionID},
 	scouting::{stats::CombinedTeamStats, status::RobotStatus, Competition, Team, TeamNumber},
 	State,
 };
@@ -35,17 +36,23 @@ pub async fn teams(
 	session_id: OptionalSessionID<'_>,
 	state: &State,
 	competition: Option<&str>,
-) -> Result<Compress<PageOrRedirect>, Status> {
+) -> Result<OptionalCacheFor<Compress<PageOrRedirect>>, Status> {
 	let span = span!(Level::DEBUG, "Teams");
 	let _enter = span.enter();
 
 	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
 	let Some(session_id) = session_id.to_session_id() else {
-		return Ok(Compress(redirect, CompressionLevel::Fastest));
+		return Ok(OptionalCacheFor::NoCache(Compress(
+			redirect,
+			CompressionLevel::Fastest,
+		)));
 	};
 
 	let Ok(requesting_member) = session_id.get_requesting_member(state).await else {
-		return Ok(Compress(redirect, CompressionLevel::Fastest));
+		return Ok(OptionalCacheFor::NoCache(Compress(
+			redirect,
+			CompressionLevel::Fastest,
+		)));
 	};
 
 	let lock = state.db.read().await;
@@ -125,10 +132,24 @@ pub async fn teams(
 
 	let page = create_page("Teams", &page, Some(Scope::Scouting));
 
-	Ok(Compress(
+	let should_cache = parsed_competition.is_none();
+
+	let out = Compress(
 		PageOrRedirect::Page(RawHtml(page)),
 		CompressionLevel::Fastest,
-	))
+	);
+
+	if should_cache {
+		Ok(OptionalCacheFor::Cache(CacheFor(out, 100)))
+	} else {
+		Ok(OptionalCacheFor::NoCache(out))
+	}
+}
+
+#[derive(Responder)]
+pub enum OptionalCacheFor<R> {
+	Cache(CacheFor<R>),
+	NoCache(R),
 }
 
 async fn render_team(

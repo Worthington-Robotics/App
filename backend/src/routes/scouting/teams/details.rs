@@ -2,6 +2,7 @@ use rocket::{
 	http::Status,
 	response::{content::RawHtml, Redirect},
 };
+use rocket_async_compression::{Compress, Level as CompressionLevel};
 use strum::IntoEnumIterator;
 use tracing::{error, span, Level};
 
@@ -31,13 +32,16 @@ pub async fn team_details(
 	session_id: OptionalSessionID<'_>,
 	state: &State,
 	competition: Option<&str>,
-) -> Result<PageOrRedirect, Status> {
+) -> Result<Compress<PageOrRedirect>, Status> {
 	let span = span!(Level::DEBUG, "Team details page");
 	let _enter = span.enter();
 
 	let competition_str = competition.unwrap_or("Current");
 
-	let redirect = PageOrRedirect::Redirect(Redirect::to("/login"));
+	let redirect = Compress(
+		PageOrRedirect::Redirect(Redirect::to("/login")),
+		CompressionLevel::Fastest,
+	);
 	let Some(session_id) = session_id.to_session_id() else {
 		return Ok(redirect);
 	};
@@ -664,7 +668,10 @@ pub async fn team_details(
 
 	let page = create_page("Team Details", &page, Some(Scope::Scouting));
 
-	Ok(PageOrRedirect::Page(RawHtml(page)))
+	Ok(Compress(
+		PageOrRedirect::Page(RawHtml(page)),
+		CompressionLevel::Fastest,
+	))
 }
 
 fn render_reef_level(enabled: bool) -> &'static str {
