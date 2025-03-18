@@ -172,7 +172,7 @@
 		</div>
 		<div class="cont">
 			<input type="checkbox" name="collision" id="collision" class="field" />
-			<label for="collision">Collision During Auto?</label>
+			<label for="collision">Collision With Another Robot During Auto?</label>
 		</div>
 		<div class="cont">
 			<input type="checkbox" name="park" id="park" class="field" />
@@ -194,9 +194,9 @@
 	<label for="notes">Match Notes</label>
 	<textarea name="notes" id="notes" class="round border" placeholder="Enter extra match notes here..."></textarea>
 	<div class="cont">
-		<button id="clear">Clear</button>
-		<button id="submit">Submit</button>
-		<button id="download">Download</button>
+		<button class="cont" id="clear"><img src="/assets/icons/error.svg" style="width:1.1rem" /> Clear</button>
+		<button class="cont" id="submit"><img src="/assets/icons/check.svg" style="width:1.1rem" /> Submit</button>
+		<button class="cont" id="download"><img src="/assets/icons/download.svg" style="width:1.1rem" /> Download</button>
 	</div>
 </div>
 <script>
@@ -988,7 +988,7 @@
 			hideTeleopConfirm();
 			hideAutoConfirm();
 			updateEvents();
-			
+
 			document.getElementById("won").checked = false;
 			document.getElementById("notes").value = "";
 			document.getElementById("auto-leave").checked = false;
