@@ -217,7 +217,7 @@ pub async fn team_details(
 		"{{auto-algae-accuracy}}",
 		stat_card_pct!(
 			team_stats,
-			&format!("{STAT_ALGAE} Avg"),
+			&format!("{STAT_ALGAE} Acc"),
 			auto_algae_accuracy,
 			"auto_algae_accuracy",
 			true
