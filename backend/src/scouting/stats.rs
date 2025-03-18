@@ -565,7 +565,7 @@ impl Fairing for UpdateStats {
 
 				std::mem::drop(lock);
 
-				rocket::tokio::time::sleep(Duration::from_secs(30)).await;
+				rocket::tokio::time::sleep(Duration::from_secs(20)).await;
 			}
 		});
 	}
