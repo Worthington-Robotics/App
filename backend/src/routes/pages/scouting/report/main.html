@@ -261,11 +261,13 @@
 			return;
 		}
 
+		let icon = `<img src="/assets/icons/play.svg" style="width:1rem" />`;
+
 		if (M.timerRunning) {
-			e.target.innerHTML = "Play";
+			e.target.innerHTML = `${icon} Play`;
 		} else {
 			resetTimeBase();
-			e.target.innerHTML = "Pause";
+			e.target.innerHTML = `${icon} Pause`;
 		}
 		M.timerRunning = !M.timerRunning;
 	});
