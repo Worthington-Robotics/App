@@ -988,9 +988,12 @@
 			hideTeleopConfirm();
 			hideAutoConfirm();
 			updateEvents();
-
+			
 			document.getElementById("won").checked = false;
 			document.getElementById("notes").value = "";
+			document.getElementById("auto-leave").checked = false;
+			document.getElementById("park").checked = false;
+			updateBreakdown();
 
 			document.getElementById("time-speed").value = "1";
 			document.getElementById("time-pause-button").innerHTML = "Play";
