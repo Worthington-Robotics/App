@@ -1,5 +1,6 @@
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap, io::Cursor, ops::Deref, sync::Arc};
 
+use chrono::Utc;
 use itertools::Itertools;
 use rocket::{
 	form::{Form, FromForm},
@@ -9,17 +10,22 @@ use rocket::{
 		Redirect,
 	},
 };
+use svg::node::element::{path::Data as PathData, Path, Style, Text};
 use tracing::{error, span, Level};
 
-use crate::scouting::{
-	autos::{Auto, AutoStats},
-	TeamNumber,
-};
 use crate::{
 	db::Database,
 	routes::{create_page, OptionalSessionID, PageOrRedirect, Scope, SessionID},
+	scouting::autos::{get_auto_event_graphs, AutoEventGraphs},
 	util::generate_id,
-	State,
+	AutoImageCacheEntry, State,
+};
+use crate::{
+	routes::assets::{CacheFor, SvgDynamic},
+	scouting::{
+		autos::{Auto, AutoStats},
+		TeamNumber,
+	},
 };
 
 use super::stats::{
@@ -355,4 +361,146 @@ pub async fn get_autos(
 	})?;
 
 	Ok(RawJson(autos))
+}
+
+#[rocket::get("/scouting/auto/<team>/image.svg")]
+pub async fn auto_image(
+	state: &State,
+	session_id: SessionID<'_>,
+	team: TeamNumber,
+) -> Result<CacheFor<SvgDynamic>, Status> {
+	let span = span!(Level::DEBUG, "Getting auto image");
+	let _enter = span.enter();
+
+	session_id.get_requesting_member(state).await?;
+
+	let mut images_lock = state.auto_images.lock().await;
+	let db_lock = state.db.read().await;
+
+	let mut image = images_lock.get(&team);
+	if let Some(image2) = image {
+		if (Utc::now() - image2.entry_time).num_seconds() > 100 {
+			image = None;
+		}
+	}
+
+	let image = if let Some(image) = image {
+		image.clone()
+	} else {
+		let matches = db_lock.get_all_match_stats().await.map_err(|e| {
+			error!("Failed to get match stats from database: {e}");
+			Status::InternalServerError
+		})?;
+		let matches: Vec<_> = matches.filter(|x| x.team_number == team).collect();
+
+		let graphs = get_auto_event_graphs(&matches);
+
+		let image = render_auto_image(&graphs);
+
+		let entry = Arc::new(AutoImageCacheEntry {
+			image,
+			entry_time: Utc::now(),
+		});
+		images_lock.insert(team, entry.clone());
+		entry
+	};
+
+	Ok(CacheFor(SvgDynamic(image.image.clone()), 200))
+}
+
+/// Renders an auto as an SVG image
+pub fn render_auto_image(graphs: &AutoEventGraphs) -> Vec<u8> {
+	let image_height = 160.0;
+	let image_width = 240.0;
+
+	let graph_start_x = 30.0;
+	let graph_end_x = image_width - 5.0;
+	let all_graphs_height = 120.0;
+	let graph_separation = 2.0;
+
+	let mut document = svg::Document::new().set("viewBox", (0, 0, image_width, image_height));
+
+	// Draw the graphs
+	for (i, (graph_title, color, graph)) in [
+		("Int", "#2134d9", &graphs.intakes),
+		("L4", "#f5f5f5", &graphs.l4_scores),
+		("L3", "#f5f5f5", &graphs.l3_scores),
+		("L2", "#f5f5f5", &graphs.l2_scores),
+		("L1", "#f5f5f5", &graphs.l1_scores),
+		("Alg", "#16cd9c", &graphs.algae_scores),
+	]
+	.into_iter()
+	.enumerate()
+	{
+		let dx = (graph_end_x - graph_start_x) / graph.len() as f32;
+		let dy = all_graphs_height / 6.0;
+
+		// Start from the middle and move up and down
+		let y_start = dy * i as f32 + graph_separation / 2.0;
+		let y_end = y_start + dy * 0.5 - graph_separation / 2.0;
+		let y_range = y_end - y_start;
+
+		let mut point_data = PathData::new();
+		let first = graph[0];
+		point_data = point_data.move_to((graph_start_x, y_end - first * y_range));
+
+		for (j, value) in graph.iter().enumerate() {
+			let x = graph_start_x + j as f32 * dx;
+			let y = y_end - *value * y_range;
+			point_data = point_data.line_to((x, y));
+		}
+
+		let path = Path::new()
+			.set("fill", "none")
+			.set("stroke", color)
+			.set("stroke-width", 2.75)
+			.set("stroke-linejoin", "round")
+			.set("d", point_data);
+
+		document = document.add(path);
+
+		let text = Text::new(graph_title)
+			.set("x", graph_start_x * 0.05)
+			.set("y", y_end + 0.5 * y_range)
+			.set("class", "graph-title");
+		document = document.add(text);
+	}
+
+	// Draw time intervals on the bottom axis
+	for i in 0..7 {
+		let x = graph_start_x + (graph_end_x - graph_start_x) / 6.5 * i as f32;
+		let y = all_graphs_height + 10.0;
+
+		let text = format!("{:.0}", 15.0 / 6.0 * i as f32);
+
+		let text = Text::new(text).set("x", x).set("y", y).set("class", "time");
+		document = document.add(text);
+	}
+
+	document = document.add(Style::new(
+		r#"
+		@font-face {
+			font-family: 'Rubik2';
+			font-style: normal;
+			font-weight: 300 900;
+			src: url(https://fonts.gstatic.com/s/rubik/v28/iJWKBXyIfDnIV7nBrXyw1W3fxIk.woff2) format('woff2');
+			unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+		}
+
+		.graph-title {
+			fill: #f5f5f5;
+			font: 15px "Rubik2", sans-serif;
+		}
+
+		.time {
+			fill: #f5f5f5;
+			font: 10px "Rubik2", sans-serif;
+		}
+	"#,
+	));
+
+	let mut out = Cursor::new(Vec::new());
+	svg::write(&mut out, &document).expect("Should have no errors writing to a string");
+
+	out.into_inner()
 }

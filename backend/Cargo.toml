@@ -32,6 +32,7 @@ sqlx = { version = "0.8.0", features = [
 ] }
 strum = { version = "0.26.3" }
 strum_macros = { version = "0.26.3" }
+svg = "0.18.0"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 

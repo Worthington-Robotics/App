@@ -4,7 +4,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::util::{fix_zero, vector_splat};
 
-use super::{game::get_coral_points, matches::MatchStats, TeamNumber};
+use super::{
+	game::{get_coral_points, ReefLevel},
+	matches::MatchStats,
+	TeamNumber,
+};
 
 /// A single autonomous routine
 #[derive(Deserialize, Serialize, Clone)]
@@ -118,4 +122,103 @@ pub fn calculate_auto_stats(
 
 		auto_stats.insert(auto.id, stats);
 	}
+}
+
+/// How many steps are in the auto event graph, out of 15 seconds
+const EVENT_GRAPH_RESOLUTION: usize = 30;
+
+pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
+	if matches.is_empty() {
+		return AutoEventGraphs::default();
+	}
+
+	let mut intake_times = Vec::new();
+	let mut l1_times = Vec::new();
+	let mut l2_times = Vec::new();
+	let mut l3_times = Vec::new();
+	let mut l4_times = Vec::new();
+	let mut algae_times = Vec::new();
+
+	fn clamp_timestamp(timestamp: f32) -> f32 {
+		if timestamp < 0.75 {
+			0.75
+		} else if timestamp > 15.0 {
+			15.0
+		} else {
+			timestamp
+		}
+	}
+
+	for m in matches {
+		for e in &m.auto_coral_attempts {
+			let timestamp = clamp_timestamp(e.timestamp);
+			match e.level {
+				ReefLevel::L1 => l1_times.push(timestamp),
+				ReefLevel::L2 => l2_times.push(timestamp),
+				ReefLevel::L3 => l3_times.push(timestamp),
+				ReefLevel::L4 => l4_times.push(timestamp),
+			}
+		}
+
+		for e in &m.auto_intake_events {
+			intake_times.push(clamp_timestamp(e.timestamp));
+		}
+
+		for e in &m.auto_algae_events {
+			algae_times.push(clamp_timestamp(e.timestamp));
+		}
+	}
+
+	let mut intakes = [0.0; EVENT_GRAPH_RESOLUTION];
+	let mut l1_scores = [0.0; EVENT_GRAPH_RESOLUTION];
+	let mut l2_scores = [0.0; EVENT_GRAPH_RESOLUTION];
+	let mut l3_scores = [0.0; EVENT_GRAPH_RESOLUTION];
+	let mut l4_scores = [0.0; EVENT_GRAPH_RESOLUTION];
+	let mut algae_scores = [0.0; EVENT_GRAPH_RESOLUTION];
+
+	fn get_graph_height(i: usize, times: &[f32]) -> f32 {
+		if times.is_empty() {
+			return 0.0;
+		}
+
+		let dx = 15.0 / EVENT_GRAPH_RESOLUTION as f32;
+		let center = i as f32 * dx;
+		let left_bound = center - dx;
+		let right_bound = center + dx;
+
+		let count = times
+			.iter()
+			.filter(|x| **x >= left_bound && **x <= right_bound)
+			.count();
+
+		count as f32 / times.len() as f32
+	}
+
+	for i in 0..EVENT_GRAPH_RESOLUTION {
+		intakes[i] = get_graph_height(i, &intake_times);
+		l1_scores[i] = get_graph_height(i, &l1_times);
+		l2_scores[i] = get_graph_height(i, &l2_times);
+		l3_scores[i] = get_graph_height(i, &l3_times);
+		l4_scores[i] = get_graph_height(i, &l4_times);
+		algae_scores[i] = get_graph_height(i, &algae_times);
+	}
+
+	AutoEventGraphs {
+		intakes,
+		l1_scores,
+		l2_scores,
+		l3_scores,
+		l4_scores,
+		algae_scores,
+	}
+}
+
+#[derive(Default, Clone)]
+pub struct AutoEventGraphs {
+	pub intakes: [f32; EVENT_GRAPH_RESOLUTION],
+	pub l1_scores: [f32; EVENT_GRAPH_RESOLUTION],
+	pub l2_scores: [f32; EVENT_GRAPH_RESOLUTION],
+	pub l3_scores: [f32; EVENT_GRAPH_RESOLUTION],
+	pub l4_scores: [f32; EVENT_GRAPH_RESOLUTION],
+	pub algae_scores: [f32; EVENT_GRAPH_RESOLUTION],
 }

@@ -165,7 +165,10 @@ pub struct MatchStats {
 	pub auto_intake_successes: u8,
 	/// All of the auto intake events
 	#[serde(default)]
-	pub auto_intake_events: Vec<IntakeAttempt>,
+	pub auto_intake_events: Vec<Attempt>,
+	/// All of the auto algae score events
+	#[serde(default)]
+	pub auto_algae_events: Vec<Attempt>,
 	/// Whether or not the robot collided with another during auto
 	pub auto_collision: bool,
 	/// The coral attempts during teleop
@@ -250,9 +253,9 @@ pub struct CoralAttempt {
 	pub timestamp: f32,
 }
 
-/// A single intake attempt
+/// A single event attempt
 #[derive(Serialize, Deserialize, Clone)]
-pub struct IntakeAttempt {
+pub struct Attempt {
 	/// Whether the attempt was successful
 	pub successful: bool,
 	/// The timestamp when the event happened

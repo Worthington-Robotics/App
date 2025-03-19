@@ -7,7 +7,7 @@ use api::{first::FirstClient, statbotics::StatboticsClient};
 use argon2::Argon2;
 use attendance::AttendanceFairing;
 use auth::SessionManager;
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 #[cfg(feature = "cachedb")]
 use db::cached::SyncCache;
 use db::{Database, DatabaseImpl};
@@ -219,6 +219,7 @@ async fn rocket() -> _ {
 				routes::scouting::autos::create_auto_page,
 				routes::scouting::autos::get_autos,
 				routes::scouting::autos::auto_details,
+				routes::scouting::autos::auto_image,
 				routes::scouting::status::team_status_page,
 				routes::scouting::status::update_status,
 				routes::scouting::assignments::assignments,
@@ -291,7 +292,13 @@ pub struct AppState {
 	pub statbotics_client: StatboticsClient,
 	pub team_stats: Arc<RwLock<HashMap<TeamNumber, CombinedTeamStats>>>,
 	pub auto_stats: Arc<RwLock<HashMap<String, AutoStats>>>,
-	pub auto_images: Arc<Mutex<HashMap<String, Vec<u8>>>>,
+	pub auto_images: Arc<Mutex<HashMap<TeamNumber, Arc<AutoImageCacheEntry>>>>,
+}
+
+#[derive(Clone)]
+pub struct AutoImageCacheEntry {
+	pub image: Vec<u8>,
+	pub entry_time: DateTime<Utc>,
 }
 
 pub type State = rocket::State<AppState>;

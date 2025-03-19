@@ -754,6 +754,7 @@
 			auto_intake_attempts: stats.autoIntakeAttempts,
 			auto_intake_successes: stats.autoIntakeSuccesses,
 			auto_intake_events: stats.autoIntakeEvents,
+			auto_algae_events: stats.autoAlgaeEvents,
 			teleop_coral_attempts: stats.teleopCoralAttempts,
 			teleop_intake_attempts: stats.teleopIntakeAttempts,
 			teleop_intake_successes: stats.teleopIntakeSuccesses,
@@ -791,6 +792,7 @@
 		let autoIntakeAttempts = 0;
 		let autoIntakeSuccesses = 0;
 		let autoIntakeEvents = [];
+		let autoAlgaeEvents = [];
 
 		let teleopCoralAttempts = [];
 		let teleopIntakeAttempts = 0;
@@ -836,6 +838,11 @@
 					autoAlgaeScores++;
 					totalScore += 4;
 				}
+				let attempt = {
+					successful: event.successful,
+					timestamp: event.timestamp,
+				};
+				autoAlgaeEvents.push(attempt);
 			} else if (event.id == "processor") {
 				processorAttempts++;
 				if (event.successful) {
@@ -927,6 +934,7 @@
 			autoIntakeAttempts: autoIntakeAttempts,
 			autoIntakeSuccesses: autoIntakeSuccesses,
 			autoIntakeEvents: autoIntakeEvents,
+			autoAlgaeEvents: autoAlgaeEvents,
 			teleopCoralAttempts: teleopCoralAttempts,
 			teleopIntakeAttempts: teleopIntakeAttempts,
 			teleopIntakeSuccesses: teleopIntakeSuccesses,
@@ -1233,7 +1241,7 @@
 	}
 
 	#agitate {
-		background-color: #12e3ab;
+		background-color: #16cd9c;
 	}
 
 	.success {
