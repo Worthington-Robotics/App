@@ -12,8 +12,8 @@
 			<button id="time-pause-button" class="cont" style="gap:.5rem"><img src="/assets/icons/play.svg"
 					style="width:1rem" /> Start</button>
 			<select id="time-speed" style="background-color:var(--bg3);">
-				<option value="2" selected>2x</option>
-				<option value="1.5" selected>1.5x</option>
+				<option value="2">2x</option>
+				<option value="1.5">1.5x</option>
 				<option value="1" selected>1x</option>
 				<option value="0.5">0.5x</option>
 				<option value="0.25">0.25x</option>
@@ -161,7 +161,7 @@
 	</div>
 	<label for="status">Robot Status</label>
 	<select id="status" name="status">
-		<option value="Good">Good</option>
+		<option value="Good" id="good-status">Good</option>
 		<option value="Questionable">Questionable</option>
 		<option value="Broken">Broken</option>
 	</select>
@@ -255,19 +255,19 @@
 		M.baseTime = M.time;
 	}
 
+	let playIcon = `<img src="/assets/icons/play.svg" style="width:1rem" />`;
+
 	document.getElementById("time-pause-button").addEventListener("click", (e) => {
 		// Match is over
 		if (M.time > 140) {
 			return;
 		}
 
-		let icon = `<img src="/assets/icons/play.svg" style="width:1rem" />`;
-
 		if (M.timerRunning) {
-			e.target.innerHTML = `${icon} Play`;
+			e.target.innerHTML = `${playIcon} Play`;
 		} else {
 			resetTimeBase();
-			e.target.innerHTML = `${icon} Pause`;
+			e.target.innerHTML = `${playIcon} Pause`;
 		}
 		M.timerRunning = !M.timerRunning;
 	});
@@ -998,13 +998,15 @@
 			updateEvents();
 
 			document.getElementById("won").checked = false;
+			document.getElementById("good-status").selected = true;
 			document.getElementById("notes").value = "";
+			document.getElementById("showed-up").checked = true;
 			document.getElementById("auto-leave").checked = false;
 			document.getElementById("park").checked = false;
 			updateBreakdown();
 
 			document.getElementById("time-speed").value = "1";
-			document.getElementById("time-pause-button").innerHTML = "Play";
+			document.getElementById("time-pause-button").innerHTML = `${playIcon} Start`;
 		});
 	});
 
