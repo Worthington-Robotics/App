@@ -1,17 +1,21 @@
 {{worbots-header}}{{error}}
-<h1>Create Auto</h1>
-<form id="auto-form" class="cont col">
+<div class="cont col">
+	<h1>Create Auto</h1>
+	<h3 class="details-subtitle">{{team-number}}</h3>
 	<button onclick="history.back()">Back</button>
-	<input type="text" name="name" id="name-field" class="field" placeholder="Enter auto name..." />
-	<label for="coral">Coral</label>
-	<input type="number" class="field" name="coral" id="coral" />
-	<label for="algae">Algae</label>
-	<input type="number" class="field" name="algae" id="algae" />
-	<label for="agitates">Agitates Algae?</label>
-	<input type="checkbox" class="field" name="agitates" id="agitates" />
+	<br />
+	<form id="auto-form" class="cont col">
+		<input type="text" name="name" id="name-field" class="field" placeholder="Enter auto name..." />
+		<label for="coral">Coral</label>
+		<input type="number" class="field" name="coral" id="coral" />
+		<label for="algae">Algae</label>
+		<input type="number" class="field" name="algae" id="algae" />
+		<label for="agitates">Agitates Algae?</label>
+		<input type="checkbox" class="field" name="agitates" id="agitates" />
 
-	<input type="submit" id="submit" value="Save" />
-</form>
+		<input type="submit" id="submit" value="Save" />
+	</form>
+</div>
 <script>
 	function onSubmit(event) {
 		event.preventDefault();
