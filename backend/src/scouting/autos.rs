@@ -151,6 +151,9 @@ pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
 
 	for m in matches {
 		for e in &m.auto_coral_attempts {
+			if e.timestamp == 0.0 {
+				continue;
+			}
 			let timestamp = clamp_timestamp(e.timestamp);
 			match e.level {
 				ReefLevel::L1 => l1_times.push(timestamp),
@@ -161,10 +164,16 @@ pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
 		}
 
 		for e in &m.auto_intake_events {
+			if e.timestamp == 0.0 {
+				continue;
+			}
 			intake_times.push(clamp_timestamp(e.timestamp));
 		}
 
 		for e in &m.auto_algae_events {
+			if e.timestamp == 0.0 {
+				continue;
+			}
 			algae_times.push(clamp_timestamp(e.timestamp));
 		}
 	}
