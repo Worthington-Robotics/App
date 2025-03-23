@@ -65,6 +65,7 @@ impl Team {
 	Deserialize,
 	IntoStaticStr,
 	FromFormField,
+	Default,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum Competition {
@@ -73,6 +74,7 @@ pub enum Competition {
 	MiamiValley,
 	Champs,
 	States,
+	#[default]
 	Week1,
 	Week2,
 	Week3,

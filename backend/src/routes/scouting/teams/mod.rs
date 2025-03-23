@@ -330,12 +330,13 @@ pub struct HistoricalPoint {
 }
 
 /// Get the chartsjs consumable list of historical data points for a stat
-#[rocket::get("/api/get_teams_stat/<stat>?<competition>")]
+#[rocket::get("/api/get_teams_stat/<stat>?<competition>&<scope>")]
 pub async fn get_teams_stat(
 	state: &State,
 	session_id: SessionID<'_>,
 	competition: &str,
 	stat: &str,
+	scope: &str,
 ) -> Result<Compress<RawJson<String>>, Status> {
 	let span = span!(Level::DEBUG, "Getting stats for all teams");
 	let _enter = span.enter();
@@ -378,8 +379,11 @@ pub async fn get_teams_stat(
 	let default_stats = CombinedTeamStats::default();
 	for team in teams {
 		let team_stats = stats_lock.get(&team.number).unwrap_or(&default_stats);
-		let team_stats = if competition == "Current" {
-			&team_stats.current_competition
+		let team_stats = if scope == "this_competition" {
+			&team_stats
+				.per_competition
+				.get(&parsed_competition.unwrap_or_default())
+				.unwrap_or(&default_stats.current_competition)
 		} else {
 			&team_stats.all_time
 		};

@@ -7,6 +7,7 @@ use rocket::{
 	Orbit, Rocket,
 };
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 use tracing::error;
 
 use crate::{
@@ -27,6 +28,7 @@ use super::{
 pub struct CombinedTeamStats {
 	pub historical: Vec<TeamStats>,
 	pub current_competition: TeamStats,
+	pub per_competition: HashMap<Competition, TeamStats>,
 	pub all_time: TeamStats,
 }
 
@@ -55,8 +57,9 @@ impl CombinedTeamStats {
 
 		let current_competition_stats = if let Some(current_competition) = current_competition {
 			let current_competition_matches: Vec<_> = matches
-				.into_iter()
+				.iter()
 				.filter(|x| x.competition.is_some_and(|x| x == current_competition))
+				.cloned()
 				.collect();
 
 			calculate_team_stats(team, &current_competition_matches)
@@ -64,9 +67,20 @@ impl CombinedTeamStats {
 			all_time.clone()
 		};
 
+		let mut per_competition = HashMap::new();
+		for competition in Competition::iter() {
+			let matches: Vec<_> = matches
+				.iter()
+				.filter(|x| x.competition == Some(competition))
+				.cloned()
+				.collect();
+			per_competition.insert(competition, calculate_team_stats(team, &matches));
+		}
+
 		Self {
 			historical,
 			current_competition: current_competition_stats,
+			per_competition,
 			all_time,
 		}
 	}

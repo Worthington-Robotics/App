@@ -10,6 +10,10 @@
 	</div>
 	<div class="cont">
 		<select id="stat">{{stat-options}}</select>
+		<select id="stat-scope">
+			<option value="this_competition" selected>This Competition</option>
+			<option value="all_time">All Time</option>
+		</select>
 	</div>
 	<br />
 	<div id="pages" class="cont">
@@ -47,7 +51,8 @@
 		color: var(--fg);
 	}
 
-	#stat {
+	#stat,
+	#stat-scope {
 		width: 10rem;
 	}
 
@@ -287,16 +292,18 @@
 	// Stats logic
 	let statsRegistry = {};
 
-	document.getElementById("stat").addEventListener("change", async (e) => {
-		e.preventDefault();
-
-		let stat = e.target.value;
+	async function updateStats(event) {
+		event.preventDefault();
+		let stat = document.getElementById("stat").value;
 		if (stat == "none") {
 			return;
 		}
-		let data = statsRegistry[stat];
+		let scope = document.getElementById("stat-scope").value;
+
+		let cacheKey = `${stat}.${scope}`;
+		let data = statsRegistry[cacheKey];
 		if (data == undefined) {
-			let response = await fetch(`/api/get_teams_stat//${stat}?competition={{competition}}`);
+			let response = await fetch(`/api/get_teams_stat//${stat}?competition={{competition}}&scope=${scope}`);
 			if (response.status != 200) {
 				setError("Failed to get data for stat: " + response.statusText);
 				return;
@@ -305,7 +312,7 @@
 			let text = await response.text();
 			try {
 				let newData = JSON.parse(text);
-				statsRegistry[stat] = newData;
+				statsRegistry[cacheKey] = newData;
 				data = newData;
 			} catch (e) {
 				setError("Failed to parse data for stat: " + e);
@@ -324,6 +331,9 @@
 		let header = document.getElementById("stat-header");
 		header.innerHTML = data.abbreviation;
 		header.dataset.sorted = false;
-	});
+	}
+
+	document.getElementById("stat").addEventListener("change", updateStats);
+	document.getElementById("stat-scope").addEventListener("change", updateStats);
 </script>
 {{footer}}
