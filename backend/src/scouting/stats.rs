@@ -167,7 +167,7 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		match_count_f32 = 1.0;
 	}
 
-	let cycle_time_average = ctx.cycle_time_sum as f32 / match_count_f32;
+	let cycle_time_average = ctx.cycle_time_sum as f32 / fix_zero(ctx.cycle_time_count as f32);
 	let cycle_time_deviation = standard_deviation(&ctx.cycle_times, cycle_time_average);
 
 	let reliability = if ctx.breaks as u16 >= ctx.attendance {
@@ -300,6 +300,7 @@ struct StatsContext {
 	defenses: u16,
 	penalties: u8,
 	cycle_time_sum: f32,
+	cycle_time_count: u8,
 	cycle_time_consistency_sum: f32,
 	/// Total number of matches where cycle time consistency was added to the sum
 	cycle_time_consistency_count: u16,
@@ -419,7 +420,11 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	ctx.defenses += stats.defenses as u16;
 	ctx.penalties += stats.penalties;
 
-	ctx.cycle_time_sum += stats.cycle_time;
+	if stats.cycle_time > 1.5 {
+		ctx.cycle_time_sum += stats.cycle_time;
+		ctx.cycle_time_count += 1;
+	}
+
 	if let Some(consistency) = calculate_cycle_consistency(&stats.cycle_times) {
 		ctx.cycle_time_consistency_sum += consistency;
 		ctx.cycle_time_consistency_count += 1;
