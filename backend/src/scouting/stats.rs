@@ -376,7 +376,7 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	}
 	ctx.coral_score_total += coral_score_total as u16;
 
-	let algae_score_total = stats.processor_scores as u16 * 6 + stats.net_shots as u16 * 4;
+	let algae_score_total = stats.processor_scores as u16 * 2 + stats.net_shots as u16 * 4;
 	ctx.algae_score_total += algae_score_total;
 
 	teleop_score += coral_score_total;
@@ -384,9 +384,6 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 
 	if stats.climb_attempted != ClimbAbility::None {
 		ctx.climb_attempts += 1;
-	}
-	if stats.climb_attempted != ClimbAbility::None || stats.park {
-		climb_score += 2;
 	}
 
 	if stats.climb_result == ClimbResult::Succeeded && stats.climb_time > 0.0 {
@@ -397,6 +394,9 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		} else if stats.climb_attempted == ClimbAbility::Deep {
 			climb_score += 12;
 		}
+	} else if stats.park {
+		// Park points only count if you don't climb
+		climb_score += 2;
 	}
 	if stats.climb_result == ClimbResult::Fell {
 		ctx.climb_falls += 1;

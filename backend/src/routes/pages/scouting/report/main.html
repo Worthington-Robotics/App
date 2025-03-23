@@ -847,7 +847,7 @@
 				processorAttempts++;
 				if (event.successful) {
 					processorScores++;
-					totalScore += 4;
+					totalScore += 2;
 				}
 			} else if (event.id == "net") {
 				totalScore += 4;
@@ -903,15 +903,14 @@
 		}
 
 		// Climb points
-		if (M.climbType != "none" || document.getElementById("park").checked) {
-			totalScore += 2;
-		}
 		if (M.climbResult == "succeeded") {
 			if (M.climbType == "shallow") {
 				totalScore += 6;
 			} else if (M.climbType == "deep") {
 				totalScore += 12;
 			}
+		} else if (document.getElementById("park").checked) {
+			totalScore += 2;
 		}
 
 		let cycleTimeSum = 0;
