@@ -1,6 +1,6 @@
 {{worbots-header}}{{error}}{{prompt}}
 <div class="cont col" id="checklist-details">
-	<h1>{{name}}</h1>
+	<h1 style="max-width: 80%;">{{name}}</h1>
 	<div class="cont">
 		<a href="/checklists"><button>Back</button></a>
 		<a href="/create_checklist?id={{id}}">{{edit}}</a>
@@ -73,12 +73,18 @@
 	}
 
 	function deleteTask(e) {
+		if (e.target.classList.contains("deleting")) {
+			return;
+		}
+		e.target.classList.add("deleting");
+
 		let id = e.target.parentElement.parentElement.dataset.id;
 		fetch(`/api/delete_task/${id}`, {
 			method: "DELETE",
 		}).then((resp) => {
 			if (resp.status != 200) {
 				setError(resp.statusText);
+				e.target.classList.remove("deleting");
 			} else {
 				e.target.parentElement.parentElement.remove();
 			}
@@ -140,6 +146,7 @@
 
 	.task-text {
 		margin-right: auto;
+		text-align: center;
 	}
 
 	#tasks-cont>.item {

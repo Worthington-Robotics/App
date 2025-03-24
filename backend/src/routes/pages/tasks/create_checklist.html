@@ -4,6 +4,11 @@
 	<button onclick="history.back()">Back</button>
 	<input type="text" name="name" id="name-field" class="create-cl-field" placeholder="Enter checklist name..."
 		value="{{name}}" />
+	<label for="template">Template</label>
+	<select id="template" name="template">
+		<option value="none" selected>Empty</option>
+		{{template-options}}
+	</select>
 
 	<input type="submit" id="submit" value="Save" />
 </form>
@@ -15,9 +20,12 @@
 
 		let nameEncoded = encodeURIComponent(name);
 
+		let template = document.getElementById("template").value;
+		let templateString = template == "none" ? "" : `&template=${template}`;
+
 		fetch("/api/create_checklist", {
 			method: "POST",
-			body: `id=${id}&name=${nameEncoded}`,
+			body: `id=${id}&name=${nameEncoded}${templateString}`,
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
 		}).then((response) => {
 			if (response.status != 200) {

@@ -9,8 +9,8 @@ use tracing::{error, span, Level};
 
 use crate::db::Database;
 use crate::routes::OptionalSessionID;
-use crate::tasks::{Checklist, Task};
-use crate::util::{fix_zero, generate_id, render_progress_ring};
+use crate::tasks::{Checklist, ChecklistTemplate, Task};
+use crate::util::{fix_zero, generate_id, render_progress_ring, ToDropdown};
 use crate::{routes::SessionID, State};
 
 use super::{create_page, PageOrRedirect, Scope};
@@ -140,6 +140,12 @@ pub async fn create_checklist_page(
 	let page = include_str!("pages/tasks/create_checklist.min.html");
 	let page = page.replace("{{id}}", &checklist.id);
 	let page = page.replace("{{name}}", &checklist.name);
+
+	let page = page.replace(
+		"{{template-options}}",
+		&ChecklistTemplate::create_options(None),
+	);
+
 	let page = create_page("Create Checklist", &page, Some(Scope::Todo));
 
 	Ok(PageOrRedirect::Page(RawHtml(page)))
@@ -252,14 +258,54 @@ pub async fn create_checklist(
 		Status::InternalServerError
 	})?;
 
-	let checklist = Checklist {
+	let mut new_checklist = Checklist {
 		id: checklist.id.clone(),
 		name: checklist.name.clone(),
 		// Don't overwrite existing tasks
 		tasks: existing_checklist.map(|x| x.tasks).unwrap_or_default(),
 	};
 
-	if let Err(e) = lock.create_checklist(checklist).await {
+	// Apply the template
+	let mut new_tasks = Vec::new();
+	if let Some(template) = checklist.template {
+		match template {
+			ChecklistTemplate::TeamsAtCompetition => {
+				let global_data = lock.get_global_data().await.map_err(|e| {
+					error!("Failed to get global data from database: {e}");
+					Status::InternalServerError
+				})?;
+				if let Some(competition) = global_data.current_competition {
+					let teams = lock.get_teams().await.map_err(|e| {
+						error!("Failed to get all teams from database: {e}");
+						Status::InternalServerError
+					})?;
+					let teams: Vec<_> = teams
+						.filter(|x| x.competitions.contains(&competition))
+						.sorted_by_key(|x| x.number)
+						.collect();
+
+					for team in teams {
+						let text = format!("{} {}", team.number, team.sanitized_name());
+						let task = Task {
+							id: generate_id(),
+							checklist: checklist.id.clone(),
+							text,
+							done: false,
+						};
+						new_tasks.push(task.id.clone());
+						if let Err(e) = lock.create_task(task).await {
+							error!("Failed to create task: {e:#}");
+							return Err(Status::InternalServerError);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	new_checklist.tasks.extend(new_tasks);
+
+	if let Err(e) = lock.create_checklist(new_checklist).await {
 		error!("Failed to create checklist in database: {e}");
 		return Err(Status::InternalServerError);
 	}
@@ -271,6 +317,7 @@ pub async fn create_checklist(
 pub struct ChecklistForm {
 	id: String,
 	name: String,
+	template: Option<ChecklistTemplate>,
 }
 
 #[rocket::post("/api/create_task", data = "<task>")]

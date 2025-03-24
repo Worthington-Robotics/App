@@ -4,7 +4,10 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Context};
 use chrono::Utc;
-use rocket::{futures::TryStreamExt, tokio::try_join};
+use rocket::{
+	futures::TryStreamExt,
+	tokio::{task::JoinSet, try_join},
+};
 use sqlx::{
 	postgres::{PgConnectOptions, PgPoolOptions, PgRow},
 	Executor, Pool, Postgres, Row,
@@ -45,7 +48,7 @@ impl Database for SqlDatabase {
 			.context("Failed to parse connection URI")?
 			.ssl_mode(sqlx::postgres::PgSslMode::Require);
 		let pool = PgPoolOptions::new()
-			.max_connections(1)
+			.max_connections(7)
 			.connect_with(connect_options)
 			.await
 			.context("Failed to open database connection")?;
@@ -476,6 +479,26 @@ impl Database for SqlDatabase {
 	}
 
 	async fn delete_checklist(&mut self, checklist: &str) -> anyhow::Result<()> {
+		if let Ok(checklist) = self.get_checklist(checklist).await {
+			if let Some(checklist) = checklist {
+				let mut join_set = JoinSet::new();
+				for task in checklist.tasks {
+					let pool = self.pool.clone();
+					let tokio_task = async move {
+						let _ = sqlx::query("DELETE FROM tasks WHERE Id = $1")
+							.bind(task)
+							.execute(&pool)
+							.await;
+					};
+					join_set.spawn(tokio_task);
+				}
+
+				while let Some(result) = join_set.join_next().await {
+					let _ = result;
+				}
+			}
+		}
+
 		let result = sqlx::query("DELETE FROM checklists WHERE Id = $1")
 			.bind(checklist)
 			.execute(&self.pool)

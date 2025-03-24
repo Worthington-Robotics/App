@@ -198,8 +198,12 @@ impl Database for JSONDatabase {
 	}
 
 	async fn delete_checklist(&mut self, checklist: &str) -> anyhow::Result<()> {
-		self.contents.checklists.remove(checklist);
-		Ok(())
+		if let Some(checklist) = self.contents.checklists.remove(checklist) {
+			for task in checklist.tasks {
+				let _ = self.delete_task(&task).await;
+			}
+		}
+		self.write()
 	}
 
 	async fn get_checklists(&self) -> anyhow::Result<impl Iterator<Item = Checklist>> {
