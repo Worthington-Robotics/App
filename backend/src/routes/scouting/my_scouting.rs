@@ -55,7 +55,7 @@ pub async fn my_scouting(
 
 	let mut teams_string = String::new();
 	for team in &assignment.teams {
-		teams_string.push_str(&render_team(*team));
+		teams_string.push_str(&render_team(*team, TeamStyle::None));
 	}
 	let page = page.replace("{{teams}}", &teams_string);
 
@@ -145,27 +145,27 @@ fn render_match(
 	let mut claim_bubbles_str = String::new();
 	claim_bubbles_str.push_str(&render_claim_bubble(
 		claims.red_1.as_deref(),
-		BubbleStyle::Red,
+		AllianceStyle::Red,
 	));
 	claim_bubbles_str.push_str(&render_claim_bubble(
 		claims.red_2.as_deref(),
-		BubbleStyle::Red,
+		AllianceStyle::Red,
 	));
 	claim_bubbles_str.push_str(&render_claim_bubble(
 		claims.red_3.as_deref(),
-		BubbleStyle::Red,
+		AllianceStyle::Red,
 	));
 	claim_bubbles_str.push_str(&render_claim_bubble(
 		claims.blue_1.as_deref(),
-		BubbleStyle::Blue,
+		AllianceStyle::Blue,
 	));
 	claim_bubbles_str.push_str(&render_claim_bubble(
 		claims.blue_2.as_deref(),
-		BubbleStyle::Blue,
+		AllianceStyle::Blue,
 	));
 	claim_bubbles_str.push_str(&render_claim_bubble(
 		claims.blue_3.as_deref(),
-		BubbleStyle::Blue,
+		AllianceStyle::Blue,
 	));
 	let out = out.replace("{{claims}}", &claim_bubbles_str);
 
@@ -223,7 +223,12 @@ fn render_match(
 	};
 
 	let claimed_team_elem = if let Some(claimed_team) = claimed_team {
-		render_team(claimed_team)
+		let style = match claimed_slot.expect("Claimed team exists") {
+			0..=2 => AllianceStyle::Red,
+			3.. => AllianceStyle::Blue,
+		};
+
+		render_team(claimed_team, TeamStyle::Alliance(style))
 	} else {
 		String::new()
 	};
@@ -255,11 +260,11 @@ fn render_match(
 }
 
 /// Render one of the little team bubbles to show claim status
-fn render_claim_bubble(claim: Option<&str>, style: BubbleStyle) -> String {
+fn render_claim_bubble(claim: Option<&str>, style: AllianceStyle) -> String {
 	let class = if claim.is_some() {
 		match style {
-			BubbleStyle::Red => " r",
-			BubbleStyle::Blue => " b",
+			AllianceStyle::Red => " r",
+			AllianceStyle::Blue => " b",
 		}
 	} else {
 		""
@@ -267,12 +272,23 @@ fn render_claim_bubble(claim: Option<&str>, style: BubbleStyle) -> String {
 	format!("<div class=\"claim{class}\"></div>")
 }
 
-/// Style for one of the team bubbles in a match
-enum BubbleStyle {
+/// Style for one of the team bubbles or teams in a match
+enum AllianceStyle {
 	Red,
 	Blue,
 }
 
-fn render_team(team: TeamNumber) -> String {
-	format!("<a class=\"cont round team nolink\" href=\"/scouting/team/{team}\">{team}</a>")
+/// Style for one of the teams in a match
+enum TeamStyle {
+	Alliance(AllianceStyle),
+	None,
+}
+
+fn render_team(team: TeamNumber, style: TeamStyle) -> String {
+	let style = match style {
+		TeamStyle::Alliance(AllianceStyle::Blue) => "style=\"border-color:var(--wbblueacc)\"",
+		TeamStyle::Alliance(AllianceStyle::Red) => "style=\"border-color:var(--wbred)\"",
+		TeamStyle::None => "",
+	};
+	format!("<a class=\"cont round nolink team\" href=\"/scouting/team/{team}\" {style}>{team}</a>")
 }
