@@ -104,7 +104,7 @@ pub async fn my_scouting(
 		&match_stats,
 		global_data.current_competition.as_ref(),
 	);
-	let mut completion_amount = matches_scouted as f32 / 15.0;
+	let mut completion_amount = matches_scouted as f32 / 30.0;
 	if completion_amount > 1.0 {
 		completion_amount = 1.0;
 	}
