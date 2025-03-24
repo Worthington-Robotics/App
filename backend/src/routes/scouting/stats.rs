@@ -235,7 +235,7 @@ stat_info! {
 	time_to_first_cycle, "time_to_first_cycle" => "TTFC", "Time To First Cycle", "Average time before the first score in teleop";
 	penalties, "penalties" => "Pen", "Penalties", "Total number of penalties across all matches";
 	reliability, "reliability" => "RB", "Reliability", "How often this team plays a match without breaking";
-	matches, "matches" => "Matches", "Matches", "How many matches have been scouted for this team";
+	matches, "matches" => "MA", "Matches", "How many matches have been scouted for this team";
 	auto_score, "auto_score" => "ATSCO", "Auto Score", "Average number of points scored in auto";
 	teleop_score, "teleop_score" => "TESCO", "Teleop Score", "Average number of points scored in teleop";
 	climb_score, "climb_score" => "CLSCO", "Climb Score", "Average number of points scored from climbing";
