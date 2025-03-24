@@ -213,7 +213,7 @@ stat_info! {
 	coral_score, "coral_score" => "CSCO", "Coral Score", "Average points from coral in teleop";
 	coral_average, "coral_average" => "CAVG", "Coral Average", "Average number of coral scored in teleop";
 	coral_accuracy, "coral_accuracy" => "CACC", "Coral Accuracy", "Success rate for scoring coral";
-	algae_score, "algae_score" => "ASCO", "Algae Score", "Average points from algae in teleop";
+	algae_score, "algae_score" => "ALSCO", "Algae Score", "Average points from algae in teleop";
 	processor_average, "processor_average" => "PAVG", "Processor Average", "Average number of teleop algae scored in the processor";
 	processor_accuracy, "processor_accuracy" => "PACC", "Processor Accuracy", "Success rate for the processor";
 	net_average, "net_average" => "NAVG", "Net Average", "Average number of net scores";
@@ -236,9 +236,9 @@ stat_info! {
 	penalties, "penalties" => "Pen", "Penalties", "Total number of penalties across all matches";
 	reliability, "reliability" => "RB", "Reliability", "How often this team plays a match without breaking";
 	matches, "matches" => "MA", "Matches", "How many matches have been scouted for this team";
-	auto_score, "auto_score" => "ATSCO", "Auto Score", "Average number of points scored in auto";
-	teleop_score, "teleop_score" => "TESCO", "Teleop Score", "Average number of points scored in teleop";
-	climb_score, "climb_score" => "CLSCO", "Climb Score", "Average number of points scored from climbing";
+	auto_score, "auto_score" => "ASCO", "Auto Score", "Average number of points scored in auto";
+	teleop_score, "teleop_score" => "TSCO", "Teleop Score", "Average number of points scored in teleop";
+	climb_score, "climb_score" => "CSCO", "Climb Score", "Average number of points scored from climbing";
 	l1_accuracy, "l1_accuracy" => "L1ACC", "L1 Accuracy", "Success rate scoring on L1";
 	l2_accuracy, "l2_accuracy" => "L2ACC", "L2 Accuracy", "Success rate scoring on L2";
 	l3_accuracy, "l3_accuracy" => "L3ACC", "L3 Accuracy", "Success rate scoring on L3";
