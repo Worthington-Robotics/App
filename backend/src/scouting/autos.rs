@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::util::{fix_zero, vector_splat};
+use crate::util::{fix_zero, float_max, vector_splat};
 
 use super::{
 	game::{get_coral_points, ReefLevel},
@@ -126,6 +126,8 @@ pub fn calculate_auto_stats(
 
 /// How many steps are in the auto event graph, out of 15 seconds
 const EVENT_GRAPH_RESOLUTION: usize = 30;
+/// How much time to remove from remove from auto events to offset user latency
+const EVENT_TIME_OFFSET: f32 = 0.5;
 
 pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
 	if matches.is_empty() {
@@ -143,9 +145,9 @@ pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
 		if timestamp < 0.75 {
 			0.75
 		} else if timestamp > 15.0 {
-			15.0
+			15.0 - EVENT_TIME_OFFSET
 		} else {
-			timestamp
+			timestamp - EVENT_TIME_OFFSET
 		}
 	}
 
@@ -200,7 +202,12 @@ pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
 			.filter(|x| **x >= left_bound && **x <= right_bound)
 			.count();
 
-		count as f32 / times.len() as f32
+		let out = count as f32 / times.len() as f32;
+		if out > 1.0 {
+			1.0
+		} else {
+			out
+		}
 	}
 
 	for i in 0..EVENT_GRAPH_RESOLUTION {
@@ -210,6 +217,33 @@ pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
 		l3_scores[i] = get_graph_height(i, &l3_times);
 		l4_scores[i] = get_graph_height(i, &l4_times);
 		algae_scores[i] = get_graph_height(i, &algae_times);
+	}
+
+	// Rescale the graphs so that they are more distinct
+	let intake_max = fix_zero(float_max(intakes.iter().copied()).unwrap_or(1.0));
+	let l1_max = fix_zero(float_max(l1_scores.iter().copied()).unwrap_or(1.0));
+	let l2_max = fix_zero(float_max(l2_scores.iter().copied()).unwrap_or(1.0));
+	let l3_max = fix_zero(float_max(l3_scores.iter().copied()).unwrap_or(1.0));
+	let l4_max = fix_zero(float_max(l4_scores.iter().copied()).unwrap_or(1.0));
+	let algae_max = fix_zero(float_max(algae_scores.iter().copied()).unwrap_or(1.0));
+
+	for val in intakes.iter_mut() {
+		*val /= intake_max;
+	}
+	for val in l1_scores.iter_mut() {
+		*val /= l1_max;
+	}
+	for val in l2_scores.iter_mut() {
+		*val /= l2_max;
+	}
+	for val in l3_scores.iter_mut() {
+		*val /= l3_max;
+	}
+	for val in l4_scores.iter_mut() {
+		*val /= l4_max;
+	}
+	for val in algae_scores.iter_mut() {
+		*val /= algae_max;
 	}
 
 	AutoEventGraphs {
@@ -222,7 +256,7 @@ pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
 	}
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct AutoEventGraphs {
 	pub intakes: [f32; EVENT_GRAPH_RESOLUTION],
 	pub l1_scores: [f32; EVENT_GRAPH_RESOLUTION],
@@ -230,4 +264,17 @@ pub struct AutoEventGraphs {
 	pub l3_scores: [f32; EVENT_GRAPH_RESOLUTION],
 	pub l4_scores: [f32; EVENT_GRAPH_RESOLUTION],
 	pub algae_scores: [f32; EVENT_GRAPH_RESOLUTION],
+}
+
+impl Default for AutoEventGraphs {
+	fn default() -> Self {
+		Self {
+			intakes: [0.0; EVENT_GRAPH_RESOLUTION],
+			l1_scores: [0.0; EVENT_GRAPH_RESOLUTION],
+			l2_scores: [0.0; EVENT_GRAPH_RESOLUTION],
+			l3_scores: [0.0; EVENT_GRAPH_RESOLUTION],
+			l4_scores: [0.0; EVENT_GRAPH_RESOLUTION],
+			algae_scores: [0.0; EVENT_GRAPH_RESOLUTION],
+		}
+	}
 }

@@ -380,10 +380,14 @@ pub async fn get_teams_stat(
 	for team in teams {
 		let team_stats = stats_lock.get(&team.number).unwrap_or(&default_stats);
 		let team_stats = if scope == "this_competition" {
-			&team_stats
-				.per_competition
-				.get(&parsed_competition.unwrap_or_default())
-				.unwrap_or(&default_stats.current_competition)
+			if let Some(parsed_competition) = parsed_competition {
+				&team_stats
+					.per_competition
+					.get(&parsed_competition)
+					.unwrap_or(&default_stats.current_competition)
+			} else {
+				&team_stats.all_time
+			}
 		} else {
 			&team_stats.all_time
 		};

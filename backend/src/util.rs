@@ -238,3 +238,8 @@ pub fn standard_deviation(values: &[f32], mean: f32) -> f32 {
 
 	(sum / values.len() as f32).sqrt()
 }
+
+/// Why can't floats just be ord
+pub fn float_max(values: impl Iterator<Item = f32>) -> Option<f32> {
+	values.max_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal))
+}
