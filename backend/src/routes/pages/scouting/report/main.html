@@ -258,6 +258,7 @@
 	let playIcon = `<img src="/assets/icons/play.svg" style="width:1rem" />`;
 
 	document.getElementById("time-pause-button").addEventListener("click", (e) => {
+		blink("time-pause-button");
 		// Match is over
 		if (M.time > 140) {
 			return;
@@ -411,6 +412,7 @@
 		});
 	});
 	document.getElementById("auto-algae").addEventListener("click", () => {
+		blink("auto-algae");
 		createEvent({
 			teleop: false,
 			id: "algae",
@@ -418,6 +420,7 @@
 		});
 	});
 	document.getElementById("auto-algae-miss").addEventListener("click", () => {
+		blink("auto-algae-miss");
 		createEvent({
 			teleop: false,
 			id: "algae",
@@ -425,6 +428,7 @@
 		});
 	});
 	document.getElementById("auto-intake").addEventListener("click", () => {
+		blink("auto-intake");
 		createEvent({
 			teleop: false,
 			id: "intake",
@@ -432,6 +436,7 @@
 		});
 	});
 	document.getElementById("auto-intake-miss").addEventListener("click", () => {
+		blink("auto-intake-miss");
 		createEvent({
 			teleop: false,
 			id: "intake",
@@ -467,6 +472,7 @@
 		});
 	});
 	document.getElementById("processor").addEventListener("click", () => {
+		blink("processor");
 		createEvent({
 			teleop: true,
 			id: "processor",
@@ -474,6 +480,7 @@
 		});
 	});
 	document.getElementById("processor-miss").addEventListener("click", () => {
+		blink("processor-miss");
 		createEvent({
 			teleop: true,
 			id: "processor",
@@ -481,6 +488,7 @@
 		});
 	});
 	document.getElementById("intake").addEventListener("click", () => {
+		blink("intake");
 		createEvent({
 			teleop: true,
 			id: "intake",
@@ -488,6 +496,7 @@
 		});
 	});
 	document.getElementById("intake-miss").addEventListener("click", () => {
+		blink("intake-miss");
 		createEvent({
 			teleop: true,
 			id: "intake",
@@ -495,6 +504,7 @@
 		});
 	});
 	document.getElementById("net").addEventListener("click", () => {
+		blink("net");
 		createEvent({
 			teleop: true,
 			id: "net",
@@ -502,12 +512,14 @@
 		});
 	});
 	document.getElementById("agitate").addEventListener("click", () => {
+		blink("agitate");
 		createEvent({
 			teleop: true,
 			id: "agitate",
 		});
 	});
 	document.getElementById("defend").addEventListener("click", () => {
+		blink("defend");
 		createEvent({
 			teleop: true,
 			id: "defend",
@@ -518,6 +530,7 @@
 	let penalty = "penalty";
 	for (let elem of document.getElementsByClassName(penalty)) {
 		elem.addEventListener("click", () => {
+			blink(elem);
 			createEvent({
 				teleop: false,
 				id: penalty,
@@ -610,6 +623,7 @@
 	}
 
 	document.getElementById("start-shallow").addEventListener("click", () => {
+		blink("start-shallow");
 		M.climbType = "shallow";
 		if (M.climbStart == null) {
 			M.climbStart = M.time;
@@ -617,6 +631,7 @@
 		M.climbEnd = null;
 	});
 	document.getElementById("start-deep").addEventListener("click", () => {
+		blink("start-deep");
 		M.climbType = "deep";
 		if (M.climbStart == null) {
 			M.climbStart = M.time - calculateReactionTime();
@@ -624,6 +639,7 @@
 		M.climbEnd = null;
 	});
 	document.getElementById("climb-fail").addEventListener("click", () => {
+		blink("climb-fail");
 		if (M.climbStart != null) {
 			M.climbResult = "failed";
 			M.climbEnd = M.time - calculateReactionTime();
@@ -631,6 +647,7 @@
 		}
 	});
 	document.getElementById("climb-fall").addEventListener("click", () => {
+		blink("climb-fall");
 		if (M.climbStart != null) {
 			M.climbResult = "fell";
 			M.climbEnd = M.time - calculateReactionTime();
@@ -638,6 +655,7 @@
 		}
 	});
 	document.getElementById("climb-successful").addEventListener("click", () => {
+		blink("climb-successful");
 		if (M.climbStart != null) {
 			M.climbResult = "succeeded";
 			M.climbEnd = M.time - calculateReactionTime();
@@ -645,6 +663,7 @@
 		}
 	});
 	document.getElementById("climb-refresh").addEventListener("click", () => {
+		blink("climb-refresh");
 		M.climbResult = null;
 		M.climbStart = null;
 		M.climbType = "none";
@@ -1127,6 +1146,19 @@
 		return out;
 	}
 
+	// Blinks a button temporarily to show confirmation
+	function blink(button) {
+		// Accept id strings
+		if (button.length != undefined) {
+			button = document.getElementById(button);
+		}
+		button.classList.add("blink");
+		// Restart the animation
+		button.style.animation = "none";
+		button.offsetHeight;
+		button.style.animation = null;
+	}
+
 	// Parses a time (m:ss or s). Returns -1 on error.
 	function parseTime(time) {
 		let elems = time.split(':');
@@ -1285,6 +1317,20 @@
 
 	#points {
 		font-size: calc(2.0vw * var(--scale));
+	}
+
+	.blink {
+		animation: blink 1s;
+	}
+
+	@keyframes blink {
+		from {
+			filter: brightness(2.5) saturate(70%)
+		}
+
+		to {
+			filter: none
+		}
 	}
 </style>
 {{footer}}
