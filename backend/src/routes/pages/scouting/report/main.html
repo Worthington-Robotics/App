@@ -132,6 +132,16 @@
 				src="/assets/icons/error.svg" class="grid-icon" /></button>
 		<button class="grid-button teleop-confirm" id="teleop-cancel"
 			style="display:none;background-color:var(--bg2);">Cancel</button>
+
+		<button class="cont grid-button defense-confirm" id="defense-coral-station" style="display:none"><img
+				src="/assets/icons/coral.svg" class="grid-icon center coral" /> Coral Station</button>
+		<button class="cont grid-button defense-confirm reef" id="defense-reef" style="display:none"><img
+				src="/assets/icons/box.svg" class="grid-icon center" /> Reef</button>
+		<button class="cont grid-button defense-confirm" id="defense-other"
+			style="display:none;background-color:var(--bg2);"><img src="/assets/icons/plus.svg" class="grid-icon center" />
+			Other</button>
+		<button class="cont grid-button defense-confirm failure" id="defense-cancel" style="display:none"><img
+				src="/assets/icons/error.svg" class="grid-icon center" /> Cancel</button>
 	</div>
 	<h2>Climb</h2>
 	<div class="section-grid">
@@ -211,7 +221,7 @@
 			timerRunning: false,
 			timeScale: 1,
 			timeOffset: 0,
-			// Has a list of all events during teleop and auto, as {teleop: bool, id: string, timestamp: number}. Events with a success will have a success: bool field. Coral events will have a level: number field.
+			// Has a list of all events during teleop and auto, as {teleop: bool, id: string, timestamp: number}. Events with a success will have a success: bool field. Coral events will have a level: number field. Defense events will have a location: string field.
 			matchEvents: [],
 			climbType: "none",
 			climbStart: null,
@@ -512,13 +522,6 @@
 			id: "agitate",
 		});
 	});
-	document.getElementById("defend").addEventListener("click", () => {
-		blink("defend");
-		createEvent({
-			teleop: true,
-			id: "defend",
-		});
-	});
 
 	// To fix the minifier
 	let penalty = "penalty";
@@ -614,7 +617,60 @@
 		for (let e of document.getElementById("teleop-grid").children) {
 			if (e.classList.contains("teleop-confirm")) {
 				e.style.display = "none";
+			} else if (!e.classList.contains("defense-confirm")) {
+				e.style.display = "";
+			}
+		}
+	}
+
+	document.getElementById("defend").addEventListener("click", () => {
+		let event = {
+			teleop: true,
+			id: "defend",
+			timestamp: M.time,
+			successful: true,
+		};
+		pendingEvent = event;
+
+		for (let e of document.getElementById("teleop-grid").children) {
+			if (e.classList.contains("defense-confirm")) {
+				e.style.display = "";
 			} else {
+				e.style.display = "none";
+			}
+		}
+	});
+
+	document.getElementById("defense-coral-station").addEventListener("click", () => {
+		confirmDefend("coral_station");
+	});
+
+	document.getElementById("defense-reef").addEventListener("click", () => {
+		confirmDefend("reef");
+	});
+
+	document.getElementById("defense-other").addEventListener("click", () => {
+		confirmDefend("other");
+	});
+
+	function confirmDefend(location) {
+		if (pendingEvent != null) {
+			pendingEvent.location = location;
+			createEvent(pendingEvent);
+		}
+		pendingEvent = null;
+		hideDefendConfirm();
+	}
+
+	document.getElementById("defense-cancel").addEventListener("click", () => {
+		hideDefendConfirm();
+	});
+
+	function hideDefendConfirm() {
+		for (let e of document.getElementById("teleop-grid").children) {
+			if (e.classList.contains("defense-confirm")) {
+				e.style.display = "none";
+			} else if (!e.classList.contains("teleop-confirm")) {
 				e.style.display = "";
 			}
 		}
@@ -784,6 +840,8 @@
 			climb_time: M.climbEnd - M.climbStart,
 			points_scored: stats.totalScore,
 			defenses: stats.defenses,
+			coral_station_defenses: stats.coralStationDefenses,
+			reef_defenses: stats.reefDefenses,
 			penalties: stats.penalties,
 			cycle_time: stats.cycleTime,
 			cycle_times: stats.cycleTimes,
@@ -819,6 +877,8 @@
 		let processorScores = 0;
 		let netShots = 0;
 		let defenses = 0;
+		let coralStationDefenses = 0;
+		let reefDefenses = 0;
 
 		let penalties = 0;
 		let totalScore = 0;
@@ -890,6 +950,11 @@
 				agitations++;
 			} else if (event.id == "defend") {
 				defenses++;
+				if (event.location == "coral_station") {
+					coralStationDefenses++;
+				} else if (event.location == "reef") {
+					reefDefenses++;
+				}
 			} else if (event.id == "penalty") {
 				penalties++;
 				totalScore -= 4;
@@ -959,6 +1024,8 @@
 			processorScores: processorScores,
 			netShots: netShots,
 			defenses: defenses,
+			coralStationDefenses: coralStationDefenses,
+			reefDefenses: reefDefenses,
 			penalties: penalties,
 			totalScore: totalScore
 		}

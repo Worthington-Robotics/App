@@ -201,6 +201,8 @@ pub async fn download_matches(
 			climb_time: m.climb_time,
 			points_scored: m.points_scored,
 			defenses: m.defenses,
+			coral_station_defenses: m.coral_station_defenses,
+			reef_defenses: m.reef_defenses,
 			penalties: m.penalties,
 			cycle_time: Some(m.cycle_time).filter(|x| x != &0.0),
 			cycle_times,
@@ -300,6 +302,10 @@ pub struct CSVMatchStats {
 	pub points_scored: u16,
 	/// The number of times that the team defended against other robots
 	pub defenses: u8,
+	/// The number of times that the team defended at the coral station
+	pub coral_station_defenses: u8,
+	/// The number of times that the team defended at the Reef
+	pub reef_defenses: u8,
 	/// The number of penalties that the team incurred during the match
 	pub penalties: u8,
 	/// The team's average cycle time
