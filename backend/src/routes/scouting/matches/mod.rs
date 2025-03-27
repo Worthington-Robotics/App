@@ -2,6 +2,7 @@ pub mod review;
 pub mod schedule;
 
 use chrono::Utc;
+use reqwest::StatusCode;
 use rocket::{
 	form::{Form, FromForm},
 	http::Status,
@@ -273,7 +274,7 @@ pub async fn match_report_raw(
 }
 
 /// Workaround for CORS
-#[rocket::delete("/api/check_tba_match/<match>")]
+#[rocket::get("/api/check_tba_match/<match>")]
 pub async fn check_tba_match(state: &State, r#match: &str) -> Result<(), Status> {
 	let span = span!(Level::DEBUG, "Checking TBA match");
 	let _enter = span.enter();
@@ -284,7 +285,7 @@ pub async fn check_tba_match(state: &State, r#match: &str) -> Result<(), Status>
 	let Ok(result) = result else {
 		return Err(Status::InternalServerError);
 	};
-	if result.error_for_status().is_err() {
+	if result.status().is_client_error() || result.status().is_server_error() {
 		return Err(Status::NotFound);
 	}
 

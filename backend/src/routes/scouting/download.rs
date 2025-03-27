@@ -212,6 +212,11 @@ pub async fn download_matches(
 			notes: m.notes,
 			strengths: m.strengths,
 			weaknesses: m.weaknesses,
+			brownout: m.brownout,
+			tipping: m.tipping,
+			beached: m.beached,
+			teleop_pause: m.teleop_pause,
+			game_piece_stuck: m.game_piece_stuck,
 		};
 
 		if let Err(e) = csv_writer.serialize(&record) {
@@ -330,6 +335,16 @@ pub struct CSVMatchStats {
 	/// Team weaknesses during the match
 	#[serde(default)]
 	pub weaknesses: String,
+	/// Whether the robot had brownout issues
+	pub brownout: bool,
+	/// Whether the robot had tipping issues
+	pub tipping: bool,
+	/// Whether the robot was beached on an algae
+	pub beached: bool,
+	/// Whether the robot had a large pause when teleop started
+	pub teleop_pause: bool,
+	/// Whether the robot had a stuck game piece
+	pub game_piece_stuck: bool,
 }
 
 #[rocket::get("/api/scouting_download/team_info.csv")]

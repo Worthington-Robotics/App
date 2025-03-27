@@ -231,6 +231,21 @@ pub struct MatchStats {
 	/// Whether the team parked
 	#[serde(default)]
 	pub park: bool,
+	/// Whether the robot had brownout issues
+	#[serde(default)]
+	pub brownout: bool,
+	/// Whether the robot had tipping issues
+	#[serde(default)]
+	pub tipping: bool,
+	/// Whether the robot was beached on an algae
+	#[serde(default)]
+	pub beached: bool,
+	/// Whether the robot had a large pause when teleop started
+	#[serde(default)]
+	pub teleop_pause: bool,
+	/// Whether the robot had a stuck game piece
+	#[serde(default)]
+	pub game_piece_stuck: bool,
 	/// Data from the match report
 	#[serde(default)]
 	pub match_report_data: Option<serde_json::Map<String, serde_json::Value>>,

@@ -170,22 +170,46 @@
 		<option value="Broken">Broken</option>
 	</select>
 	<div class="cont col">
+		<h3>Line Crosses</h3>
 		<div class="cont">
 			<input type="checkbox" name="auto-leave" id="auto-leave" class="field" />
 			<label for="auto-leave">Left Line During Auto?</label>
-		</div>
-		<div class="cont">
-			<input type="checkbox" name="collision" id="collision" class="field" />
-			<label for="collision">Collision With Another Robot During Auto?</label>
 		</div>
 		<div class="cont">
 			<input type="checkbox" name="park" id="park" class="field" />
 			<label for="park">Parked In Barge Zone?</label>
 		</div>
 	</div>
+	<div class="cont col">
+		<h3>Robot Issues</h3>
+		<div class="cont">
+			<input type="checkbox" name="collision" id="collision" class="field" />
+			<label for="collision">Collision With Another Robot During Auto?</label>
+		</div>
+		<div class="cont">
+			<input type="checkbox" name="brownout" id="brownout" class="field" />
+			<label for="brownout">Brownout Issues?</label>
+		</div>
+		<div class="cont">
+			<input type="checkbox" name="tipping" id="tipping" class="field" />
+			<label for="tipping">Tipping Problems?</label>
+		</div>
+		<div class="cont">
+			<input type="checkbox" name="beached" id="beached" class="field" />
+			<label for="beached">Beached on Algae?</label>
+		</div>
+		<div class="cont">
+			<input type="checkbox" name="teleop-pause" id="teleop-pause" class="field" />
+			<label for="teleop-pause">Pause at Start of Teleop?</label>
+		</div>
+		<div class="cont">
+			<input type="checkbox" name="game-piece-stuck" id="game-piece-stuck" class="field" />
+			<label for="game-piece-stuck">Game Piece Stuck in Robot?</label>
+		</div>
+	</div>
 	<h2>Review</h2>
-	<div id="events">
-		<h4>Match Events</h4>
+	<div id="events" class="cont col">
+		<h3>Match Events</h3>
 		<br />
 		<div id="events-container" class="cont col item-cont"></div>
 	</div>
@@ -851,6 +875,11 @@
 			showed_up: document.getElementById("showed-up").checked,
 			won: document.getElementById("won").checked,
 			notes: document.getElementById("notes").value,
+			brownout: document.getElementById("brownout").checked,
+			tipping: document.getElementById("tipping").checked,
+			beached: document.getElementById("beached").checked,
+			teleop_pause: document.getElementById("teleop-pause").checked,
+			game_piece_stuck: document.getElementById("game-piece-stuck").checked,
 		};
 
 		return data;
@@ -1086,6 +1115,12 @@
 			document.getElementById("showed-up").checked = true;
 			document.getElementById("auto-leave").checked = false;
 			document.getElementById("park").checked = false;
+			document.getElementById("auto-collision").checked = false;
+			document.getElementById("brownout").checked = false;
+			document.getElementById("tipping").checked = false;
+			document.getElementById("beached").checked = false;
+			document.getElementById("teleop-pause").checked = false;
+			document.getElementById("game-piece-stuck").checked = false;
 			updateBreakdown();
 
 			document.getElementById("time-speed").value = "1";
@@ -1148,7 +1183,7 @@
 		matchLink.href = url;
 		matchLinkButton.disabled = false;
 		matchLinkButton.style.backgroundColor = "var(--wbblue)";
-		matchLinkButton.innerHTML = "Go to match";
+		matchLinkButton.innerHTML = "Open match video";
 	}
 
 	function formatTBAMatchURL(matchNumber, comp) {
