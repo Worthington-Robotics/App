@@ -14,6 +14,7 @@ use std::collections::HashSet;
 
 use anyhow::Context;
 use chrono::Utc;
+use itertools::Itertools;
 use rocket::{
 	form::Form,
 	http::Status,
@@ -97,6 +98,13 @@ pub async fn admin(
 	let options = Division::create_options(data.current_division.as_ref());
 	let options = format!("<option value=none>None</option>{options}");
 	let page = page.replace("{{division-options}}", &options);
+
+	let focused_teams = data
+		.focused_teams
+		.into_iter()
+		.map(|x| x.to_string())
+		.join(", ");
+	let page = page.replace("{{focused-teams}}", &focused_teams);
 
 	let page = create_page("Scouting Administration", &page, Some(Scope::Scouting));
 
@@ -182,8 +190,16 @@ pub async fn update_settings(
 		})?)
 	};
 
+	let focused_teams = settings
+		.focused_teams
+		.replace(" ", "")
+		.split(",")
+		.filter_map(|x| x.parse().ok())
+		.collect();
+
 	current_data.current_competition = competition;
 	current_data.current_division = division;
+	current_data.focused_teams = focused_teams;
 
 	if let Err(e) = lock.set_global_data(current_data).await {
 		error!("Failed to set global data in database: {e}");
@@ -197,4 +213,5 @@ pub async fn update_settings(
 pub struct SettingsForm {
 	pub competition: String,
 	pub division: String,
+	pub focused_teams: String,
 }

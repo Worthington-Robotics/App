@@ -2,7 +2,6 @@ pub mod review;
 pub mod schedule;
 
 use chrono::Utc;
-use reqwest::StatusCode;
 use rocket::{
 	form::{Form, FromForm},
 	http::Status,

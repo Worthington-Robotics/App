@@ -37,6 +37,10 @@
 				</select>
 			</div>
 		</div>
+		<div class="cont col">
+			<label for="focused-teams">Focused Teams for Match Scouting</label>
+			<textarea id="focused-teams" name="focused-teams" placeholder="4145, 27">{{focused-teams}}</textarea>
+		</div>
 		<input type="submit" id="settings-submit" value="Save" />
 	</div>
 </div>
@@ -78,10 +82,11 @@
 
 		let competition = document.getElementById("competition").value;
 		let division = document.getElementById("division").value;
+		let focusedTeams = document.getElementById("focused-teams").value;
 
 		fetch("/api/scouting/update_settings", {
 			method: "POST",
-			body: `competition=${competition}&division=${division}`,
+			body: `competition=${competition}&division=${division}&focused_teams=${focusedTeams}`,
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
 		}).then((resp) => {
 			if (resp.status != 200) {

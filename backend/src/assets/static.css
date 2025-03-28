@@ -1,7 +1,7 @@
 /* NOTICE: If you change this file, make sure to change the URL to the file so that caches are updated */
 
 * {
-	font-family: "Rubik";
+	font-family: "Rubik", sans-serif;
 
 	/* Colors */
 	--fg: #f5f5f5;

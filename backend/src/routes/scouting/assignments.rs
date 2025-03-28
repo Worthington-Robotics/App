@@ -382,52 +382,78 @@ pub async fn claim_best(
 		return Err(Status::InternalServerError);
 	};
 
-	let slots_slice = &[
-		claims.red_1,
-		claims.red_2,
-		claims.red_3,
-		claims.blue_1,
-		claims.blue_2,
-		claims.blue_3,
-	];
+	let global_data = lock.get_global_data().await.map_err(|e| {
+		error!("Failed to get global data from database: {e}");
+		Status::InternalServerError
+	})?;
 
-	const MEAN_EPA: f32 = 35.0;
+	// First check for any globally focused teams that the scouting leads want to scout first
+	let slot = if claims.red_1.is_none() && global_data.focused_teams.contains(&m.red_alliance[0]) {
+		Some(0)
+	} else if claims.red_2.is_none() && global_data.focused_teams.contains(&m.red_alliance[1]) {
+		Some(1)
+	} else if claims.red_3.is_none() && global_data.focused_teams.contains(&m.red_alliance[2]) {
+		Some(2)
+	} else if claims.blue_1.is_none() && global_data.focused_teams.contains(&m.blue_alliance[0]) {
+		Some(3)
+	} else if claims.blue_2.is_none() && global_data.focused_teams.contains(&m.blue_alliance[1]) {
+		Some(4)
+	} else if claims.blue_3.is_none() && global_data.focused_teams.contains(&m.blue_alliance[2]) {
+		Some(5)
+	} else {
+		const MEAN_EPA: f32 = 35.0;
 
-	let mut lowest_distance = f32::INFINITY;
-	let mut lowest_index = 0;
-	for (i, slot) in slots_slice.iter().enumerate() {
-		if slot.is_some() {
-			continue;
+		let slots_slice = &[
+			claims.red_1,
+			claims.red_2,
+			claims.red_3,
+			claims.blue_1,
+			claims.blue_2,
+			claims.blue_3,
+		];
+
+		let mut lowest_distance = f32::INFINITY;
+		let mut lowest_index = 0;
+		for (i, slot) in slots_slice.iter().enumerate() {
+			if slot.is_some() {
+				continue;
+			}
+
+			let team = if i < 3 {
+				m.red_alliance.get(i)
+			} else {
+				m.blue_alliance.get(i - 3)
+			};
+			let Some(team) = team else {
+				continue;
+			};
+
+			let epa = state.statbotics_client.get_epa(*team).await;
+			let Some(epa) = epa else {
+				continue;
+			};
+
+			let distance = (MEAN_EPA - epa).abs();
+			if distance < lowest_distance {
+				lowest_index = i;
+				lowest_distance = distance;
+			}
 		}
 
-		let team = if i < 3 {
-			m.red_alliance.get(i)
+		dbg!(&lowest_distance, &lowest_index);
+
+		if lowest_distance != f32::INFINITY {
+			Some(lowest_index as u8)
 		} else {
-			m.blue_alliance.get(i - 3)
-		};
-		let Some(team) = team else {
-			continue;
-		};
-
-		let epa = state.statbotics_client.get_epa(*team).await;
-		let Some(epa) = epa else {
-			continue;
-		};
-
-		let distance = (MEAN_EPA - epa).abs();
-		if distance < lowest_distance {
-			lowest_index = i;
-			lowest_distance = distance;
+			None
 		}
-	}
-
-	dbg!(&lowest_distance, &lowest_index);
+	};
 
 	// Prevent deadlock since we will now call this other API method
 	std::mem::drop(lock);
 
-	if lowest_distance != f32::INFINITY {
-		claim_match(state, session_id, m.num.num, lowest_index as u8).await?;
+	if let Some(slot) = slot {
+		claim_match(state, session_id, m.num.num, slot).await?;
 	}
 
 	Ok(())

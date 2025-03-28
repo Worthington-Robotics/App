@@ -1284,12 +1284,20 @@ impl Database for SqlDatabase {
 			.await
 			.context("Failed to remove existing global data from database")?;
 
-		sqlx::query("INSERT INTO global_data (Competition, Division) VALUES ($1, $2)")
-			.bind(data.current_competition.map(|x| x.to_string()))
-			.bind(data.current_division.map(|x| x.to_string()))
-			.execute(&self.pool)
-			.await
-			.context("Failed to create new global data in database")?;
+		sqlx::query(
+			"INSERT INTO global_data (Competition, Division, FocusedTeams) VALUES ($1, $2, $3)",
+		)
+		.bind(data.current_competition.map(|x| x.to_string()))
+		.bind(data.current_division.map(|x| x.to_string()))
+		.bind(
+			data.focused_teams
+				.into_iter()
+				.map(|x| x as i32)
+				.collect::<Vec<_>>(),
+		)
+		.execute(&self.pool)
+		.await
+		.context("Failed to create new global data in database")?;
 
 		Ok(())
 	}
@@ -1344,7 +1352,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	);
 
 	let global_data_task =
-		pool.execute("CREATE TABLE IF NOT EXISTS global_data (Competition text, Division text)");
+		pool.execute("CREATE TABLE IF NOT EXISTS global_data (Competition text, Division text, FocusedTeams int2[])");
 
 	try_join!(
 		members_task,
@@ -1663,9 +1671,13 @@ fn read_global_data(row: PgRow) -> anyhow::Result<GlobalData> {
 	let competition = competition.and_then(|x| Competition::from_db(&x));
 	let division: Option<String> = row.try_get("division")?;
 	let division = division.and_then(|x| Division::from_db(&x));
+	let focused_teams: Option<Vec<i16>> = row.try_get("focusedteams")?;
+	let focused_teams = focused_teams.unwrap_or_default();
+	let focused_teams = focused_teams.into_iter().map(|x| x as TeamNumber).collect();
 
 	Ok(GlobalData {
 		current_competition: competition,
 		current_division: division,
+		focused_teams,
 	})
 }

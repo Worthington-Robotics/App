@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -244,4 +246,5 @@ pub trait Database {
 pub struct GlobalData {
 	pub current_competition: Option<Competition>,
 	pub current_division: Option<Division>,
+	pub focused_teams: HashSet<TeamNumber>,
 }
