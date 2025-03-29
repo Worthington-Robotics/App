@@ -1,4 +1,5 @@
 use chrono::DateTime;
+use itertools::Itertools;
 use rocket::{
 	http::Status,
 	response::{content::RawHtml, Redirect},
@@ -77,7 +78,7 @@ pub async fn my_scouting(
 	let claims: Vec<_> = claims.collect();
 
 	let mut matches_string = String::new();
-	for m in matches {
+	for m in matches.sorted_by_key(|x| x.num.num) {
 		matches_string.push_str(&render_match(
 			m,
 			&claims,
