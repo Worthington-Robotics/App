@@ -304,7 +304,7 @@ pub struct CSVMatchStats {
 	/// How long the climb took
 	pub climb_time: f32,
 	/// The total number of points that the team scored
-	pub points_scored: u16,
+	pub points_scored: i16,
 	/// The number of times that the team defended against other robots
 	pub defenses: u8,
 	/// The number of times that the team defended at the coral station
