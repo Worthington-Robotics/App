@@ -12,7 +12,7 @@ use crate::{
 	scouting::{
 		assignment::{MatchClaims, ScoutingAssignment},
 		matches::{count_matches_scouted, Match, MatchStats},
-		TeamNumber,
+		Competition, TeamNumber,
 	},
 	util::{render_time, TIMEZONE},
 	State,
@@ -77,6 +77,11 @@ pub async fn my_scouting(
 	})?;
 	let claims: Vec<_> = claims.collect();
 
+	let global_data = lock.get_global_data().await.map_err(|e| {
+		error!("Failed to get global data from database: {e}");
+		Status::InternalServerError
+	})?;
+
 	let mut matches_string = String::new();
 	for m in matches.sorted_by_key(|x| x.num.num) {
 		matches_string.push_str(&render_match(
@@ -84,15 +89,12 @@ pub async fn my_scouting(
 			&claims,
 			&match_stats,
 			&requesting_member.id,
+			global_data.current_competition.as_ref(),
 		));
 	}
 	let page = page.replace("{{matches}}", &matches_string);
 
 	// Scouting progress
-	let global_data = lock.get_global_data().await.map_err(|e| {
-		error!("Failed to get global data from database: {e}");
-		Status::InternalServerError
-	})?;
 
 	let match_stats = lock.get_all_match_stats().await.map_err(|e| {
 		error!("Failed to get match stats from database: {e}");
@@ -125,6 +127,7 @@ fn render_match(
 	claims: &[MatchClaims],
 	match_stats: &[MatchStats],
 	requesting_member: &str,
+	current_competition: Option<&Competition>,
 ) -> String {
 	let out = include_str!("../components/scouting/my_match.min.html");
 
@@ -245,7 +248,9 @@ fn render_match(
 	// Check if match stats have been reported for this match and team to let the user know if they are done
 	let is_done = if let Some(claimed_team) = claimed_team {
 		match_stats.iter().any(|x| {
-			x.match_number.as_ref().is_some_and(|x| x == &m.num) && x.team_number == claimed_team
+			x.match_number.as_ref().is_some_and(|x| x == &m.num)
+				&& x.team_number == claimed_team
+				&& x.competition.as_ref() == current_competition
 		})
 	} else {
 		false
