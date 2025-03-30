@@ -350,12 +350,12 @@ pub async fn reset_team_info(state: &State, session_id: SessionID<'_>) -> Result
 		})?
 		.collect();
 
-	for mut info in infos {
+	for (team, mut info) in infos {
 		// Move already scouted teams to needing update, and keep non-scouted teams the same
 		if info.progress == PitScoutingProgress::Finished {
 			info.progress = PitScoutingProgress::NeedsRefresh;
 
-			if let Err(e) = lock.create_team_info(info.team, info).await {
+			if let Err(e) = lock.create_team_info(team, info).await {
 				error!("Failed to create team info in database: {e}");
 			}
 		}
