@@ -166,22 +166,32 @@
 	let page = 0;
 	const rowsPerPage = 50;
 
-	let rows = document
-		.getElementById("teams-cont-body")
+	let teamsContBody = document
+		.getElementById("teams-cont-body");
+
+	let rows = teamsContBody
 		.getElementsByTagName("tr");
 
 	// Hydrate the rows
+
+	// Copy all the rows into a document fragment, modify that fragment, then replace the rows with that fragment
+	let fragment = document.createDocumentFragment();
 	for (let row of rows) {
+		let clonedRow = row.cloneNode(true);
+
 		let td = "td";
 		let rank = document.createElement(td);
 		rank.className = "r";
-		row.prepend(rank);
-		let cols = row.getElementsByTagName(td);
+		clonedRow.prepend(rank);
+		let cols = clonedRow.getElementsByTagName(td);
 		let num = cols[1].innerHTML;
 		let name = cols[2];
 		name.innerHTML = `<a class="name-row" href="/scouting/team/${num}?competition={{competition}}">${name.innerHTML}</a>`;
 		name.firstChild.classList.add("nolink");
+
+		fragment.append(clonedRow);
 	}
+	teamsContBody.replaceChildren(fragment);
 
 	let pageButtons = document
 		.getElementById("pages")
