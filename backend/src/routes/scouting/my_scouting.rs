@@ -195,9 +195,9 @@ fn render_match(
 			.as_ref()
 			.is_some_and(|x| x == requesting_member);
 
-	if !is_claimed && claims.is_full() {
-		return String::new();
-	}
+	// if !is_claimed && claims.is_full() {
+	// 	return String::new();
+	// }
 
 	let class = if is_claimed { "claimed" } else { "available" };
 	let out = out.replace("{{class}}", class);

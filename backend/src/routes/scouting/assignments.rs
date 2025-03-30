@@ -348,7 +348,7 @@ pub async fn claim_best(
 	state: &State,
 	session_id: SessionID<'_>,
 	r#match: u16,
-) -> Result<(), Status> {
+) -> Result<String, Status> {
 	let span = span!(Level::DEBUG, "Claiming best team from match");
 	let _enter = span.enter();
 
@@ -428,10 +428,11 @@ pub async fn claim_best(
 				continue;
 			};
 
-			let epa = state.statbotics_client.get_epa(*team).await;
-			let Some(epa) = epa else {
-				continue;
-			};
+			let epa = state
+				.statbotics_client
+				.get_epa(*team)
+				.await
+				.unwrap_or(1000.0);
 
 			let distance = (MEAN_EPA - epa).abs();
 			if distance < lowest_distance {
@@ -454,9 +455,11 @@ pub async fn claim_best(
 
 	if let Some(slot) = slot {
 		claim_match(state, session_id, m.num.num, slot).await?;
-	}
 
-	Ok(())
+		Ok(String::new())
+	} else {
+		Ok("full".into())
+	}
 }
 
 #[rocket::post("/api/unclaim_match/<match>")]

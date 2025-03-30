@@ -262,16 +262,23 @@
 			method: "POST",
 		}).then((resp) => {
 			if (resp.status == 200) {
-				// Swap the class of the element
-				if (selectedMatchIsClaimed) {
-					selectedMatchElement.classList.remove("claimed");
-					selectedMatchElement.classList.add("available");
-				} else {
-					selectedMatchElement.classList.add("claimed");
-					selectedMatchElement.classList.remove("available");
-				}
-				// No matter whether we are claiming or unclaiming, the match is moving to the other filter so we won't be able to see it
-				selectedMatchElement.style.display = "none";
+				resp.text().then((text) => {
+					// Check if the match is full
+					if (text == "full") {
+						setError("Match is already fully claimed");
+					} else {
+						// Swap the class of the element
+						if (selectedMatchIsClaimed) {
+							selectedMatchElement.classList.remove("claimed");
+							selectedMatchElement.classList.add("available");
+						} else {
+							selectedMatchElement.classList.add("claimed");
+							selectedMatchElement.classList.remove("available");
+						}
+						// No matter whether we are claiming or unclaiming, the match is moving to the other filter so we won't be able to see it
+						selectedMatchElement.style.display = "none";
+					}
+				});
 				closePopup();
 			} else {
 				setError(resp.statusText);
