@@ -176,20 +176,32 @@
 
 	// Copy all the rows into a document fragment, modify that fragment, then replace the rows with that fragment
 	let fragment = document.createDocumentFragment();
+	let index = 0;
 	for (let row of rows) {
 		let clonedRow = row.cloneNode(true);
 
 		let td = "td";
+
 		let rank = document.createElement(td);
 		rank.className = "r";
+		styleRank(rank, index);
 		clonedRow.prepend(rank);
-		let cols = clonedRow.getElementsByTagName(td);
+
+		let cols = clonedRow.children;
 		let num = cols[1].innerHTML;
 		let name = cols[2];
-		name.innerHTML = `<a class="name-row" href="/scouting/team/${num}?competition={{competition}}">${name.innerHTML}</a>`;
-		name.firstChild.classList.add("nolink");
+
+		let link = document.createElement("a");
+		link.className = "nolink name-row";
+		link.href = `/scouting/team/${num}?competition={{competition}}`;
+		link.innerHTML = name.innerHTML;
+		name.replaceChildren(link);
+
+		// Apply pagination hiding here so that we don't have to update the rows later
+		clonedRow.style.display = index >= rowsPerPage ? "none" : "table-row";
 
 		fragment.append(clonedRow);
+		index++;
 	}
 	teamsContBody.replaceChildren(fragment);
 
@@ -215,41 +227,34 @@
 				row.style.display = "table-row";
 
 				let rank = row.children[0];
-				rank.classList.remove("first");
-				rank.classList.remove("second");
-				rank.classList.remove("third");
-
-				rank.innerHTML = i + 1;
-				if (i == 0) {
-					rank.classList.add("first");
-				} else if (i == 1) {
-					rank.classList.add("second");
-				} else if (i == 2) {
-					rank.classList.add("third");
-				}
+				styleRank(rank, i);
 			}
 
 			i++;
 		}
 
 		// Update page buttons
+		updatePageButtons();
+	}
 
+	function updatePageButtons() {
+		let rowCount = rows.length;
+		let pageCount = Math.ceil(rowCount / rowsPerPage);
 		// Start with the 0-index page made 1-index, minus half the number of buttons
 		// so that the current page is in the center
-		let j = page + 1 - 2;
-		let pageCount = Math.ceil(i / rowsPerPage);
+		let i = page + 1 - 2;
 		for (let button of pageButtons) {
-			button.innerHTML = j;
-			if (j > pageCount || j < 1) {
+			button.innerHTML = i;
+			if (i > pageCount || i < 1) {
 				button.disabled = true;
 			} else {
 				button.disabled = false;
 			}
-			j++;
+			i++;
 		}
 	}
 
-	updateRows();
+	updatePageButtons();
 
 	for (let button of pageButtons) {
 		button.addEventListener("click", (e) => {
@@ -259,6 +264,22 @@
 			page = e.target.innerHTML * one - one;
 			updateRows();
 		})
+	}
+
+	// Applies inner text and styling to a rank column based on the index
+	function styleRank(elem, i) {
+		elem.classList.remove("first");
+		elem.classList.remove("second");
+		elem.classList.remove("third");
+
+		elem.innerHTML = i + 1;
+		if (i == 0) {
+			elem.classList.add("first");
+		} else if (i == 1) {
+			elem.classList.add("second");
+		} else if (i == 2) {
+			elem.classList.add("third");
+		}
 	}
 
 	document.getElementById("search").addEventListener("keyup", (e) => {
