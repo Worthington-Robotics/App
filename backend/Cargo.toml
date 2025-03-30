@@ -20,7 +20,9 @@ dotenv = "0.15.0"
 itertools = "0.13.0"
 password-hash = "0.5.0"
 rand = "0.8.5"
-reqwest = { version = "0.12.5", features = ["rustls-tls"] }
+reqwest = { version = "0.12.5", default-features = false, features = [
+	"rustls-tls",
+] }
 rocket = { git = "https://github.com/rwf2/Rocket.git", features = ["json"] }
 rocket_async_compression = { git = "https://github.com/lobsterwise/rocket_async_compression.git" }
 serde = "1.0.203"
