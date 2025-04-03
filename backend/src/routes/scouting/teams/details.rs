@@ -633,20 +633,20 @@ pub async fn team_details(
 	);
 	let page = page.replace(
 		"{{pit-auto-algae}}",
-		&render_stat_card_optional(
+		&render_stat_card_optional_float(
 			&format!("{STAT_ALGAE} Auto"),
 			"",
-			team_info.auto_algae.map(|x| x.to_string()),
+			team_info.auto_algae,
 			false,
 			"",
 		),
 	);
 	let page = page.replace(
 		"{{pit-auto-coral}}",
-		&render_stat_card_optional(
+		&render_stat_card_optional_float(
 			&format!("{STAT_CORAL} Auto"),
 			"",
-			team_info.auto_coral.map(|x| x.to_string()),
+			team_info.auto_coral,
 			false,
 			"",
 		),

@@ -250,8 +250,8 @@ pub struct TeamInfo {
 	pub auto_scores_front: Option<bool>,
 	pub auto_scores_back: Option<bool>,
 	pub auto_scores_side: Option<bool>,
-	pub auto_algae: Option<u8>,
-	pub auto_coral: Option<u8>,
+	pub auto_algae: Option<f32>,
+	pub auto_coral: Option<f32>,
 	pub uses_pathplanner: Option<bool>,
 	pub two_can_networks: Option<bool>,
 	/// Additional notes about the robot
