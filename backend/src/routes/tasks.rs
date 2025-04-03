@@ -139,7 +139,7 @@ pub async fn create_checklist_page(
 
 	let page = include_str!("pages/tasks/create_checklist.min.html");
 	let page = page.replace("{{id}}", &checklist.id);
-	let page = page.replace("{{name}}", &checklist.name);
+	let page = page.replace("{{name}}", &format!("\"{}\"", checklist.name));
 
 	let page = page.replace(
 		"{{template-options}}",
