@@ -259,7 +259,11 @@ pub async fn create_checklist(
 	})?;
 
 	let mut new_checklist = Checklist {
-		id: checklist.id.clone(),
+		// Don't overwrite the existing ID
+		id: existing_checklist
+			.as_ref()
+			.map(|x| x.id.clone())
+			.unwrap_or_default(),
 		name: checklist.name.clone(),
 		// Don't overwrite existing tasks
 		tasks: existing_checklist.map(|x| x.tasks).unwrap_or_default(),

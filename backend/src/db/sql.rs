@@ -4,10 +4,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Context};
 use chrono::Utc;
-use rocket::{
-	futures::TryStreamExt,
-	tokio::{task::JoinSet, try_join},
-};
+use rocket::{futures::TryStreamExt, tokio::try_join};
 use sqlx::{
 	postgres::{PgConnectOptions, PgPoolOptions, PgRow},
 	Executor, Pool, Postgres, Row,
@@ -464,7 +461,9 @@ impl Database for SqlDatabase {
 
 	async fn create_checklist(&mut self, checklist: Checklist) -> anyhow::Result<()> {
 		// Remove the existing checklist
-		self.delete_checklist(&checklist.id)
+		sqlx::query("DELETE FROM checklists WHERE Id = $1")
+			.bind(&checklist.id)
+			.execute(&self.pool)
 			.await
 			.context("Failed to delete existing checklist")?;
 		sqlx::query("INSERT INTO checklists (Id, Name, Tasks) VALUES ($1, $2, $3)")
@@ -481,21 +480,10 @@ impl Database for SqlDatabase {
 	async fn delete_checklist(&mut self, checklist: &str) -> anyhow::Result<()> {
 		if let Ok(checklist) = self.get_checklist(checklist).await {
 			if let Some(checklist) = checklist {
-				let mut join_set = JoinSet::new();
-				for task in checklist.tasks {
-					let pool = self.pool.clone();
-					let tokio_task = async move {
-						let _ = sqlx::query("DELETE FROM tasks WHERE Id = $1")
-							.bind(task)
-							.execute(&pool)
-							.await;
-					};
-					join_set.spawn(tokio_task);
-				}
-
-				while let Some(result) = join_set.join_next().await {
-					let _ = result;
-				}
+				let _ = sqlx::query("DELETE FROM tasks WHERE Checklist = $1")
+					.bind(&checklist.id)
+					.execute(&self.pool)
+					.await;
 			}
 		}
 
@@ -865,7 +853,9 @@ impl Database for SqlDatabase {
 		Ok(())
 	}
 
-	async fn get_all_team_info(&self) -> anyhow::Result<impl Iterator<Item = (TeamNumber, TeamInfo)>> {
+	async fn get_all_team_info(
+		&self,
+	) -> anyhow::Result<impl Iterator<Item = (TeamNumber, TeamInfo)>> {
 		let result = sqlx::query("SELECT * FROM team_info")
 			.fetch_all(&self.pool)
 			.await;
