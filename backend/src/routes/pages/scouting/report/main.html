@@ -836,6 +836,10 @@
 
 		let competitionString = document.getElementById("competition").value;
 		let competition = parseCompetition(competitionString);
+		if (competition == null) {
+			setError("Please specify the competition");
+			return null;
+		}
 
 		const data = {
 			team_number: document.getElementById("team-number").value * 1,
