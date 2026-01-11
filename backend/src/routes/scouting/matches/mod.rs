@@ -234,7 +234,6 @@ pub async fn match_report_main_impl(
 	let parsed_competition = Competition::from_db(&competition);
 
 	let options = Competition::create_options(parsed_competition.as_ref());
-	let options = format!("<option value=none>None</option>{options}");
 	let page = page.replace("{{competition-options}}", &options);
 
 	let stats_id = stats_id.filter(|x| !x.is_empty());

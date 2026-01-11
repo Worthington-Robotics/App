@@ -1,9 +1,12 @@
 {{worbots-header}}{{error}}{{prompt}}
 <div id="match-review" class="cont col">
 	<h1>Matches</h1>
-	<h3 class="details-subtitle">{{team}}</h3>
+	<h3 class="details-subtitle">{{subtitle}}</h3>
 	<div class="cont">
 		<a href="/scouting/team/{{team}}"><button>Back</button></a>
+	</div>
+	<div class="cont">
+		{{competition-dropdown}}
 	</div>
 	<div class="cont col item-container" id="matches">
 		{{matches}}
@@ -97,6 +100,7 @@
 <script>
 	let popupStatsID = null;
 	let popupMatchNumber = null;
+	let popupTeamNumber = null;
 
 	document.getElementById("popup-delete").addEventListener("click", () => {
 		document.getElementById("popup-container").style.display = "none";
@@ -117,11 +121,12 @@
 	function openPopup(event) {
 		popupStatsID = event.target.dataset.id;
 		popupMatchNumber = event.target.dataset.number;
-		document.getElementById("popup-rescout").href = `/scouting/report?team_number={{team}}&match_number=${popupMatchNumber}&stats_id=${encodeURIComponent(popupStatsID)}`;
+		popupTeamNumber = event.target.dataset.teamNumber;
+		document.getElementById("popup-rescout").href = `/scouting/report?team_number=${popupTeamNumber}&match_number=${popupMatchNumber}&stats_id=${encodeURIComponent(popupStatsID)}`;
 
 		document.getElementById("popup-edit").href = `/scouting/edit_match/${encodeURIComponent(popupStatsID)}`;
 
-		document.getElementById("popup-header").innerHTML = `Match ${popupMatchNumber}`;
+		document.getElementById("popup-header").innerHTML = `Team ${popupTeamNumber}, Match ${popupMatchNumber}`;
 
 		let notes = event.target.children[1].innerHTML;
 		document.getElementById("popup-notes").innerHTML = notes;
@@ -136,5 +141,14 @@
 	document.getElementById("popup-close").addEventListener("click", () => {
 		document.getElementById("popup-container").style.display = "none";
 	});
+
+	let competitionDropdown = document.getElementById("competition");
+	if (competitionDropdown != null) {
+		competitionDropdown.addEventListener("change", e => {
+			let competition = e.target.value;
+			let competitionOption = competition == "none" ? "" : `?competition=${competition}`;
+			window.location = `/scouting/review${competitionOption}`;
+		});
+	}
 </script>
 {{footer}}
