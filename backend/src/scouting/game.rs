@@ -5,8 +5,21 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum ClimbAbility {
 	None,
-	Shallow,
-	Deep,
+	L1,
+	L2,
+	L3,
+}
+
+impl ClimbAbility {
+	/// Gets the score of this climb in endgame (not auto)
+	pub fn get_score(&self) -> u8 {
+		match self {
+			Self::None => 0,
+			Self::L1 => 10,
+			Self::L2 => 20,
+			Self::L3 => 30,
+		}
+	}
 }
 
 /// Result stating the success of a climb
@@ -16,53 +29,4 @@ pub enum ClimbResult {
 	Failed,
 	Fell,
 	Succeeded,
-}
-
-/// Level for the reef
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum ReefLevel {
-	L1,
-	L2,
-	L3,
-	L4,
-}
-
-impl ReefLevel {
-	/// Get the integer index of this level
-	pub fn to_int(&self) -> u8 {
-		match self {
-			Self::L1 => 0,
-			Self::L2 => 1,
-			Self::L3 => 2,
-			Self::L4 => 3,
-		}
-	}
-}
-
-/// Game pieces
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum GamePiece {
-	Coral,
-	Algae,
-}
-
-/// Gets the point value of a coral
-pub fn get_coral_points(level: ReefLevel, is_auto: bool) -> u8 {
-	if is_auto {
-		match level {
-			ReefLevel::L1 => 3,
-			ReefLevel::L2 => 4,
-			ReefLevel::L3 => 6,
-			ReefLevel::L4 => 7,
-		}
-	} else {
-		match level {
-			ReefLevel::L1 => 2,
-			ReefLevel::L2 => 3,
-			ReefLevel::L3 => 4,
-			ReefLevel::L4 => 5,
-		}
-	}
 }

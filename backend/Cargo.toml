@@ -8,7 +8,7 @@ sqldb = []
 cachedb = []
 
 [dependencies]
-anyhow = "1.0.86"
+anyhow = { version = "1.0.86", features = ["backtrace"] }
 argon2 = { version = "0.5.3", features = ["std"] }
 async-trait = "0.1.80"
 base64 = "0.22.1"

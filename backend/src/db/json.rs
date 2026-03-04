@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use std::{
-	collections::HashMap,
+	collections::{HashMap, HashSet},
 	fs::File,
 	io::{BufReader, BufWriter},
 	path::PathBuf,
@@ -22,7 +22,7 @@ use crate::{
 		autos::Auto,
 		matches::{Match, MatchNumber, MatchStats, MatchStatsID},
 		status::StatusUpdate,
-		Team, TeamInfo, TeamNumber,
+		Competition, Team, TeamInfo, TeamNumber,
 	},
 	tasks::{Checklist, Task},
 };
@@ -279,6 +279,27 @@ impl Database for JSONDatabase {
 
 	async fn get_teams(&self) -> anyhow::Result<impl Iterator<Item = Team>> {
 		Ok(self.contents.teams.values().cloned())
+	}
+
+	async fn clear_team_competitions(&mut self) -> anyhow::Result<()> {
+		for team in self.contents.teams.values_mut() {
+			team.competitions.clear();
+		}
+
+		self.write()
+	}
+
+	async fn update_team_competitions(
+		&mut self,
+		updates: &[(TeamNumber, HashSet<Competition>)],
+	) -> anyhow::Result<()> {
+		for (team, comps) in updates {
+			if let Some(team) = self.contents.teams.get_mut(team) {
+				team.competitions.extend(comps);
+			}
+		}
+
+		self.write()
 	}
 
 	async fn create_match_stats(&mut self, stats: MatchStats) -> anyhow::Result<()> {

@@ -137,22 +137,28 @@ pub async fn download_matches(
 	let mut csv_writer = csv::Writer::from_writer(Cursor::new(&mut buf));
 
 	for m in match_stats {
-		let mut auto_coral_attempts = [0, 0, 0, 0];
-		let mut auto_coral_scores = [0, 0, 0, 0];
-		for attempt in m.auto_coral_attempts {
-			auto_coral_attempts[attempt.level.to_int() as usize] += 1;
-			if attempt.successful {
-				auto_coral_scores[attempt.level.to_int() as usize] += 1;
-			}
+		let mut auto_fuel_attempts = 0;
+		let mut auto_fuel_scores = 0;
+		for volley in &m.auto_fuel_volleys {
+			auto_fuel_attempts += volley.shots_attempted as u16;
+			auto_fuel_scores += volley.shots_made as u16;
 		}
 
-		let mut teleop_coral_attempts = [0, 0, 0, 0];
-		let mut teleop_coral_scores = [0, 0, 0, 0];
-		for attempt in m.teleop_coral_attempts {
-			teleop_coral_attempts[attempt.level.to_int() as usize] += 1;
-			if attempt.successful {
-				teleop_coral_scores[attempt.level.to_int() as usize] += 1;
-			}
+		let mut teleop_fuel_attempts = 0;
+		let mut teleop_fuel_scores = 0;
+		for volley in &m.teleop_fuel_volleys {
+			teleop_fuel_attempts += volley.shots_attempted as u16;
+			teleop_fuel_scores += volley.shots_made as u16;
+		}
+
+		let mut teleop_intakes = 0;
+		for volley in &m.teleop_intake_volleys {
+			teleop_intakes += volley.shots_made as u16;
+		}
+
+		let mut teleop_passes = 0;
+		for volley in &m.teleop_pass_volleys {
+			teleop_passes += volley.shots_made as u16;
 		}
 
 		let cycle_times = format!(
@@ -169,40 +175,24 @@ pub async fn download_matches(
 			recorded_live: m.recorded_live,
 			competition: m.competition,
 			auto: m.auto,
-			auto_l4_attempts: auto_coral_attempts[3],
-			auto_l4_scores: auto_coral_scores[3],
-			auto_l3_attempts: auto_coral_attempts[2],
-			auto_l3_scores: auto_coral_scores[2],
-			auto_l2_attempts: auto_coral_attempts[1],
-			auto_l2_scores: auto_coral_scores[1],
-			auto_l1_attempts: auto_coral_attempts[0],
-			auto_l1_scores: auto_coral_scores[0],
-			auto_algae_attempts: m.auto_algae_attempts,
-			auto_algae_scores: m.auto_algae_scores,
-			auto_intake_attempts: m.auto_intake_attempts,
-			auto_intake_successes: m.auto_intake_successes,
+			auto_fuel_attempts,
+			auto_fuel_scores,
+			auto_fuel_volleys: m.auto_fuel_volleys.len() as u16,
+			auto_climb_attempted: m.auto_climb_attempted,
+			auto_climb_successful: m.auto_climb_successful,
 			auto_collision: m.auto_collision,
-			teleop_l4_attempts: teleop_coral_attempts[3],
-			teleop_l4_scores: teleop_coral_scores[3],
-			teleop_l3_attempts: teleop_coral_attempts[2],
-			teleop_l3_scores: teleop_coral_scores[2],
-			teleop_l2_attempts: teleop_coral_attempts[1],
-			teleop_l2_scores: teleop_coral_scores[1],
-			teleop_l1_attempts: teleop_coral_attempts[0],
-			teleop_l1_scores: teleop_coral_scores[0],
-			teleop_intake_attempts: m.teleop_intake_attempts,
-			teleop_intake_successes: m.teleop_intake_successes,
-			agitations: m.agitations,
-			processor_attempts: m.processor_attempts,
-			processor_scores: m.processor_scores,
-			net_shots: m.net_shots,
+			teleop_fuel_attempts,
+			teleop_fuel_scores,
+			teleop_fuel_volleys: m.teleop_fuel_volleys.len() as u16,
+			teleop_intakes,
+			teleop_intake_volleys: m.teleop_intake_volleys.len() as u16,
+			teleop_passes,
+			teleop_pass_volleys: m.teleop_pass_volleys.len() as u16,
 			climb_attempted: m.climb_attempted,
 			climb_result: m.climb_result,
 			climb_time: m.climb_time,
 			points_scored: m.points_scored,
 			defenses: m.defenses,
-			coral_station_defenses: m.coral_station_defenses,
-			reef_defenses: m.reef_defenses,
 			penalties: m.penalties,
 			cycle_time: Some(m.cycle_time).filter(|x| x != &0.0),
 			cycle_times,
@@ -259,44 +249,24 @@ pub struct CSVMatchStats {
 	/// The auto that the team ran during this match
 	#[serde(default)]
 	pub auto: Option<String>,
-	pub auto_l4_attempts: u8,
-	pub auto_l4_scores: u8,
-	pub auto_l3_attempts: u8,
-	pub auto_l3_scores: u8,
-	pub auto_l2_attempts: u8,
-	pub auto_l2_scores: u8,
-	pub auto_l1_attempts: u8,
-	pub auto_l1_scores: u8,
-	/// The number of times that the team attempted to score algae during auto
-	pub auto_algae_attempts: u8,
-	/// The number of times that the team scored algae during auto
-	pub auto_algae_scores: u8,
-	/// The number of auto intake attempts
-	pub auto_intake_attempts: u8,
-	/// The number of auto intake successes
-	pub auto_intake_successes: u8,
+	pub auto_fuel_attempts: u16,
+	pub auto_fuel_scores: u16,
+	pub auto_fuel_volleys: u16,
+	/// Whether or not an auto climb was attempted
+	pub auto_climb_attempted: bool,
+	/// WHether or not an auto climb was successful
+	pub auto_climb_successful: bool,
 	/// Whether or not the robot collided with another during auto
 	pub auto_collision: bool,
-	pub teleop_l4_attempts: u8,
-	pub teleop_l4_scores: u8,
-	pub teleop_l3_attempts: u8,
-	pub teleop_l3_scores: u8,
-	pub teleop_l2_attempts: u8,
-	pub teleop_l2_scores: u8,
-	pub teleop_l1_attempts: u8,
-	pub teleop_l1_scores: u8,
-	/// The number of intake attempts during teleop
-	pub teleop_intake_attempts: u8,
-	/// The number of intake successes during teleop
-	pub teleop_intake_successes: u8,
-	/// The number of times the team successfully agitated algae
-	pub agitations: u8,
-	/// The number of processor attempts
-	pub processor_attempts: u8,
-	/// The number of processor scores
-	pub processor_scores: u8,
-	/// The number of successful net shots
-	pub net_shots: u8,
+	pub teleop_fuel_attempts: u16,
+	pub teleop_fuel_scores: u16,
+	pub teleop_fuel_volleys: u16,
+	/// The fuel intake attempts during teleop
+	pub teleop_intakes: u16,
+	pub teleop_intake_volleys: u16,
+	/// The pass attempts during teleop
+	pub teleop_passes: u16,
+	pub teleop_pass_volleys: u16,
 	/// The climb that the team attempted to do
 	pub climb_attempted: ClimbAbility,
 	/// The result of the climb
@@ -307,10 +277,6 @@ pub struct CSVMatchStats {
 	pub points_scored: i16,
 	/// The number of times that the team defended against other robots
 	pub defenses: u8,
-	/// The number of times that the team defended at the coral station
-	pub coral_station_defenses: u8,
-	/// The number of times that the team defended at the Reef
-	pub reef_defenses: u8,
 	/// The number of penalties that the team incurred during the match
 	pub penalties: u8,
 	/// The team's average cycle time

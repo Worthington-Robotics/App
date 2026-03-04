@@ -18,6 +18,7 @@ use crate::{
 };
 
 /// Combination of the two databases
+#[cfg(feature = "cachedb")]
 pub mod cached;
 /// Simple JSON database
 pub mod json;
@@ -149,6 +150,15 @@ pub trait Database {
 
 	/// Get a list of all teams
 	async fn get_teams(&self) -> anyhow::Result<impl Iterator<Item = Team>>;
+
+	/// Clear team competitions
+	async fn clear_team_competitions(&mut self) -> anyhow::Result<()>;
+
+	/// Update many team competitions
+	async fn update_team_competitions(
+		&mut self,
+		updates: &[(TeamNumber, HashSet<Competition>)],
+	) -> anyhow::Result<()>;
 
 	/// Create match stats
 	async fn create_match_stats(&mut self, stats: MatchStats) -> anyhow::Result<()>;

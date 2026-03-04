@@ -2,13 +2,9 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::util::{fix_zero, float_max, vector_splat};
+use crate::util::{fix_zero, float_max};
 
-use super::{
-	game::{get_coral_points, ReefLevel},
-	matches::MatchStats,
-	TeamNumber,
-};
+use super::{matches::MatchStats, TeamNumber};
 
 /// A single autonomous routine
 #[derive(Deserialize, Serialize, Clone)]
@@ -19,12 +15,8 @@ pub struct Auto {
 	pub name: String,
 	/// The team this auto is for
 	pub team: TeamNumber,
-	/// How many coral this auto attempts to score
-	pub coral: u8,
-	/// How many algae this auto attempts to score
-	pub algae: u8,
-	/// Whether this auto attempts to agitate algae
-	pub agitates: bool,
+	/// How many fuel this auto attempts to score
+	pub fuel: u8,
 	/// The position of the auto on the starting line, in meters
 	pub starting_position: f32,
 }
@@ -34,16 +26,10 @@ pub struct Auto {
 pub struct AutoStats {
 	/// The average point value of this auto
 	pub point_value: f32,
-	/// Average number of coral that this auto gets
-	pub average_coral: f32,
-	/// Average number of algae that this auto gets
-	pub average_algae: f32,
-	/// Average coral accuracy for this auto
-	pub coral_accuracy: f32,
-	/// Average algae accuracy for this auto
-	pub algae_accuracy: f32,
-	/// Chances out of 1 for each coral placement of the auto to be successful, in order
-	pub coral_chances: Vec<f32>,
+	/// Average number of fuel that this auto gets
+	pub average_fuel: f32,
+	/// Average fuel accuracy for this auto
+	pub fuel_accuracy: f32,
 	/// How often this auto is used
 	pub usage_rate: f32,
 }
@@ -57,65 +43,37 @@ pub fn calculate_auto_stats(
 	auto_stats: &mut HashMap<String, AutoStats>,
 ) {
 	for auto in autos {
-		let mut coral_hits = vector_splat(0u16, auto.coral as usize);
-		let mut coral_misses = vector_splat(0u16, auto.coral as usize);
-		let mut algae_attempts = 0.0;
-		let mut algae_hits = 0.0;
-		let mut coral_points = 0.0;
+		let mut fuel_hits = 0.0;
+		let mut fuel_misses = 0.0;
 		let mut uses = 0;
+		let mut total_matches = 0;
 		for m in matches {
 			if m.team_number != team {
 				continue;
 			}
+			total_matches += 1;
 			if !m.auto.as_ref().is_some_and(|x| x == &auto.id) {
 				continue;
 			}
 
-			for (i, shot) in m.auto_coral_attempts.iter().enumerate() {
-				if i >= auto.coral as usize {
-					break;
-				}
-
-				if shot.successful {
-					coral_hits[i] += 1;
-					coral_points += get_coral_points(shot.level, true) as f32;
-				} else {
-					coral_misses[i] += 1;
+			for volley in &m.auto_fuel_volleys {
+				fuel_hits += volley.shots_made as f32;
+				if volley.shots_attempted > volley.shots_made {
+					fuel_misses += (volley.shots_attempted - volley.shots_made) as f32;
 				}
 			}
-
-			algae_attempts += m.auto_algae_attempts as f32;
-			algae_hits += m.auto_algae_scores as f32;
 
 			uses += 1;
 		}
 
-		let mut coral_total = 0.0;
-		let mut coral_chances = Vec::with_capacity(auto.coral as usize);
-		for (hits, misses) in coral_hits.into_iter().zip(coral_misses) {
-			let chance = if hits + misses == 0 {
-				0.0
-			} else {
-				hits as f32 / (hits + misses) as f32
-			};
-			coral_total += chance;
-			coral_chances.push(chance);
-		}
-
-		let usage_rate = uses as f32 / fix_zero(matches.len() as f32);
 		let fixed_use_total = fix_zero(uses as f32);
+		let point_value = fuel_hits / fixed_use_total;
 
-		let mut point_value = 0.0;
-		point_value += coral_points;
-		point_value += algae_hits as f32 * 6.0;
-		point_value /= fixed_use_total;
+		let usage_rate = uses as f32 / fix_zero(total_matches as f32);
 
 		let stats = AutoStats {
-			average_coral: coral_total / fixed_use_total,
-			average_algae: algae_hits / fixed_use_total,
-			coral_accuracy: coral_total / fix_zero(coral_chances.len() as f32),
-			coral_chances,
-			algae_accuracy: algae_hits / fix_zero(algae_attempts),
+			average_fuel: fuel_hits / fixed_use_total,
+			fuel_accuracy: fuel_hits / fix_zero(fuel_hits + fuel_misses),
 			usage_rate,
 			point_value,
 		};
@@ -134,12 +92,7 @@ pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
 		return AutoEventGraphs::default();
 	}
 
-	let mut intake_times = Vec::new();
-	let mut l1_times = Vec::new();
-	let mut l2_times = Vec::new();
-	let mut l3_times = Vec::new();
-	let mut l4_times = Vec::new();
-	let mut algae_times = Vec::new();
+	let mut shot_times = Vec::new();
 
 	fn clamp_timestamp(timestamp: f32) -> f32 {
 		if timestamp < 0.75 {
@@ -152,40 +105,16 @@ pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
 	}
 
 	for m in matches {
-		for e in &m.auto_coral_attempts {
-			if e.timestamp == 0.0 {
+		for e in &m.auto_fuel_volleys {
+			if e.start_time == 0.0 {
 				continue;
 			}
-			let timestamp = clamp_timestamp(e.timestamp);
-			match e.level {
-				ReefLevel::L1 => l1_times.push(timestamp),
-				ReefLevel::L2 => l2_times.push(timestamp),
-				ReefLevel::L3 => l3_times.push(timestamp),
-				ReefLevel::L4 => l4_times.push(timestamp),
-			}
-		}
-
-		for e in &m.auto_intake_events {
-			if e.timestamp == 0.0 {
-				continue;
-			}
-			intake_times.push(clamp_timestamp(e.timestamp));
-		}
-
-		for e in &m.auto_algae_events {
-			if e.timestamp == 0.0 {
-				continue;
-			}
-			algae_times.push(clamp_timestamp(e.timestamp));
+			let timestamp = clamp_timestamp(e.start_time);
+			shot_times.push(timestamp);
 		}
 	}
 
-	let mut intakes = [0.0; EVENT_GRAPH_RESOLUTION];
-	let mut l1_scores = [0.0; EVENT_GRAPH_RESOLUTION];
-	let mut l2_scores = [0.0; EVENT_GRAPH_RESOLUTION];
-	let mut l3_scores = [0.0; EVENT_GRAPH_RESOLUTION];
-	let mut l4_scores = [0.0; EVENT_GRAPH_RESOLUTION];
-	let mut algae_scores = [0.0; EVENT_GRAPH_RESOLUTION];
+	let mut shots = [0.0; EVENT_GRAPH_RESOLUTION];
 
 	fn get_graph_height(i: usize, times: &[f32]) -> f32 {
 		if times.is_empty() {
@@ -211,70 +140,28 @@ pub fn get_auto_event_graphs(matches: &[MatchStats]) -> AutoEventGraphs {
 	}
 
 	for i in 0..EVENT_GRAPH_RESOLUTION {
-		intakes[i] = get_graph_height(i, &intake_times);
-		l1_scores[i] = get_graph_height(i, &l1_times);
-		l2_scores[i] = get_graph_height(i, &l2_times);
-		l3_scores[i] = get_graph_height(i, &l3_times);
-		l4_scores[i] = get_graph_height(i, &l4_times);
-		algae_scores[i] = get_graph_height(i, &algae_times);
+		shots[i] = get_graph_height(i, &shot_times);
 	}
 
 	// Rescale the graphs so that they are more distinct
-	let intake_max = fix_zero(float_max(intakes.iter().copied()).unwrap_or(1.0));
-	let l1_max = fix_zero(float_max(l1_scores.iter().copied()).unwrap_or(1.0));
-	let l2_max = fix_zero(float_max(l2_scores.iter().copied()).unwrap_or(1.0));
-	let l3_max = fix_zero(float_max(l3_scores.iter().copied()).unwrap_or(1.0));
-	let l4_max = fix_zero(float_max(l4_scores.iter().copied()).unwrap_or(1.0));
-	let algae_max = fix_zero(float_max(algae_scores.iter().copied()).unwrap_or(1.0));
+	let shot_max = fix_zero(float_max(shots.iter().copied()).unwrap_or(1.0));
 
-	for val in intakes.iter_mut() {
-		*val /= intake_max;
-	}
-	for val in l1_scores.iter_mut() {
-		*val /= l1_max;
-	}
-	for val in l2_scores.iter_mut() {
-		*val /= l2_max;
-	}
-	for val in l3_scores.iter_mut() {
-		*val /= l3_max;
-	}
-	for val in l4_scores.iter_mut() {
-		*val /= l4_max;
-	}
-	for val in algae_scores.iter_mut() {
-		*val /= algae_max;
+	for val in shots.iter_mut() {
+		*val /= shot_max;
 	}
 
-	AutoEventGraphs {
-		intakes,
-		l1_scores,
-		l2_scores,
-		l3_scores,
-		l4_scores,
-		algae_scores,
-	}
+	AutoEventGraphs { shots }
 }
 
 #[derive(Clone)]
 pub struct AutoEventGraphs {
-	pub intakes: [f32; EVENT_GRAPH_RESOLUTION],
-	pub l1_scores: [f32; EVENT_GRAPH_RESOLUTION],
-	pub l2_scores: [f32; EVENT_GRAPH_RESOLUTION],
-	pub l3_scores: [f32; EVENT_GRAPH_RESOLUTION],
-	pub l4_scores: [f32; EVENT_GRAPH_RESOLUTION],
-	pub algae_scores: [f32; EVENT_GRAPH_RESOLUTION],
+	pub shots: [f32; EVENT_GRAPH_RESOLUTION],
 }
 
 impl Default for AutoEventGraphs {
 	fn default() -> Self {
 		Self {
-			intakes: [0.0; EVENT_GRAPH_RESOLUTION],
-			l1_scores: [0.0; EVENT_GRAPH_RESOLUTION],
-			l2_scores: [0.0; EVENT_GRAPH_RESOLUTION],
-			l3_scores: [0.0; EVENT_GRAPH_RESOLUTION],
-			l4_scores: [0.0; EVENT_GRAPH_RESOLUTION],
-			algae_scores: [0.0; EVENT_GRAPH_RESOLUTION],
+			shots: [0.0; EVENT_GRAPH_RESOLUTION],
 		}
 	}
 }

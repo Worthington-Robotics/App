@@ -5,6 +5,7 @@ use serde::{de::DeserializeOwned, Deserialize};
 use crate::scouting::TeamNumber;
 
 /// Client used for FIRST API requests
+#[derive(Clone)]
 pub struct FirstClient {
 	auth_header: String,
 	req_client: Client,
@@ -52,6 +53,34 @@ impl FirstClient {
 		Ok(response.schedule)
 	}
 
+	/// Get the teams going to a given event
+	pub async fn get_event_teams(
+		&self,
+		season: i32,
+		event: &str,
+	) -> anyhow::Result<Vec<FirstTeam>> {
+		// We don't have to worry about pagination since there should never be more than 100
+		let base_url =
+			format!("https://frc-api.firstinspires.org/v3.0/{season}/teams?eventCode={event}");
+		let response: TeamsAPIResponse = self.call(&base_url).await?;
+
+		Ok(response.teams)
+	}
+
+	/// Get all regional events for the given week
+	pub async fn get_regional_events(
+		&self,
+		season: i32,
+		week: u8,
+	) -> anyhow::Result<Vec<FirstEvent>> {
+		// We don't have to worry about pagination since there should never be more than 100
+		let base_url =
+			format!("https://frc-api.firstinspires.org/v3.0/{season}/events?weekNumber={week}&tournamentType=Regional");
+		let response: EventsAPIResponse = self.call(&base_url).await?;
+
+		Ok(response.events)
+	}
+
 	async fn call<D: DeserializeOwned>(&self, url: &str) -> anyhow::Result<D> {
 		serde_json::from_slice(
 			&self
@@ -69,7 +98,7 @@ impl FirstClient {
 }
 
 /// A team from the FIRST API
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct FirstTeam {
 	pub team_number: TeamNumber,
@@ -107,4 +136,19 @@ pub struct FirstMatch {
 #[serde(rename_all = "camelCase")]
 pub struct FirstMatchTeam {
 	pub team_number: TeamNumber,
+}
+
+/// An event from the FIRST API
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct FirstEvent {
+	pub code: String,
+}
+
+/// Response from the teams API
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EventsAPIResponse {
+	#[serde(rename = "Events")]
+	events: Vec<FirstEvent>,
 }

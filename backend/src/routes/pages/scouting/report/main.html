@@ -1,9 +1,4 @@
-{{worbots-header}}{{error}}{{prompt}}
-<h1>Match Report</h1>
-<div class="cont">
-	<button onclick="history.back()">Back</button>
-</div>
-<br />
+{{error}}{{prompt}}
 <div id="time-container">
 	<div class="cont">
 		<div id="match-time" class="cont round">
@@ -36,195 +31,208 @@
 		</form>
 	</div>
 </div>
-<br />
-<div id="match-report" class="cont col">
-	<h2>Reminders</h2>
-	<ul>
-		<li>Use the timer, starting it when the announcer says "Go" or "Reefscape"</li>
-		<li>Look over the report when you are done to make sure you didn't miss anything</li>
-		<li>Remember to track intakes</li>
-	</ul>
-	<h2>Pre-Match</h2>
-	<label for="team-number">Team Number</label>
-	<input type="number" class="field" name="team-number" id="team-number" placeholder="0000" value="{team-number}" />
-	<label for="match-number">Match Number</label>
-	<input type="text" class="field" name="match-number" id="match-number" placeholder="Q0" value="{match-number}" />
-	<label for="competition">Competition</label>
-	<select id="competition" name="competition">
-		{{competition-options}}
-	</select>
-	<a id="match-link" class="nolink" target="_blank"><button id="match-link-button" disabled>Enter team, match, and
-			competition</button></a>
-	<div class="cont">
-		<input type="checkbox" name="recorded-live" id="recorded-live" class="field" />
-		<label for="recorded-live">Recording Live (Not a Video)?</label>
-	</div>
-	<div class="cont">
-		<input type="checkbox" name="showed-up" id="showed-up" class="field" checked />
-		<label for="showed-up">Team Showed Up to Match?</label>
-	</div>
-	<h2>Auto</h2>
-	<div class="section-grid" id="auto-grid">
-		<button id="auto-coral-l4" class="cont grid-button reef"><img src="/assets/icons/coral.svg"
-				class="grid-icon center coral" /> L4</button>
-		<button id="auto-algae" class="cont grid-button"><img src="/assets/icons/algae.svg"
-				class="grid-icon center algae" /> Algae</button>
-		<button id="auto-coral-l3" class="cont grid-button reef"><img src="/assets/icons/coral.svg"
-				class="grid-icon center coral" /> L3</button>
-		<button id="auto-algae-miss" class="cont grid-button miss"><img src="/assets/icons/algae.svg"
-				class="grid-icon center algae" /> Algae Miss</button>
-		<button id="auto-coral-l2" class="cont grid-button reef"><img src="/assets/icons/coral.svg"
-				class="grid-icon center coral" /> L2</button>
-		<button id="auto-intake" class="cont grid-button"><img src="/assets/icons/download.svg" class="grid-icon center" />
-			Intake</button>
-		<button id="auto-coral-l1" class="cont grid-button reef"><img src="/assets/icons/coral.svg"
-				class="grid-icon center coral" /> L1</button>
-		<button id="auto-intake-miss" class="cont grid-button miss"><img src="/assets/icons/download.svg"
-				class="grid-icon center" /> Intake Miss</button>
-		<button class="cont grid-button penalty"><img src="/assets/icons/error.svg" class="grid-icon center" />
-			Penalty</button>
-
-		<button class="grid-button auto-confirm success" id="auto-success" style="display:none"><img
-				src="/assets/icons/check.svg" class="grid-icon" /></button>
-		<button class="grid-button auto-confirm failure" id="auto-failure" style="display:none"><img
-				src="/assets/icons/error.svg" class="grid-icon" /></button>
-		<button class="grid-button auto-confirm" id="auto-cancel"
-			style="display:none;background-color:var(--bg2);">Cancel</button>
-	</div>
-	<label for="auto">Auto</label>
-	<select name="auto" id="auto" class="field">
-		<option value="none">Unknown</option>
-	</select>
-	<h2>Teleop</h2>
-	<div class="section-grid" id="teleop-grid">
-		<button id="coral-l4" class="cont grid-button reef"><img src="/assets/icons/coral.svg"
-				class="grid-icon center coral" /> L4</button>
-		<button id="processor" class="cont grid-button"><img src="/assets/icons/window.svg" class="grid-icon center" />
-			Processor</button>
-
-		<button id="coral-l3" class="cont grid-button reef"><img src="/assets/icons/coral.svg"
-				class="grid-icon center coral" /> L3</button>
-		<button id="processor-miss" class="cont grid-button miss"><img src="/assets/icons/window.svg"
-				class="grid-icon center" /> Processor Miss</button>
-
-		<button id="coral-l2" class="cont grid-button reef"><img src="/assets/icons/coral.svg"
-				class="grid-icon center coral" /> L2</button>
-		<button id="intake" class="cont grid-button"><img src="/assets/icons/download.svg" class="grid-icon center" />
-			Intake</button>
-
-		<button id="coral-l1" class="cont grid-button reef"><img src="/assets/icons/coral.svg"
-				class="grid-icon center coral" /> L1</button>
-		<button id="intake-miss" class="cont grid-button miss"><img src="/assets/icons/download.svg"
-				class="grid-icon center" /> Intake Miss</button>
-
-		<button id="net" class="cont grid-button"><img src="/assets/icons/hashtag.svg" class="grid-icon center" />
-			Net</button>
-		<button id="agitate" class="cont grid-button"><img src="/assets/icons/upload.svg" class="grid-icon center" />
-			Agitate</button>
-		<button id="defend" class="cont grid-button"><img src="/assets/icons/shield.svg" class="grid-icon center" />
-			Defend</button>
-		<button class="cont grid-button penalty"><img src="/assets/icons/error.svg" class="grid-icon center" />
-			Penalty</button>
-
-		<button class="grid-button teleop-confirm success" id="teleop-success" style="display:none"><img
-				src="/assets/icons/check.svg" class="grid-icon" /></button>
-		<button class="grid-button teleop-confirm failure" id="teleop-failure" style="display:none"><img
-				src="/assets/icons/error.svg" class="grid-icon" /></button>
-		<button class="grid-button teleop-confirm" id="teleop-cancel"
-			style="display:none;background-color:var(--bg2);">Cancel</button>
-
-		<button class="cont grid-button defense-confirm" id="defense-coral-station" style="display:none"><img
-				src="/assets/icons/coral.svg" class="grid-icon center coral" /> Coral Station</button>
-		<button class="cont grid-button defense-confirm reef" id="defense-reef" style="display:none"><img
-				src="/assets/icons/box.svg" class="grid-icon center" /> Reef</button>
-		<button class="cont grid-button defense-confirm" id="defense-other"
-			style="display:none;background-color:var(--bg2);"><img src="/assets/icons/plus.svg" class="grid-icon center" />
-			Other</button>
-		<button class="cont grid-button defense-confirm failure" id="defense-cancel" style="display:none"><img
-				src="/assets/icons/error.svg" class="grid-icon center" /> Cancel</button>
-	</div>
-	<h2>Climb</h2>
-	<div class="section-grid">
-		<button id="start-shallow" class="cont grid-button"><img src="/assets/icons/box.svg" class="grid-icon" />
-			Start Shallow</button>
-		<button id="start-deep" class="cont grid-button"><img src="/assets/icons/box.svg" class="grid-icon" />
-			Start Deep</button>
-		<button id="climb-fail" class="cont grid-button miss"><img src="/assets/icons/error.svg" class="grid-icon" />
-			Time Expired</button>
-		<button id="climb-fall" class="cont grid-button miss"><img src="/assets/icons/download.svg" class="grid-icon" />
-			Fell Down</button>
-		<button id="climb-successful" class="cont grid-button"><img src="/assets/icons/check.svg" class="grid-icon" />
-			Successful</button>
-		<button id="climb-refresh" class="cont grid-button"><img src="/assets/icons/refresh.svg" class="grid-icon" />
-			Reset</button>
-	</div>
-	<h2>Post-Match</h2>
-	<div class="cont">
-		<input type="checkbox" name="won" id="won" class="field" />
-		<label for="won">Won?</label>
-	</div>
-	<label for="status">Robot Status</label>
-	<select id="status" name="status">
-		<option value="Good" id="good-status">Good</option>
-		<option value="Questionable">Questionable</option>
-		<option value="Broken">Broken</option>
-	</select>
-	<div class="cont col">
-		<h3>Line Crosses</h3>
-		<div class="cont">
-			<input type="checkbox" name="auto-leave" id="auto-leave" class="field" />
-			<label for="auto-leave">Left Line During Auto?</label>
+<div id="match-report">
+	<div class="cont col section" id="section-0">
+		<div class="section-header">
+			<div></div>
+			<div class="cont col">
+				<h3>Match Report</h3>
+			</div>
+			<div class="cont"><button class="next-section">🡓</button></div>
 		</div>
 		<div class="cont">
-			<input type="checkbox" name="park" id="park" class="field" />
-			<label for="park">Parked In Barge Zone?</label>
+			<button onclick="history.back()">Back</button>
+		</div>
+		<ul style="max-width:80%">
+			<li>Use the arrows to move between sections</li>
+			<li>Use the timer, starting it when the announcer says "Go" or "Rebuild"</li>
+			<li>Look over the report when you are done to make sure you didn't miss anything</li>
+			<li>Remember to track intakes</li>
+		</ul>
+	</div>
+	<div class="cont col section" id="section-1">
+		<div class="section-header">
+			<div class="cont"><button class="prev-section">🡑</button></div>
+			<h3 class="cont">Pre-Match</h3>
+			<div class="cont"><button class="next-section">🡓</button></div>
+		</div>
+		<label for="team-number">Team Number</label>
+		<input type="number" class="field" name="team-number" id="team-number" placeholder="0000" value="{team-number}" />
+		<label for="match-number">Match Number</label>
+		<input type="text" class="field" name="match-number" id="match-number" placeholder="Q0" value="{match-number}" />
+		<label for="competition">Competition</label>
+		<select id="competition" name="competition">
+			{{competition-options}}
+		</select>
+		<a id="match-link" class="nolink" target="_blank"><button id="match-link-button" disabled>Enter team, match, and
+				competition</button></a>
+		<div class="cont">
+			<input type="checkbox" name="recorded-live" id="recorded-live" class="field" />
+			<label for="recorded-live">Recording Live (Not a Video)?</label>
+		</div>
+		<div class="cont">
+			<input type="checkbox" name="showed-up" id="showed-up" class="field" checked />
+			<label for="showed-up">Team Showed Up to Match?</label>
 		</div>
 	</div>
-	<div class="cont col">
-		<h3>Robot Issues</h3>
-		<div class="cont">
-			<input type="checkbox" name="collision" id="collision" class="field" />
-			<label for="collision">Collision With Another Robot During Auto?</label>
+	<div class="cont col section" id="section-2">
+		<div class="section-header">
+			<div class="cont"><button class="prev-section">🡑</button></div>
+			<h3 class="cont">Auto</h3>
+			<div class="cont"><button class="next-section">🡓</button></div>
 		</div>
-		<div class="cont">
-			<input type="checkbox" name="brownout" id="brownout" class="field" />
-			<label for="brownout">Brownout Issues?</label>
+		<div class="section-grid" id="auto-grid">
+			<div id="auto-fuel" class="cont fuel-bg grid-button-tall swipe-button-container four">
+				<div id="auto-fuel-top" class="cont swipe-button top"><img src="/assets/icons/fuel.svg"
+						class="grid-icon center fuel" /> Fuel Hit</div>
+				<div id="auto-fuel-miss-top" class="cont fuel-miss-bg swipe-button top"><img src="/assets/icons/fuel.svg"
+						class="grid-icon center fuel" /> Fuel Miss</div>
+				<div id="auto-fuel-bottom" class="cont swipe-button"><img src="/assets/icons/fuel.svg"
+						class="grid-icon center fuel" /> Fuel Hit</div>
+				<div id="auto-fuel-miss-bottom" class="cont fuel-miss-bg swipe-button"><img src="/assets/icons/fuel.svg"
+						class="grid-icon center fuel" /> Fuel Miss</div>
+			</div>
+			<button class="cont grid-button penalty"><img src="/assets/icons/error.svg" class="grid-icon center" />
+				Penalty</button>
+			<div id="auto-intake" class="cont intake-bg grid-button-tall swipe-button-container two-tall">
+				<div id="auto-intake-top" class="cont swipe-button top"><img src="/assets/icons/download.svg"
+						class="grid-icon center" /> Intake</div>
+				<div id="auto-intake-bottom" class="cont swipe-button"><img src="/assets/icons/download.svg"
+						class="grid-icon center" /> Intake</div>
+			</div>
 		</div>
-		<div class="cont">
-			<input type="checkbox" name="tipping" id="tipping" class="field" />
-			<label for="tipping">Tipping Problems?</label>
+		<label for="auto">Auto</label>
+		<select name="auto" id="auto" class="field">
+			<option value="none">Unknown</option>
+		</select>
+	</div>
+	<div class="cont col section" id="section-3">
+		<div class="section-header">
+			<div class="cont"><button class="prev-section">🡑</button></div>
+			<h3 class="cont">Teleop</h3>
+			<div class="cont"><button class="next-section">🡓</button></div>
 		</div>
-		<div class="cont">
-			<input type="checkbox" name="beached" id="beached" class="field" />
-			<label for="beached">Beached on Algae?</label>
-		</div>
-		<div class="cont">
-			<input type="checkbox" name="teleop-pause" id="teleop-pause" class="field" />
-			<label for="teleop-pause">Pause at Start of Teleop?</label>
-		</div>
-		<div class="cont">
-			<input type="checkbox" name="game-piece-stuck" id="game-piece-stuck" class="field" />
-			<label for="game-piece-stuck">Game Piece Stuck in Robot?</label>
+		<div class="section-grid" id="teleop-grid">
+			<div id="teleop-fuel" class="cont fuel-bg grid-button-tall swipe-button-container four">
+				<div id="teleop-fuel-top" class="cont swipe-button top"><img src="/assets/icons/fuel.svg"
+						class="grid-icon center fuel" /> Fuel Hit</div>
+				<div id="teleop-fuel-miss-top" class="cont fuel-miss-bg swipe-button top"><img src="/assets/icons/fuel.svg"
+						class="grid-icon center fuel" /> Fuel Miss</div>
+				<div id="teleop-fuel-bottom" class="cont swipe-button"><img src="/assets/icons/fuel.svg"
+						class="grid-icon center fuel" /> Fuel Hit</div>
+				<div id="teleop-fuel-miss-bottom" class="cont fuel-miss-bg swipe-button"><img src="/assets/icons/fuel.svg"
+						class="grid-icon center fuel" /> Fuel Miss</div>
+			</div>
+			<div id="pass" class="cont pass-bg grid-button-tall swipe-button-container two-tall">
+				<div id="pass-top" class="cont swipe-button top"><img src="/assets/icons/share.svg" class="grid-icon center" />
+					Pass</div>
+				<div id="pass-bottom" class="cont swipe-button"><img src="/assets/icons/share.svg" class="grid-icon center" />
+					Pass</div>
+			</div>
+			<div id="teleop-intake" class="cont intake-bg grid-button-tall swipe-button-container two-tall">
+				<div id="teleop-intake-top" class="cont swipe-button top"><img src="/assets/icons/download.svg"
+						class="grid-icon center" /> Intake</div>
+				<div id="teleop-intake-bottom" class="cont swipe-button"><img src="/assets/icons/download.svg"
+						class="grid-icon center" /> Intake</div>
+			</div>
+			<button id="defend" class="cont grid-button"><img src="/assets/icons/shield.svg" class="grid-icon center" />
+				Defend</button>
+			<button class="cont grid-button penalty"><img src="/assets/icons/error.svg" class="grid-icon center" />
+				Penalty</button>
 		</div>
 	</div>
-	<h2>Review</h2>
-	<div id="events" class="cont col">
-		<h3>Match Events</h3>
+	<div class="cont col section" id="section-4">
+		<div class="section-header">
+			<div class="cont"><button class="prev-section">🡑</button></div>
+			<h3 class="cont">Climb</h3>
+			<div class="cont"><button class="next-section">🡓</button></div>
+		</div>
+		<div class="section-grid">
+			<button id="start-l3" class="cont grid-button"><img src="/assets/icons/box.svg" class="grid-icon" />
+				Start L3</button>
+			<button id="climb-fail" class="cont grid-button miss"><img src="/assets/icons/error.svg" class="grid-icon" />
+				Time Expired</button>
+			<button id="start-l2" class="cont grid-button"><img src="/assets/icons/box.svg" class="grid-icon" />
+				Start L2</button>
+			<button id="climb-fall" class="cont grid-button miss"><img src="/assets/icons/download.svg" class="grid-icon" />
+				Fell Down</button>
+			<button id="start-l1" class="cont grid-button"><img src="/assets/icons/box.svg" class="grid-icon" />
+				Start L1</button>
+			<button id="climb-successful" class="cont grid-button"><img src="/assets/icons/check.svg" class="grid-icon" />
+				Successful</button>
+			<button id="climb-refresh" class="cont grid-button"><img src="/assets/icons/refresh.svg" class="grid-icon" />
+				Reset</button>
+		</div>
+	</div>
+	<div class="cont col section" id="section-5">
+		<div class="section-header">
+			<div class="cont"><button class="prev-section">🡑</button></div>
+			<h3 class="cont">Post-Match</h3>
+			<div class="cont"><button class="next-section">🡓</button></div>
+		</div>
+		<div class="cont">
+			<input type="checkbox" name="won" id="won" class="field" />
+			<label for="won">Won?</label>
+		</div>
+		<label for="status">Robot Status</label>
+		<select id="status" name="status">
+			<option value="Good" id="good-status">Good</option>
+			<option value="Questionable">Questionable</option>
+			<option value="Broken">Broken</option>
+		</select>
+		<div class="cont">
+			<input type="checkbox" name="auto-climb" id="auto-climb" class="field" />
+			<label for="auto-climb">Climbed in Auto?</label>
+		</div>
+		<div class="cont col">
+			<h3>Robot Issues</h3>
+			<div class="cont">
+				<input type="checkbox" name="collision" id="collision" class="field" />
+				<label for="collision">Collision With Another Robot During Auto?</label>
+			</div>
+			<div class="cont">
+				<input type="checkbox" name="brownout" id="brownout" class="field" />
+				<label for="brownout">Brownout Issues?</label>
+			</div>
+			<div class="cont">
+				<input type="checkbox" name="tipping" id="tipping" class="field" />
+				<label for="tipping">Tipping Problems?</label>
+			</div>
+			<div class="cont">
+				<input type="checkbox" name="beached" id="beached" class="field" />
+				<label for="beached">Beached on Fuel?</label>
+			</div>
+			<div class="cont">
+				<input type="checkbox" name="teleop-pause" id="teleop-pause" class="field" />
+				<label for="teleop-pause">Pause at Start of Teleop?</label>
+			</div>
+			<div class="cont">
+				<input type="checkbox" name="game-piece-stuck" id="game-piece-stuck" class="field" />
+				<label for="game-piece-stuck">Game Piece Stuck in Robot?</label>
+			</div>
+		</div>
+	</div>
+	<div class="cont col section" style="justify-content: flex-start;" id="section-6">
+		<div class="section-header">
+			<div class="cont"><button class="prev-section">🡑</button></div>
+			<h3 class="cont">Review</h3>
+		</div>
+		<div id="events" class="cont col">
+			<h3>Match Events</h3>
+			<div id="events-container" class="cont col item-cont"></div>
+		</div>
 		<br />
-		<div id="events-container" class="cont col item-cont"></div>
-	</div>
-	<br />
-	<div id="breakdown" class="cont col">
-		<h3>Breakdown</h3>
-		<div id="points">0 Points</div>
-	</div>
-	<br />
-	<label for="notes">Match Notes</label>
-	<textarea name="notes" id="notes" class="round border" placeholder="Enter extra match notes here..."></textarea>
-	<div class="cont">
-		<button class="cont" id="clear"><img src="/assets/icons/error.svg" style="width:1.1rem" /> Clear</button>
-		<button class="cont" id="submit"><img src="/assets/icons/check.svg" style="width:1.1rem" /> Submit</button>
-		<button class="cont" id="download"><img src="/assets/icons/download.svg" style="width:1.1rem" /> Download</button>
+		<div id="breakdown" class="cont col">
+			<h3>Breakdown</h3>
+			<div id="points">0 Points</div>
+		</div>
+		<label for="notes">Match Notes</label>
+		<textarea name="notes" id="notes" class="round border" placeholder="Enter extra match notes here..."></textarea>
+		<div class="cont">
+			<button class="cont" id="clear"><img src="/assets/icons/error.svg" style="width:1.1rem" /> Clear</button>
+			<button class="cont" id="submit"><img src="/assets/icons/check.svg" style="width:1.1rem" /> Submit</button>
+			<button class="cont" id="download"><img src="/assets/icons/download.svg" style="width:1.1rem" /> Download</button>
+		</div>
 	</div>
 </div>
 <script>
@@ -245,7 +253,7 @@
 			timerRunning: false,
 			timeScale: 1,
 			timeOffset: 0,
-			// Has a list of all events during teleop and auto, as {teleop: bool, id: string, timestamp: number}. Events with a success will have a success: bool field. Coral events will have a level: number field. Defense events will have a location: string field.
+			// Has a list of all events during teleop and auto, as {teleop: bool, id: string, startTime: number, endTime: number?, hitCount: number?, missCount: number?}. Defense events will have a location: string field.
 			matchEvents: [],
 			climbType: "none",
 			climbStart: null,
@@ -253,8 +261,6 @@
 			climbResult: "failed"
 		};
 		pendingEvent = null;
-		hideAutoConfirm();
-		hideTeleopConfirm();
 	}
 
 	initMatchData();
@@ -348,14 +354,14 @@
 
 	function createEvent(event) {
 		// Only set the timestamp if it isn't already set
-		if (event.timestamp == undefined) {
-			event.timestamp = M.time;
+		if (event.startTime == undefined) {
+			event.startTime = M.time;
 		}
-		event.timestamp -= calculateReactionTime();
+		event.startTime -= calculateReactionTime();
 
 		M.matchEvents.push(event);
 		updateEvents();
-		updateBreakdown();
+		// updateBreakdown();
 	}
 
 	function calculateReactionTime() {
@@ -380,17 +386,17 @@
 			elem.className = "item round event";
 			elem.dataset.index = i;
 
-			let period = `<div class="cont round event-period" onclick="eventUpdatePeriod(event);">${event.teleop ? "T" : "A"}</div>`;
-			let time = `<div class="cont event-time">${renderTime(event.timestamp)}</div>`;
+			let period = `<div class="cont round event-period" onclick="updateEventPeriod(event);">${event.teleop ? "T" : "A"}</div>`;
+			let time = `<div class="cont event-time">${renderTime(event.startTime)}</div>`;
 			let nameUppercase = event.id.charAt(0).toUpperCase() + event.id.slice(1);
 			let name = `<div class="cont event-name">${event.id}</div>`;
-			let removeButton = `<div class=cont><div class="cont round event-remove" data-index=${i} onclick="eventRemove(event);"><img src="/assets/icons/delete2.svg" size=12px /></div></div>`;
+			let removeButton = `<div class=cont><div class="cont round event-remove" data-index=${i} onclick="removeEvent(event);"><img src="/assets/icons/delete2.svg" size=12px /></div></div>`;
 			elem.innerHTML = `${period}${time}${name}${removeButton}`;
 			container.appendChild(elem);
 		}
 	}
 
-	function eventRemove(event) {
+	function removeEvent(event) {
 		index = event.target.dataset.index;
 		if (index == undefined) {
 			return;
@@ -400,7 +406,7 @@
 		updateBreakdown();
 	}
 
-	function eventUpdatePeriod(event) {
+	function updateEventPeriod(event) {
 		index = event.target.parentElement.dataset.index;
 		if (index == undefined) {
 			return;
@@ -410,141 +416,141 @@
 		updateBreakdown();
 	}
 
+	// Starts or adds to a volley event
+	function startOrContinueEvent(id, teleop, successful) {
+		let event = undefined;
+		// Starting from the most recent events, find one with the same type that hasn't ended yet
+		for (let i = M.matchEvents.length - 1; i >= 0; i--) {
+			let existingEvent = M.matchEvents[i];
+			if (existingEvent.id == id && existingEvent.teleop == teleop && existingEvent.endTime == undefined) {
+				event = existingEvent;
+				break;
+			}
+		}
+		if (event == undefined) {
+			event = {
+				id: id,
+				teleop: teleop,
+				hitCount: 0,
+				missCount: 0
+			};
+			createEvent(event);
+		}
+
+		if (successful) {
+			event.hitCount++;
+		} else {
+			event.missCount++;
+		}
+	}
+
+	// Ends a volley event
+	function endEvent(id) {
+		// Starting from the most recent events, find one with the same type that hasn't ended yet
+		for (let i = M.matchEvents.length - 1; i >= 0; i--) {
+			let event = M.matchEvents[i];
+			if (event.id == id && event.endTime == undefined) {
+				event.endTime = M.time - calculateReactionTime();
+				break;
+			}
+		}
+	}
+
+	// Starts and ends a volley event with a single shot
+	function createSingleVolleyEvent(id, teleop, successful) {
+		startOrContinueEvent(id, teleop, successful);
+		endEvent(id);
+	}
+
 	// Event buttons
-	document.getElementById("auto-coral-l4").addEventListener("click", () => {
-		setAutoPendingEvent({
-			teleop: false,
-			id: "coral",
-			level: 3,
-		});
+	document.getElementById("auto-fuel-top").addEventListener("click", () => createSingleVolleyEvent("fuel", false, true));
+	document.getElementById("auto-fuel-bottom").addEventListener("click", () => createSingleVolleyEvent("fuel", false, true));
+	document.getElementById("auto-fuel-miss-top").addEventListener("click", () => createSingleVolleyEvent("fuel", false, false));
+	document.getElementById("auto-fuel-miss-bottom").addEventListener("click", () => createSingleVolleyEvent("fuel", false, false));
+	document.getElementById("auto-intake-top").addEventListener("click", () => createSingleVolleyEvent("intake", false, true));
+	document.getElementById("auto-intake-bottom").addEventListener("click", () => createSingleVolleyEvent("intake", false, true));
+
+	document.getElementById("teleop-fuel-top").addEventListener("click", () => createSingleVolleyEvent("fuel", true, true));
+	document.getElementById("teleop-fuel-bottom").addEventListener("click", () => createSingleVolleyEvent("fuel", true, true));
+	document.getElementById("teleop-fuel-miss-top").addEventListener("click", () => createSingleVolleyEvent("fuel", true, false));
+	document.getElementById("teleop-fuel-miss-bottom").addEventListener("click", () => createSingleVolleyEvent("fuel", true, false));
+	document.getElementById("teleop-intake-top").addEventListener("click", () => createSingleVolleyEvent("intake", true, true));
+	document.getElementById("teleop-intake-bottom").addEventListener("click", () => createSingleVolleyEvent("intake", true, true));
+	document.getElementById("pass-top").addEventListener("click", () => createSingleVolleyEvent("pass", true, true));
+	document.getElementById("pass-bottom").addEventListener("click", () => createSingleVolleyEvent("pass", true, true));
+
+
+	// Touch control
+
+	// Map of touch identifiers to information about that swipe session
+	let touchContext = {}
+
+	function endTouch(id) {
+		if (touchContext[id] != undefined) {
+			endEvent(touchContext[id].eventId);
+		}
+		delete touchContext[id];
+		console.log("End touch " + id);
+	}
+
+	function startOrContinueTouch(x, y, id) {
+		let elem = document.elementFromPoint(x, y);
+		// Walk up through document tree
+		while (elem != undefined && !elem.classList.contains("swipe-button")) {
+			// We reached the top
+			if (elem.id == "match-report") {
+				elem = undefined;
+			} else {
+				elem = elem.parentElement;
+			}
+		}
+
+		// Let the user drag out of the box as long as they started in it
+		if (elem == undefined) {
+			return;
+		}
+
+		// Decode the data for the event from the id
+		let eventId = elem.id.includes("fuel") ? "fuel" : elem.id.includes("intake") ? "intake" : "pass";
+		let eventSuccess = eventId == "fuel" ? !elem.id.includes("miss") : true;
+		let eventIsTeleop = !elem.id.includes("auto");
+
+		// If we already started on one event type and moved to a new one, we want to stay on the one we started the touch with
+		if (touchContext[id] != undefined && eventId != touchContext[id].eventId) {
+			return;
+		}
+
+		// Check if we are moving to a new button within the swipe area
+		let isNewButton = touchContext[id] == undefined || touchContext[id].lastElementId != elem.id;
+		if (isNewButton) {
+			blink(elem);
+			startOrContinueEvent(eventId, eventIsTeleop, eventSuccess);
+		}
+
+		// Save context for later
+		if (touchContext[id] == undefined) {
+			touchContext[id] = {
+				eventId: eventId,
+			};
+			console.log("Start touch " + id);
+		}
+		touchContext[id].lastElementId = elem.id;
+	}
+
+	document.getElementById("match-report").addEventListener("touchstart", (e) => {
+		for (let touch of e.changedTouches) {
+			startOrContinueTouch(touch.clientX, touch.clientY, touch.identifier);
+		}
 	});
-	document.getElementById("auto-coral-l3").addEventListener("click", () => {
-		setAutoPendingEvent({
-			teleop: false,
-			id: "coral",
-			level: 2,
-		});
+	document.getElementById("match-report").addEventListener("touchmove", (e) => {
+		for (let touch of e.touches) {
+			startOrContinueTouch(touch.clientX, touch.clientY, touch.identifier);
+		}
 	});
-	document.getElementById("auto-coral-l2").addEventListener("click", () => {
-		setAutoPendingEvent({
-			teleop: false,
-			id: "coral",
-			level: 1,
-		});
-	});
-	document.getElementById("auto-coral-l1").addEventListener("click", () => {
-		setAutoPendingEvent({
-			teleop: false,
-			id: "coral",
-			level: 0,
-		});
-	});
-	document.getElementById("auto-algae").addEventListener("click", () => {
-		blink("auto-algae");
-		createEvent({
-			teleop: false,
-			id: "algae",
-			successful: true
-		});
-	});
-	document.getElementById("auto-algae-miss").addEventListener("click", () => {
-		blink("auto-algae-miss");
-		createEvent({
-			teleop: false,
-			id: "algae",
-			successful: false
-		});
-	});
-	document.getElementById("auto-intake").addEventListener("click", () => {
-		blink("auto-intake");
-		createEvent({
-			teleop: false,
-			id: "intake",
-			successful: true
-		});
-	});
-	document.getElementById("auto-intake-miss").addEventListener("click", () => {
-		blink("auto-intake-miss");
-		createEvent({
-			teleop: false,
-			id: "intake",
-			successful: false
-		});
-	});
-	document.getElementById("coral-l4").addEventListener("click", () => {
-		setTeleopPendingEvent({
-			teleop: true,
-			id: "coral",
-			level: 3,
-		});
-	});
-	document.getElementById("coral-l3").addEventListener("click", () => {
-		setTeleopPendingEvent({
-			teleop: true,
-			id: "coral",
-			level: 2,
-		});
-	});
-	document.getElementById("coral-l2").addEventListener("click", () => {
-		setTeleopPendingEvent({
-			teleop: true,
-			id: "coral",
-			level: 1,
-		});
-	});
-	document.getElementById("coral-l1").addEventListener("click", () => {
-		setTeleopPendingEvent({
-			teleop: true,
-			id: "coral",
-			level: 0,
-		});
-	});
-	document.getElementById("processor").addEventListener("click", () => {
-		blink("processor");
-		createEvent({
-			teleop: true,
-			id: "processor",
-			successful: true
-		});
-	});
-	document.getElementById("processor-miss").addEventListener("click", () => {
-		blink("processor-miss");
-		createEvent({
-			teleop: true,
-			id: "processor",
-			successful: false
-		});
-	});
-	document.getElementById("intake").addEventListener("click", () => {
-		blink("intake");
-		createEvent({
-			teleop: true,
-			id: "intake",
-			successful: true
-		});
-	});
-	document.getElementById("intake-miss").addEventListener("click", () => {
-		blink("intake-miss");
-		createEvent({
-			teleop: true,
-			id: "intake",
-			successful: false
-		});
-	});
-	document.getElementById("net").addEventListener("click", () => {
-		blink("net");
-		createEvent({
-			teleop: true,
-			id: "net",
-			successful: true
-		});
-	});
-	document.getElementById("agitate").addEventListener("click", () => {
-		blink("agitate");
-		createEvent({
-			teleop: true,
-			id: "agitate",
-		});
+	document.getElementById("match-report").addEventListener("touchend", (e) => {
+		for (let touch of e.changedTouches) {
+			endTouch(touch.identifier);
+		}
 	});
 
 	// To fix the minifier
@@ -559,160 +565,37 @@
 		})
 	}
 
-	function setAutoPendingEvent(event) {
-		event.timestamp = M.time;
-		pendingEvent = event;
-		for (let e of document.getElementById("auto-grid").children) {
-			if (e.classList.contains("auto-confirm")) {
-				e.style.display = "";
-			} else {
-				e.style.display = "none";
-			}
-		}
-	}
-
-	document.getElementById("auto-success").addEventListener("click", () => {
-		if (pendingEvent != null) {
-			pendingEvent.successful = true;
-			createEvent(pendingEvent);
-		}
-		pendingEvent = null;
-		hideAutoConfirm();
-	});
-
-	document.getElementById("auto-failure").addEventListener("click", () => {
-		if (pendingEvent != null) {
-			pendingEvent.successful = false;
-			createEvent(pendingEvent);
-		}
-		pendingEvent = null;
-		hideAutoConfirm();
-	});
-
-	document.getElementById("auto-cancel").addEventListener("click", () => {
-		hideAutoConfirm();
-	});
-
-	function hideAutoConfirm() {
-		for (let e of document.getElementById("auto-grid").children) {
-			if (e.classList.contains("auto-confirm")) {
-				e.style.display = "none";
-			} else {
-				e.style.display = "";
-			}
-		}
-	}
-
-	function setTeleopPendingEvent(event) {
-		event.timestamp = M.time;
-		pendingEvent = event;
-		for (let e of document.getElementById("teleop-grid").children) {
-			if (e.classList.contains("teleop-confirm")) {
-				e.style.display = "";
-			} else {
-				e.style.display = "none";
-			}
-		}
-	}
-
-	document.getElementById("teleop-success").addEventListener("click", () => {
-		if (pendingEvent != null) {
-			pendingEvent.successful = true;
-			createEvent(pendingEvent);
-		}
-		pendingEvent = null;
-		hideTeleopConfirm();
-	});
-
-	document.getElementById("teleop-failure").addEventListener("click", () => {
-		if (pendingEvent != null) {
-			pendingEvent.successful = false;
-			createEvent(pendingEvent);
-		}
-		pendingEvent = null;
-		hideTeleopConfirm();
-	});
-
-	document.getElementById("teleop-cancel").addEventListener("click", () => {
-		hideTeleopConfirm();
-	});
-
-	function hideTeleopConfirm() {
-		for (let e of document.getElementById("teleop-grid").children) {
-			if (e.classList.contains("teleop-confirm")) {
-				e.style.display = "none";
-			} else if (!e.classList.contains("defense-confirm")) {
-				e.style.display = "";
-			}
-		}
-	}
-
 	document.getElementById("defend").addEventListener("click", () => {
-		let event = {
+		blink("defend");
+		createEvent({
 			teleop: true,
 			id: "defend",
-			timestamp: M.time,
-			successful: true,
-		};
-		pendingEvent = event;
-
-		for (let e of document.getElementById("teleop-grid").children) {
-			if (e.classList.contains("defense-confirm")) {
-				e.style.display = "";
-			} else {
-				e.style.display = "none";
-			}
-		}
+			hitCount: 0,
+			missCount: 0,
+		});
 	});
 
-	document.getElementById("defense-coral-station").addEventListener("click", () => {
-		confirmDefend("coral_station");
-	});
-
-	document.getElementById("defense-reef").addEventListener("click", () => {
-		confirmDefend("reef");
-	});
-
-	document.getElementById("defense-other").addEventListener("click", () => {
-		confirmDefend("other");
-	});
-
-	function confirmDefend(location) {
-		if (pendingEvent != null) {
-			pendingEvent.location = location;
-			createEvent(pendingEvent);
-		}
-		pendingEvent = null;
-		hideDefendConfirm();
-	}
-
-	document.getElementById("defense-cancel").addEventListener("click", () => {
-		hideDefendConfirm();
-	});
-
-	function hideDefendConfirm() {
-		for (let e of document.getElementById("teleop-grid").children) {
-			if (e.classList.contains("defense-confirm")) {
-				e.style.display = "none";
-			} else if (!e.classList.contains("teleop-confirm")) {
-				e.style.display = "";
-			}
-		}
-	}
-
-	document.getElementById("start-shallow").addEventListener("click", () => {
-		blink("start-shallow");
-		M.climbType = "shallow";
+	document.getElementById("start-l1").addEventListener("click", () => {
+		blink("start-l1");
+		M.climbType = "l1";
 		if (M.climbStart == null) {
 			M.climbStart = M.time;
 		}
 		M.climbEnd = null;
 	});
-	document.getElementById("start-deep").addEventListener("click", () => {
-		blink("start-deep");
-		M.climbType = "deep";
+	document.getElementById("start-l2").addEventListener("click", () => {
+		blink("start-l2");
+		M.climbType = "l2";
 		if (M.climbStart == null) {
-			M.climbStart = M.time - calculateReactionTime();
+			M.climbStart = M.time;
+		}
+		M.climbEnd = null;
+	});
+	document.getElementById("start-l3").addEventListener("click", () => {
+		blink("start-l3");
+		M.climbType = "l3";
+		if (M.climbStart == null) {
+			M.climbStart = M.time;
 		}
 		M.climbEnd = null;
 	});
@@ -749,6 +632,7 @@
 		updateBreakdown();
 	});
 
+	// Submits the team stats
 	function onSubmit(event) {
 		event.preventDefault();
 
@@ -772,6 +656,7 @@
 		});
 	}
 
+	// Downloads the team stats to your device
 	function download(event) {
 		event.preventDefault();
 
@@ -849,32 +734,21 @@
 			recorded_live: document.getElementById("recorded-live").checked,
 			auto: auto,
 			auto_collision: document.getElementById("collision").checked,
-			auto_coral_attempts: stats.autoCoralAttempts,
-			auto_algae_attempts: stats.autoAlgaeAttempts,
-			auto_algae_scores: stats.autoAlgaeScores,
-			auto_intake_attempts: stats.autoIntakeAttempts,
-			auto_intake_successes: stats.autoIntakeSuccesses,
-			auto_intake_events: stats.autoIntakeEvents,
-			auto_algae_events: stats.autoAlgaeEvents,
-			teleop_coral_attempts: stats.teleopCoralAttempts,
-			teleop_intake_attempts: stats.teleopIntakeAttempts,
-			teleop_intake_successes: stats.teleopIntakeSuccesses,
-			agitations: stats.agitations,
-			processor_attempts: stats.processorAttempts,
-			processor_scores: stats.processorScores,
-			net_shots: stats.netShots,
+			auto_climb_attempted: document.getElementById("auto-climb").checked,
+			auto_climb_successful: document.getElementById("auto-climb").checked,
+			auto_fuel_volleys: stats.autoFuelVolleys,
+			auto_intake_volleys: stats.autoIntakeVolleys,
+			teleop_fuel_volleys: stats.teleopFuelVolleys,
+			teleop_intake_volleys: stats.teleopIntakeVolleys,
+			teleop_pass_volleys: stats.teleopPassVolleys,
 			climb_attempted: M.climbType,
 			climb_result: M.climbResult,
 			climb_time: M.climbEnd - M.climbStart,
 			points_scored: stats.totalScore,
 			defenses: stats.defenses,
-			coral_station_defenses: stats.coralStationDefenses,
-			reef_defenses: stats.reefDefenses,
 			penalties: stats.penalties,
 			cycle_time: stats.cycleTime,
 			cycle_times: stats.cycleTimes,
-			auto_leave: document.getElementById("auto-leave").checked,
-			park: document.getElementById("park").checked,
 			status: document.getElementById("status").value,
 			showed_up: document.getElementById("showed-up").checked,
 			won: document.getElementById("won").checked,
@@ -894,138 +768,75 @@
 		let cycleStartTime = null;
 		let cycleTimes = [];
 
-		let autoCoralAttempts = [];
-		let autoAlgaeAttempts = 0;
-		let autoAlgaeScores = 0;
-		let autoIntakeAttempts = 0;
-		let autoIntakeSuccesses = 0;
-		let autoIntakeEvents = [];
-		let autoAlgaeEvents = [];
+		let autoFuelVolleys = [];
+		let autoIntakes = [];
 
-		let teleopCoralAttempts = [];
-		let teleopIntakeAttempts = 0;
-		let teleopIntakeSuccesses = 0;
-		let agitations = 0;
-		let processorAttempts = 0;
-		let processorScores = 0;
-		let netShots = 0;
+		let teleopFuelVolleys = [];
+		let teleopIntakes = [];
+		let teleopPasses = [];
 		let defenses = 0;
-		let coralStationDefenses = 0;
-		let reefDefenses = 0;
 
 		let penalties = 0;
 		let totalScore = 0;
 
-		M.matchEvents.sort((a, b) => a - b);
+		M.matchEvents.sort((a, b) => a.startTime - b.startTime);
 
 		for (let event of M.matchEvents) {
+			let volley = eventToVolley(event);
 			// Totals and score calculations
-			if (event.id == "coral") {
-				let attempt = {
-					successful: event.successful,
-					level: `l${event.level + 1}`,
-					timestamp: event.timestamp,
-				};
+			if (event.id == "fuel") {
+				totalScore += event.hitCount;
 				if (event.teleop) {
-					if (event.successful) {
-						totalScore += event.level;
-						totalScore += 2;
-					}
-					teleopCoralAttempts.push(attempt);
+					teleopFuelVolleys.push(volley);
 				} else {
-					if (event.successful) {
-						totalScore += event.level;
-						totalScore += 3;
-						if (event.level > 1) {
-							totalScore += 1;
-						}
-					}
-					autoCoralAttempts.push(attempt);
+					autoFuelVolleys.push(volley);
 				}
-			} else if (event.id == "algae") {
-				autoAlgaeAttempts++;
-				if (event.successful) {
-					autoAlgaeScores++;
-					totalScore += 4;
-				}
-				let attempt = {
-					successful: event.successful,
-					timestamp: event.timestamp,
-				};
-				autoAlgaeEvents.push(attempt);
-			} else if (event.id == "processor") {
-				processorAttempts++;
-				if (event.successful) {
-					processorScores++;
-					totalScore += 2;
-				}
-			} else if (event.id == "net") {
-				totalScore += 4;
-				netShots++;
 			} else if (event.id == "intake") {
 				if (event.teleop) {
-					teleopIntakeAttempts++;
-					if (event.successful) {
-						teleopIntakeSuccesses++;
-					}
+					teleopIntakes.push(volley);
 				} else {
-					autoIntakeAttempts++;
-					if (event.successful) {
-						autoIntakeSuccesses++;
-					}
-					let attempt = {
-						successful: event.successful,
-						timestamp: event.timestamp,
-					};
-					autoIntakeEvents.push(attempt);
+					autoIntakes.push(volley);
 				}
-			} else if (event.id == "agitate") {
-				agitations++;
+			} else if (event.id == "pass") {
+				teleopPasses.push(volley);
 			} else if (event.id == "defend") {
 				defenses++;
-				if (event.location == "coral_station") {
-					coralStationDefenses++;
-				} else if (event.location == "reef") {
-					reefDefenses++;
-				}
 			} else if (event.id == "penalty") {
 				penalties++;
-				totalScore -= 4;
+				totalScore -= 10;
 			}
 
 			// Cycles
 			if (event.teleop) {
-				if (event.successful != undefined && event.successful) {
-					if (event.id == "intake") {
-						if (isReverseCycle) {
-							cycleTimes.push(cycleStartTime);
-							cycleStartTime = null;
-							isReverseCycle = false;
-						}
-						cycleStartTime = event.timestamp;
-					} else if (event.id == "coral" || event.id == "processor" || event.id == "net") {
-						if (cycleStartTime != null) {
-							isReverseCycle = true;
-						}
+				if (event.id == "intake") {
+					if (isReverseCycle) {
+						cycleTimes.push(cycleStartTime);
+						cycleStartTime = null;
+						isReverseCycle = false;
+					}
+					cycleStartTime = event.startTime;
+				} else if (event.id == "fuel") {
+					if (cycleStartTime != null) {
+						isReverseCycle = true;
 					}
 				}
 			}
 		}
 
-		// Auto cross line points
-		if (document.getElementById("auto-leave").checked || autoAlgaeAttempts > 0 || autoCoralAttempts.length > 0 || autoIntakeAttempts > 0) {
-			totalScore += 3;
+		// Auto climb points
+		if (document.getElementById("auto-climb").checked) {
+			totalScore += 15;
 		}
 
 		// Climb points
 		if (M.climbResult == "succeeded") {
-			if (M.climbType == "shallow") {
-				totalScore += 6;
-			} else if (M.climbType == "deep") {
-				totalScore += 12;
+			if (M.climbType == "l1") {
+				totalScore += 10;
+			} else if (M.climbType == "l2") {
+				totalScore += 20;
+			} else if (M.climbType == "l3") {
+				totalScore += 30;
 			}
-		} else if (document.getElementById("park").checked) {
-			totalScore += 2;
 		}
 
 		let cycleTimeSum = 0;
@@ -1042,26 +853,25 @@
 		return {
 			cycleTimes: cycleTimes,
 			cycleTime: cycleTime,
-			autoCoralAttempts: autoCoralAttempts,
-			autoAlgaeAttempts: autoAlgaeAttempts,
-			autoAlgaeScores: autoAlgaeScores,
-			autoIntakeAttempts: autoIntakeAttempts,
-			autoIntakeSuccesses: autoIntakeSuccesses,
-			autoIntakeEvents: autoIntakeEvents,
-			autoAlgaeEvents: autoAlgaeEvents,
-			teleopCoralAttempts: teleopCoralAttempts,
-			teleopIntakeAttempts: teleopIntakeAttempts,
-			teleopIntakeSuccesses: teleopIntakeSuccesses,
-			agitations: agitations,
-			processorAttempts: processorAttempts,
-			processorScores: processorScores,
-			netShots: netShots,
+			autoFuelVolleys: autoFuelVolleys,
+			autoIntakeVolleys: autoIntakes,
+			teleopFuelVolleys: teleopFuelVolleys,
+			teleopIntakeVolleys: teleopIntakes,
+			teleopPassVolleys: teleopPasses,
 			defenses: defenses,
-			coralStationDefenses: coralStationDefenses,
-			reefDefenses: reefDefenses,
 			penalties: penalties,
 			totalScore: totalScore
 		}
+	}
+
+	// Converts an event to a volley in the match stats format
+	function eventToVolley(event) {
+		return {
+			shots_attempted: event.hitCount + event.missCount,
+			shots_made: event.missCount,
+			start_time: event.startTime,
+			end_time: event.endTime == undefined ? event.startTime : event.endTime,
+		};
 	}
 
 	document.getElementById("submit").addEventListener("click", onSubmit);
@@ -1070,16 +880,17 @@
 	function parseMatchNumber(string) {
 		let matchNumber = null;
 		if (string.length < 2) {
-			setError("Invalid match number");
+			setError("Invalid match number. Include a Q or P at the start to specify whether this is a qualification or playoff match");
 			return null;
 		}
 
 		let type = null;
-		if (string[0] == "Q") {
+		let stringUpper = string.toUpperCase();
+		if (stringUpper[0] == "Q") {
 			type = "Qualification";
-		} else if (string[0] == "P" || string[0] == "S") {
+		} else if (stringUpper[0] == "P" || stringUpper[0] == "S") {
 			type = "Playoff";
-		} else if (string[0] == "F") {
+		} else if (stringUpper[0] == "F") {
 			type = "Finals";
 		}
 		if (type == null) {
@@ -1109,16 +920,13 @@
 	document.getElementById("clear").addEventListener("click", () => {
 		showConfirmPrompt("clear the data for the match", () => {
 			initMatchData();
-			hideTeleopConfirm();
-			hideAutoConfirm();
 			updateEvents();
 
 			document.getElementById("won").checked = false;
 			document.getElementById("good-status").selected = true;
+			document.getElementById("auto-climb").checked = false;
 			document.getElementById("notes").value = "";
 			document.getElementById("showed-up").checked = true;
-			document.getElementById("auto-leave").checked = false;
-			document.getElementById("park").checked = false;
 			document.getElementById("auto-collision").checked = false;
 			document.getElementById("brownout").checked = false;
 			document.getElementById("tipping").checked = false;
@@ -1239,8 +1047,42 @@
 		e.preventDefault();
 		updateBreakdown();
 	});
-	document.getElementById("auto-leave").addEventListener("change", () => updateBreakdown());
-	document.getElementById("park").addEventListener("change", () => updateBreakdown());
+	document.getElementById("auto-climb").addEventListener("change", () => updateBreakdown());
+
+	// Sections and scrolling
+	let section = 0;
+	let sectionCount = 7;
+
+	function updateSection() {
+		let rootElem = document.getElementById("match-report");
+		let elem = document.getElementById(`section-${section}`);
+		let relY = section * elem.getBoundingClientRect().height;
+		rootElem.scrollTo({ top: relY, behavior: "smooth" });
+		if (section == 6) {
+			updateBreakdown();
+		}
+	}
+
+	function nextSection() {
+		if (section < sectionCount - 1) {
+			section++;
+			updateSection();
+		}
+	}
+
+	function previousSection() {
+		if (section > 0) {
+			section--;
+			updateSection();
+		}
+	}
+
+	for (let elem of document.getElementsByClassName("prev-section")) {
+		elem.addEventListener("click", previousSection);
+	}
+	for (let elem of document.getElementsByClassName("next-section")) {
+		elem.addEventListener("click", nextSection);
+	}
 
 	// Creates an option element
 	function createOption(value, name) {
@@ -1335,16 +1177,62 @@
 		background-color: var(--wbredacc);
 	}
 
+	:root,
+	body {
+		overflow: hidden;
+		/* Prevent pinch zoom */
+		touch-action: pan-x pan-y;
+	}
+
+	#match-report {
+		overflow: hidden;
+		height: 90vh;
+		width: 100%;
+		margin-top: -5rem;
+	}
+
+	.section {
+		height: 90vh;
+		width: 100%;
+		box-sizing: border-box;
+		overflow-y: auto;
+		padding-top: 7rem;
+		justify-content: flex-start;
+		border-top: 1px solid white;
+	}
+
+	.section-header {
+		width: 100%;
+		display: grid;
+		grid-template-columns: 1.25fr 2fr 1.25fr;
+	}
+
+	.section-header>h3 {
+		margin: 0;
+	}
+
+	.prev-section,
+	.next-section {
+		width: 4rem;
+		height: 3rem;
+		font-size: 1.2rem;
+	}
+
 	.section-grid {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		width: 24rem;
 	}
 
-	.grid-button {
+	.grid-button,
+	.grid-button-tall {
 		margin: 0.4rem;
 		height: 4.4rem;
 		touch-action: manipulation;
+	}
+
+	.grid-button-tall {
+		height: 8.8rem;
 	}
 
 	.grid-icon {
@@ -1357,29 +1245,61 @@
 		margin-right: 0px;
 	}
 
-	.coral {
-		width: 1.1rem;
+	.swipe-button-container {
+		display: grid;
+		gap: 0;
+		padding: 0;
+		border-radius: 0.5rem;
+		overflow: hidden;
 	}
 
-	.algae {
-		width: 1.6rem;
+	.swipe-button-container.two-tall {
+		grid-template-columns: repeat(1, 1fr);
 	}
 
-	.reef {
-		background-color: rgb(121, 53, 231);
+	.swipe-button-container.two-wide {
+		grid-template-columns: repeat(2, 1fr);
+		grid-column: span 2;
 	}
 
-	.reef:hover {
-		background-color: rgb(143, 91, 225);
+	.swipe-button-container.four {
+		grid-template-columns: repeat(2, 1fr);
+		grid-column: span 2;
+	}
+
+	.swipe-button {
+		height: 100%;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.swipe-button.top {
+		border-bottom: 2px solid var(--bg3);
+	}
+
+	.fuel {
+		width: 1.2rem;
+	}
+
+	.fuel-bg {
+		background-color: #f8ac08;
+	}
+
+	.fuel-miss-bg {
+		background-color: #f55442;
+	}
+
+	.intake-bg {
+		background-color: #5c5c5c;
+	}
+
+	.pass-bg {
+		background-color: var(--wbblue);
 	}
 
 	#defend,
 	#climb-refresh {
 		background-color: var(--bg3);
-	}
-
-	#agitate {
-		background-color: #16cd9c;
 	}
 
 	.success {
@@ -1396,6 +1316,10 @@
 
 	.failure:hover {
 		background-color: var(--wbredacc);
+	}
+
+	.events-container {
+		overflow: auto;
 	}
 
 	.event {
@@ -1424,17 +1348,21 @@
 		font-size: calc(2.0vw * var(--scale));
 	}
 
+	#notes {
+		height: 35rem;
+	}
+
 	.blink {
 		animation: blink 1s;
 	}
 
 	@keyframes blink {
 		from {
-			filter: brightness(2.5) saturate(70%)
+			filter: invert(1);
 		}
 
 		to {
-			filter: none
+			filter: none;
 		}
 	}
 </style>

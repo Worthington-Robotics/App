@@ -18,6 +18,7 @@
 	</div>
 	<div class="cont col">
 		<h2>Other</h2>
+		<button id="refresh-team-comps">Refresh Team Competitions</button>
 		<a href="/scouting/assignments"><button>Edit Prescouting Assignments</button></a>
 		<button id="pit-scouting-reset">Mark Pit Scouting as Needing Update</button>
 		<a href="/scouting/review"><button>View All Scouting Reports</button></a>
@@ -76,7 +77,20 @@
 				}
 			});
 		});
-	})
+	});
+	document.getElementById("refresh-team-comps").addEventListener("click", () => {
+		showConfirmPrompt("update team competitions from the API, clearing any existing custom assignments", () => {
+			fetch("/api/scouting/populate_team_competitions", {
+				method: "POST",
+			}).then((resp) => {
+				if (resp.status != 200) {
+					setError(resp.statusText);
+				} else {
+					setSuccess("Team competitions refreshed");
+				}
+			});
+		});
+	});
 
 	document.getElementById("settings-submit").addEventListener("click", (e) => {
 		e.preventDefault();

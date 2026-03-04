@@ -2,9 +2,7 @@ use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use super::{
-	game::ClimbResult, status::RobotStatus, ClimbAbility, Competition, ReefLevel, TeamNumber,
-};
+use super::{game::ClimbResult, status::RobotStatus, ClimbAbility, Competition, TeamNumber};
 
 /// A single match
 #[derive(Serialize, Deserialize, Clone)]
@@ -153,38 +151,22 @@ pub struct MatchStats {
 	/// The auto that the team ran during this match
 	#[serde(default)]
 	pub auto: Option<String>,
-	/// The auto coral attempts
-	pub auto_coral_attempts: Vec<CoralAttempt>,
-	/// The number of times that the team attempted to score algae during auto
-	pub auto_algae_attempts: u8,
-	/// The number of times that the team scored algae during auto
-	pub auto_algae_scores: u8,
-	/// The number of auto intake attempts
-	pub auto_intake_attempts: u8,
-	/// The number of auto intake successes
-	pub auto_intake_successes: u8,
-	/// All of the auto intake events
-	#[serde(default)]
-	pub auto_intake_events: Vec<Attempt>,
-	/// All of the auto algae score events
-	#[serde(default)]
-	pub auto_algae_events: Vec<Attempt>,
+	/// The auto fuel attempts
+	pub auto_fuel_volleys: Vec<EventVolley>,
+	/// The auto intake attempts
+	pub auto_intake_volleys: Vec<EventVolley>,
+	/// Whether or not an auto climb was attempted
+	pub auto_climb_attempted: bool,
+	/// Whether or not an auto climb was successful
+	pub auto_climb_successful: bool,
 	/// Whether or not the robot collided with another during auto
 	pub auto_collision: bool,
-	/// The coral attempts during teleop
-	pub teleop_coral_attempts: Vec<CoralAttempt>,
-	/// The number of intake attempts during teleop
-	pub teleop_intake_attempts: u8,
-	/// The number of intake successes during teleop
-	pub teleop_intake_successes: u8,
-	/// The number of times the team successfully agitated algae
-	pub agitations: u8,
-	/// The number of processor attempts
-	pub processor_attempts: u8,
-	/// The number of processor scores
-	pub processor_scores: u8,
-	/// The number of successful net shots
-	pub net_shots: u8,
+	/// The fuel attempts during teleop
+	pub teleop_fuel_volleys: Vec<EventVolley>,
+	/// The fuel intake attempts during teleop
+	pub teleop_intake_volleys: Vec<EventVolley>,
+	/// The pass attempts during teleop
+	pub teleop_pass_volleys: Vec<EventVolley>,
 	/// The climb that the team attempted to do
 	pub climb_attempted: ClimbAbility,
 	/// The result of the climb
@@ -195,12 +177,6 @@ pub struct MatchStats {
 	pub points_scored: i16,
 	/// The number of times that the team defended against other robots
 	pub defenses: u8,
-	/// The number of times that the team defended at the coral station
-	#[serde(default)]
-	pub coral_station_defenses: u8,
-	/// The number of times that the team defended at the Reef
-	#[serde(default)]
-	pub reef_defenses: u8,
 	/// The number of penalties that the team incurred during the match
 	pub penalties: u8,
 	/// The team's average cycle time
@@ -228,9 +204,6 @@ pub struct MatchStats {
 	/// Whether the team left in auto
 	#[serde(default)]
 	pub auto_leave: bool,
-	/// Whether the team parked
-	#[serde(default)]
-	pub park: bool,
 	/// Whether the robot had brownout issues
 	#[serde(default)]
 	pub brownout: bool,
@@ -262,26 +235,37 @@ impl MatchStats {
 	}
 }
 
-/// A single coral placement attempt on the reef
+/// A series of fuel shots or pickups
 #[derive(Serialize, Deserialize, Clone)]
-pub struct CoralAttempt {
-	/// Whether the attempt was successful
-	pub successful: bool,
-	/// The reef level of the placement
-	pub level: ReefLevel,
-	/// The timestamp when the event happened
-	#[serde(default)]
-	pub timestamp: f32,
+pub struct EventVolley {
+	/// How many shots were attempted
+	pub shots_attempted: u8,
+	/// How many shots were made
+	pub shots_made: u8,
+	/// Game time where the event started
+	pub start_time: f32,
+	/// Game time where the event ended
+	pub end_time: f32,
 }
 
-/// A single event attempt
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Attempt {
-	/// Whether the attempt was successful
-	pub successful: bool,
-	/// The timestamp when the event happened
-	#[serde(default)]
-	pub timestamp: f32,
+impl EventVolley {
+	/// Gets the duration of this volley if the timing data is available
+	pub fn duration(&self) -> Option<f32> {
+		if self.start_time == 0.0 || self.end_time == 0.0 || self.start_time >= self.end_time {
+			None
+		} else {
+			Some(self.end_time - self.start_time)
+		}
+	}
+
+	/// Gets the speed / fire rate of this volley, if the timing data is available
+	pub fn get_rate(&self) -> Option<f32> {
+		if let Some(duration) = self.duration() {
+			Some(self.shots_attempted as f32 / duration)
+		} else {
+			None
+		}
+	}
 }
 
 /// Count how many matches a member has scouted

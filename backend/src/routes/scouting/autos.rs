@@ -28,10 +28,7 @@ use crate::{
 	},
 };
 
-use super::stats::{
-	render_stat_card_float, render_stat_card_optional_bool, render_stat_card_pct, STAT_ALGAE,
-	STAT_CORAL,
-};
+use super::stats::{render_stat_card_float, render_stat_card_pct, STAT_FUEL};
 
 #[rocket::get("/scouting/team/<team>/autos")]
 pub async fn autos_page(
@@ -64,10 +61,7 @@ pub async fn autos_page(
 	let mut auto_map = HashMap::with_capacity(autos.size_hint().0);
 
 	for auto in autos {
-		auto_map
-			.entry(auto.coral + auto.algae)
-			.or_insert(Vec::new())
-			.push(auto);
+		auto_map.entry(auto.fuel).or_insert(Vec::new()).push(auto);
 	}
 
 	let auto_stats = state.auto_stats.read().await;
@@ -125,8 +119,7 @@ fn render_auto(auto: &Auto, stats: &AutoStats) -> String {
 	let out = out.replace("{{id}}", &auto.id);
 	let out = out.replace("{{name}}", &auto.name);
 	let out = out.replace("{{average-score}}", &format!("{:.2}", stats.point_value));
-	let out = out.replace("{{coral}}", &format!("{:.2}", stats.average_coral));
-	let out = out.replace("{{algae}}", &format!("{:.2}", stats.average_algae));
+	let out = out.replace("{{fuel}}", &format!("{:.2}", stats.average_fuel));
 
 	out
 }
@@ -175,9 +168,7 @@ pub async fn create_auto(
 		id,
 		name: auto.name,
 		team: auto.team,
-		coral: auto.coral,
-		algae: auto.algae,
-		agitates: auto.agitates,
+		fuel: auto.fuel,
 		starting_position: auto.starting_position,
 	};
 
@@ -195,9 +186,7 @@ pub async fn create_auto(
 pub struct AutoForm {
 	name: String,
 	team: TeamNumber,
-	coral: u8,
-	algae: u8,
-	agitates: bool,
+	fuel: u8,
 	starting_position: f32,
 }
 
@@ -235,8 +224,7 @@ pub async fn auto_details(
 	let page = include_str!("../pages/scouting/team/auto_details.min.html");
 	let page = page.replace("{{id}}", &auto.id);
 	let page = page.replace("{{name}}", &auto.name);
-	let page = page.replace("{{coral}}", &auto.coral.to_string());
-	let page = page.replace("{{algae}}", &auto.algae.to_string());
+	let page = page.replace("{{fuel}}", &auto.fuel.to_string());
 
 	// Create stats
 	let default_stats = AutoStats::default();
@@ -248,48 +236,24 @@ pub async fn auto_details(
 		&render_stat_card_float("Avg Points", "", auto_stats.point_value, true, ""),
 	);
 	let page = page.replace(
-		"{{average-coral}}",
+		"{{average-fuel}}",
 		&render_stat_card_float(
-			&format!("{STAT_CORAL} Avg"),
+			&format!("{STAT_FUEL} Avg"),
 			"",
-			auto_stats.average_coral,
+			auto_stats.average_fuel,
 			true,
 			"",
 		),
 	);
 	let page = page.replace(
-		"{{average-algae}}",
-		&render_stat_card_float(
-			&format!("{STAT_ALGAE} Avg"),
-			"",
-			auto_stats.average_algae,
-			true,
-			"",
-		),
-	);
-	let page = page.replace(
-		"{{coral-accuracy}}",
+		"{{fuel-accuracy}}",
 		&render_stat_card_pct(
-			&format!("{STAT_CORAL} Acc"),
+			&format!("{STAT_FUEL} Acc"),
 			"",
-			auto_stats.coral_accuracy,
+			auto_stats.fuel_accuracy,
 			false,
 			"",
 		),
-	);
-	let page = page.replace(
-		"{{algae-accuracy}}",
-		&render_stat_card_pct(
-			&format!("{STAT_ALGAE} Avg"),
-			"",
-			auto_stats.algae_accuracy,
-			false,
-			"",
-		),
-	);
-	let page = page.replace(
-		"{{agitates}}",
-		&render_stat_card_optional_bool("Agitates?", "", Some(auto.agitates), false, ""),
 	);
 	let page = page.replace(
 		"{{usage-rate}}",
@@ -421,16 +385,8 @@ pub fn render_auto_image(graphs: &AutoEventGraphs) -> Vec<u8> {
 	let mut document = svg::Document::new().set("viewBox", (0, 0, image_width, image_height));
 
 	// Draw the graphs
-	for (i, (graph_title, color, graph)) in [
-		("Int", "#2134d9", &graphs.intakes),
-		("L4", "#f5f5f5", &graphs.l4_scores),
-		("L3", "#f5f5f5", &graphs.l3_scores),
-		("L2", "#f5f5f5", &graphs.l2_scores),
-		("L1", "#f5f5f5", &graphs.l1_scores),
-		("Alg", "#16cd9c", &graphs.algae_scores),
-	]
-	.into_iter()
-	.enumerate()
+	for (i, (graph_title, color, graph)) in
+		[("Fuel", "#f5e042", &graphs.shots)].into_iter().enumerate()
 	{
 		let dx = (graph_end_x - graph_start_x) / graph.len() as f32;
 		let dy = all_graphs_height / 6.0;

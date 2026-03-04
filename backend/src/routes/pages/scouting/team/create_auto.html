@@ -6,12 +6,8 @@
 	<br />
 	<form id="auto-form" class="cont col">
 		<input type="text" name="name" id="name-field" class="field" placeholder="Enter auto name..." />
-		<label for="coral">Coral</label>
-		<input type="number" class="field" name="coral" id="coral" />
-		<label for="algae">Algae</label>
-		<input type="number" class="field" name="algae" id="algae" />
-		<label for="agitates">Agitates Algae?</label>
-		<input type="checkbox" class="field" name="agitates" id="agitates" />
+		<label for="fuel">Fuel</label>
+		<input type="number" class="field" name="fuel" id="fuel" />
 
 		<input type="submit" id="submit" value="Save" />
 	</form>
@@ -21,19 +17,14 @@
 		event.preventDefault();
 
 		const name = encodeURIComponent(document.getElementById("name-field").value);
-		const coral = document.getElementById("coral").value * 1;
-		const algae = document.getElementById("algae").value * 1;
-		const agitates = document.getElementById("agitates").checked;
+		const fuel = document.getElementById("fuel").value * 1;
 
 		if (name == "") {
 			setError("Name field cannot be empty");
 			return;
 		}
 
-		let requestBody = `name=${name}&team={{team-number}}&coral=${coral}&algae=${algae}&starting_position=0.0`;
-		if (agitates) {
-			requestBody += "&agitates";
-		}
+		let requestBody = `name=${name}&team={{team-number}}&fuel=${fuel}&starting_position=0.0`;
 
 		fetch("/api/create_auto", {
 			method: "POST",

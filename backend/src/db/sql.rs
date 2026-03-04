@@ -1,9 +1,11 @@
 #![allow(dead_code)]
 
+use std::collections::HashSet;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Context};
 use chrono::Utc;
+use itertools::Itertools;
 use rocket::{futures::TryStreamExt, tokio::try_join};
 use sqlx::{
 	postgres::{PgConnectOptions, PgPoolOptions, PgRow},
@@ -743,6 +745,53 @@ impl Database for SqlDatabase {
 		}
 	}
 
+	async fn clear_team_competitions(&mut self) -> anyhow::Result<()> {
+		let query = sqlx::query("UPDATE teams SET Competitions='{}'");
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to clear team competitions in database")?;
+
+		Ok(())
+	}
+
+	async fn update_team_competitions(
+		&mut self,
+		updates: &[(TeamNumber, HashSet<Competition>)],
+	) -> anyhow::Result<()> {
+		let updates = updates
+			.into_iter()
+			.map(|(team, comps)| {
+				let comps = format!(
+					"ARRAY[{}]",
+					comps.iter().map(|x| format!("'{x}'")).join(",")
+				);
+				format!("({team},{comps})")
+			})
+			.join(",");
+
+		let query = format!(
+			"WITH TmpUpdates (Number, Competitions) AS (
+    VALUES
+    {updates}
+)
+UPDATE Teams
+SET Competitions = TmpUpdates.Competitions
+FROM TmpUpdates
+WHERE Teams.Number = TmpUpdates.Number;",
+		);
+
+		let query = sqlx::query(&query);
+
+		query
+			.execute(&self.pool)
+			.await
+			.context("Failed to update team competitions in database")?;
+
+		Ok(())
+	}
+
 	async fn create_match_stats(&mut self, stats: MatchStats) -> anyhow::Result<()> {
 		self.delete_match_stats(&stats.get_id())
 			.await
@@ -906,14 +955,12 @@ impl Database for SqlDatabase {
 			.context("Failed to delete existing auto")?;
 
 		sqlx::query(
-			"INSERT INTO autos (Id, Name, Team, Coral, Algae, Agitates, StartingPosition) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+			"INSERT INTO autos (Id, Name, Team, Fuel, StartingPosition) VALUES ($1, $2, $3, $4, $5)",
 		)
 		.bind(auto.id)
 		.bind(auto.name)
 		.bind(auto.team as i32)
-		.bind(auto.coral as i32)
-		.bind(auto.algae as i32)
-		.bind(auto.agitates)
+		.bind(auto.fuel as i32)
 		.bind(auto.starting_position)
 		.execute(&self.pool)
 		.await
@@ -1327,7 +1374,7 @@ async fn setup_database(pool: &Pool<Postgres>) -> anyhow::Result<()> {
 	);
 
 	let autos_task = pool.execute(
-		"CREATE TABLE IF NOT EXISTS autos (Id text PRIMARY KEY, Name text, Team int2, Coral int2, Algae int2, Agitates bool, StartingPosition float4)",
+		"CREATE TABLE IF NOT EXISTS autos (Id text PRIMARY KEY, Name text, Team int2, Fuel int2, StartingPosition float4)",
 	);
 
 	let status_task = pool.execute(
@@ -1552,18 +1599,14 @@ fn read_team_info(row: PgRow) -> anyhow::Result<TeamInfo> {
 /// Read an auto from the database
 fn read_auto(id: &str, team: TeamNumber, row: PgRow) -> anyhow::Result<Auto> {
 	let name: String = row.try_get("name")?;
-	let coral: i32 = row.try_get("coral")?;
-	let algae: i32 = row.try_get("algae")?;
-	let agitates: bool = row.try_get("agitates")?;
+	let fuel: i32 = row.try_get("fuel")?;
 	let starting_position: f32 = row.try_get("startingposition")?;
 
 	Ok(Auto {
 		id: id.to_string(),
 		name,
 		team,
-		coral: coral as u8,
-		algae: algae as u8,
-		agitates,
+		fuel: fuel as u8,
 		starting_position,
 	})
 }

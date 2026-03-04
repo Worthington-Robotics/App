@@ -51,7 +51,7 @@ async fn rocket() -> _ {
 	let mut session_manager = SessionManager::new();
 
 	let session_id = session_manager.create("admin");
-	println!("Session ID: {session_id}");
+	println!("Admin Session ID: {session_id}");
 
 	let db_task = setup_db();
 
@@ -69,9 +69,11 @@ async fn rocket() -> _ {
 	let statbotics_task = async {
 		let statbotics_client = StatboticsClient::new(&req_client);
 		if std::env::var("POPULATE_EPA").is_ok_and(|x| x == "1") {
+			println!("Getting EPA stats");
 			if let Err(e) = statbotics_client.get_stats(None).await {
 				error!("Failed to get Statbotics stats: {e}");
 			}
+			println!("Got EPA stats");
 		}
 
 		statbotics_client
@@ -145,8 +147,7 @@ async fn rocket() -> _ {
 				routes::assets::icon_user,
 				routes::assets::icon_calendar,
 				routes::assets::icon_location,
-				routes::assets::icon_coral,
-				routes::assets::icon_algae,
+				routes::assets::icon_fuel,
 				routes::assets::icon_download,
 				routes::assets::icon_error,
 				routes::assets::icon_hashtag,
@@ -156,6 +157,7 @@ async fn rocket() -> _ {
 				routes::assets::icon_info,
 				routes::assets::icon_refresh,
 				routes::assets::icon_play,
+				routes::assets::icon_share,
 				routes::login::login,
 				routes::login::authenticate,
 				routes::login::logout,
@@ -186,6 +188,7 @@ async fn rocket() -> _ {
 				routes::settings::settings,
 				routes::scouting::index,
 				routes::scouting::admin,
+				routes::scouting::populate_team_competitions,
 				routes::scouting::update_settings,
 				routes::scouting::download::download_team_stats,
 				routes::scouting::download::download_team_stats_current_comp,

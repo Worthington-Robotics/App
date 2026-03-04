@@ -9,7 +9,7 @@ use tracing::{error, span, Level};
 use crate::{
 	db::Database,
 	routes::{OptionalSessionID, SessionID},
-	scouting::{game::GamePiece, DriveTrainType, PitScoutingProgress, TeamNumber},
+	scouting::{game::ClimbAbility, DriveTrainType, IntakeType, PitScoutingProgress, TeamNumber},
 	util::{checkbox_attr, selected_attr},
 	State,
 };
@@ -102,106 +102,79 @@ pub async fn team_info_page(
 		),
 	);
 	let page = page.replace(
-		"{{can-pickup-algae-checked}}",
-		&team_info
-			.can_pickup_algae
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-pickup-coral-checked}}",
-		&team_info
-			.can_pickup_coral
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-hold-both-checked}}",
-		&team_info
-			.can_hold_both
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-ground-intake-algae-checked}}",
-		&team_info
-			.can_ground_intake_algae
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-ground-intake-coral-checked}}",
-		&team_info
-			.can_ground_intake_coral
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-slide-intake-checked}}",
-		&team_info
-			.can_slide_intake
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-reef-checked}}",
-		&team_info.can_reef.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-processor-checked}}",
-		&team_info
-			.can_processor
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-net-checked}}",
-		&team_info.can_net.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-agitate-checked}}",
-		&team_info.can_agitate.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-l1-checked}}",
-		&team_info.can_l1.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-l2-checked}}",
-		&team_info.can_l2.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-l3-checked}}",
-		&team_info.can_l3.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-l4-checked}}",
-		&team_info.can_l4.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-shallow-checked}}",
-		&team_info.can_shallow.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{can-deep-checked}}",
-		&team_info.can_deep.map(checkbox_attr).unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{piece-coral-selected}}",
+		"{{under-the-bumper-selected}}",
 		selected_attr(
 			team_info
-				.preferred_piece
-				.is_some_and(|x| x == GamePiece::Coral),
+				.intake_type
+				.is_some_and(|x| x == IntakeType::UnderBumper),
 		),
 	);
 	let page = page.replace(
-		"{{piece-algae-selected}}",
+		"{{over-the-bumper-selected}}",
 		selected_attr(
 			team_info
-				.preferred_piece
-				.is_some_and(|x| x == GamePiece::Algae),
+				.intake_type
+				.is_some_and(|x| x == IntakeType::OverBumper),
 		),
 	);
+	let page = page.replace(
+		"{{can-pass-trench-checked}}",
+		&team_info
+			.can_pass_trench
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-pass-bump-checked}}",
+		&team_info
+			.can_pass_bump
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-ground-intake-checked}}",
+		&team_info
+			.can_ground_intake
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-station-intake-checked}}",
+		&team_info
+			.can_station_intake
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-score-close-checked}}",
+		&team_info
+			.can_score_close
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-score-far-checked}}",
+		&team_info
+			.can_score_far
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+
+	let page = page.replace(
+		"{{fuel-storage}}",
+		&team_info
+			.fuel_storage
+			.map(|x| x.to_string())
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{fuel-per-shift}}",
+		&team_info
+			.fuel_per_shift
+			.map(|x| x.to_string())
+			.unwrap_or_default(),
+	);
+
 	let page = page.replace(
 		"{{cycle-time}}",
 		&team_info
@@ -216,6 +189,55 @@ pub async fn team_info_page(
 			.map(|x| x.to_string())
 			.unwrap_or_default(),
 	);
+
+	let page = page.replace(
+		"{{no-climb-selected}}",
+		selected_attr(
+			team_info
+				.climb_ability
+				.is_some_and(|x| x == ClimbAbility::None),
+		),
+	);
+	let page = page.replace(
+		"{{l1-selected}}",
+		selected_attr(
+			team_info
+				.climb_ability
+				.is_some_and(|x| x == ClimbAbility::L1),
+		),
+	);
+	let page = page.replace(
+		"{{l2-selected}}",
+		selected_attr(
+			team_info
+				.climb_ability
+				.is_some_and(|x| x == ClimbAbility::L2),
+		),
+	);
+	let page = page.replace(
+		"{{l3-selected}}",
+		selected_attr(
+			team_info
+				.climb_ability
+				.is_some_and(|x| x == ClimbAbility::L1),
+		),
+	);
+
+	let page = page.replace(
+		"{{auto-fuel}}",
+		&team_info
+			.auto_fuel
+			.map(|x| x.to_string())
+			.unwrap_or_default(),
+	);
+	let page = page.replace(
+		"{{can-climb-auto}}",
+		&team_info
+			.can_climb_auto
+			.map(checkbox_attr)
+			.unwrap_or_default(),
+	);
+
 	let page = page.replace(
 		"{{align-score-checked}}",
 		&team_info.align_score.map(checkbox_attr).unwrap_or_default(),
@@ -225,48 +247,6 @@ pub async fn team_info_page(
 		&team_info
 			.align_intake
 			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{auto-crosses-line-checked}}",
-		&team_info
-			.auto_crosses_line
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{auto-scores-front-checked}}",
-		&team_info
-			.auto_scores_front
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{auto-scores-back-checked}}",
-		&team_info
-			.auto_scores_back
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{auto-scores-side-checked}}",
-		&team_info
-			.auto_scores_side
-			.map(checkbox_attr)
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{auto-algae}}",
-		&team_info
-			.auto_algae
-			.map(|x| x.to_string())
-			.unwrap_or_default(),
-	);
-	let page = page.replace(
-		"{{auto-coral}}",
-		&team_info
-			.auto_coral
-			.map(|x| x.to_string())
 			.unwrap_or_default(),
 	);
 	let page = page.replace(

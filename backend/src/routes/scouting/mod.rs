@@ -10,7 +10,7 @@ mod stats;
 pub mod status;
 pub mod teams;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use anyhow::Context;
 use chrono::Utc;
@@ -19,9 +19,10 @@ use rocket::{
 	form::Form,
 	http::Status,
 	response::{content::RawHtml, Redirect},
+	tokio::task::JoinSet,
 	FromForm,
 };
-use tracing::{error, span, Level};
+use tracing::{error, info, span, Level};
 
 use crate::{
 	api::first::FirstClient,
@@ -149,6 +150,194 @@ pub async fn populate_teams(
 		db.create_team(team)
 			.await
 			.context("Failed to create team")?;
+	}
+
+	Ok(())
+}
+
+/// Populate team competitions from the FIRST API
+#[rocket::post("/api/scouting/populate_team_competitions")]
+pub async fn populate_team_competitions(
+	session_id: SessionID<'_>,
+	state: &State,
+) -> Result<(), Status> {
+	let span = span!(Level::DEBUG, "Updating team competitions");
+	let _enter = span.enter();
+
+	session_id.verify_elevated(state).await?;
+
+	// First, get teams going to our competitions
+
+	let global_data = state.db.read().await.get_global_data().await.map_err(|e| {
+		error!("Failed to get global data from database: {e}");
+		Status::InternalServerError
+	})?;
+	let season = get_season(&Utc::now());
+
+	info!("Getting base competitions");
+
+	let mut tasks = JoinSet::new();
+	for comp in [
+		Competition::Pittsburgh,
+		Competition::Buckeye,
+		Competition::MiamiValley,
+		Competition::Champs,
+	] {
+		let first_client = state.first_client.clone();
+		let current_division = global_data.current_division.clone();
+		let task = async move {
+			let event_code = if comp == Competition::Champs {
+				let Some(current_division) = current_division else {
+					return Ok::<_, Status>(None);
+				};
+
+				current_division.get_code()
+			} else {
+				let Some(event_code) = comp.get_code() else {
+					error!("Event {comp} does not have a code");
+					return Ok(None);
+				};
+
+				event_code
+			};
+
+			first_client
+				.get_event_teams(season as i32, event_code)
+				.await
+				.map_err(|e| {
+					error!("Failed to get event teams from FIRST API: {e:#}");
+					Status::InternalServerError
+				})
+				.map(move |x| x.into_iter().map(move |x| (x.team_number, comp)))
+				.map(Some)
+		};
+
+		tasks.spawn(task);
+	}
+
+	let mut base_teams = Vec::new();
+	while let Some(result) = tasks.join_next().await {
+		let Ok(result) = result else {
+			error!("Task failed");
+			return Err(Status::InternalServerError);
+		};
+
+		let result = result?;
+		if let Some(result) = result {
+			base_teams.extend(result);
+		}
+	}
+
+	dbg!(&base_teams);
+
+	// Now that we have the base teams, figure out their prescouting week competitions.
+	info!("Getting all events");
+
+	// Get week-by-week events
+	let mut tasks = JoinSet::new();
+	let current_week = global_data
+		.current_competition
+		.and_then(|x| x.get_week())
+		.unwrap_or(6);
+	for week in 1..current_week {
+		let first_client = state.first_client.clone();
+		let task = async move {
+			let events = first_client
+				.get_regional_events(season as i32, week)
+				.await?;
+
+			Ok::<_, anyhow::Error>((week, events))
+		};
+		tasks.spawn(task);
+	}
+
+	let mut all_regionals = Vec::new();
+	while let Some(result) = tasks.join_next().await {
+		let Ok(result) = result else {
+			error!("Task failed");
+			return Err(Status::InternalServerError);
+		};
+
+		let result = result.map_err(|e| {
+			error!("Failed to get events from API: {e}");
+			Status::InternalServerError
+		})?;
+
+		let regionals = result.1.into_iter().map(|x| (result.0, x));
+		all_regionals.extend(regionals);
+	}
+
+	// We skip comps for prescouting.
+	let base_comps = [
+		Competition::Pittsburgh.get_code().unwrap(),
+		Competition::Buckeye.get_code().unwrap(),
+		Competition::MiamiValley.get_code().unwrap(),
+	];
+
+	info!("Getting event teams");
+
+	let mut tasks = JoinSet::new();
+	for (week, regional) in all_regionals {
+		if base_comps.contains(&regional.code.as_str()) {
+			continue;
+		}
+
+		let first_client = state.first_client.clone();
+		let task = async move {
+			let teams = first_client
+				.get_event_teams(season as i32, &regional.code)
+				.await?;
+
+			Ok::<_, anyhow::Error>((week, teams))
+		};
+
+		tasks.spawn(task);
+	}
+
+	let mut all_teams = HashMap::with_capacity(base_teams.len());
+	for (team, comp) in base_teams {
+		let mut set = HashSet::new();
+		set.insert(comp);
+		all_teams.insert(team, set);
+	}
+
+	while let Some(result) = tasks.join_next().await {
+		let Ok(result) = result else {
+			error!("Task failed");
+			return Err(Status::InternalServerError);
+		};
+
+		let result = result.map_err(|e| {
+			error!("Failed to get events from API: {e}");
+			Status::InternalServerError
+		})?;
+
+		for team in result.1 {
+			if let Some(comps) = all_teams.get_mut(&team.team_number) {
+				let comp = Competition::from_week(result.0);
+				comps.extend(comp);
+			}
+		}
+	}
+
+	// Finally, update the database
+	info!("Updating team competitions");
+
+	if let Err(e) = state.db.write().await.clear_team_competitions().await {
+		error!("Failed to clear team competitions: {e}");
+		return Err(Status::InternalServerError);
+	}
+
+	let all_teams: Vec<_> = all_teams.into_iter().collect();
+	if let Err(e) = state
+		.db
+		.write()
+		.await
+		.update_team_competitions(&all_teams)
+		.await
+	{
+		error!("Failed to update team competitions: {e:?}");
+		return Err(Status::InternalServerError);
 	}
 
 	Ok(())

@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use rocket::{
@@ -9,7 +9,7 @@ use rocket::{
 use tracing::error;
 
 use crate::{
-	scouting::{matches::MatchNumber, TeamNumber},
+	scouting::{matches::MatchNumber, Competition, TeamNumber},
 	tasks::{Checklist, Task},
 };
 
@@ -375,6 +375,23 @@ impl Database for CacheDatabase {
 
 	async fn get_teams(&self) -> anyhow::Result<impl Iterator<Item = crate::scouting::Team>> {
 		self.cache.get_teams().await
+	}
+
+	async fn clear_team_competitions(&mut self) -> anyhow::Result<()> {
+		self.sql.clear_team_competitions().await?;
+		self.cache.clear_team_competitions().await?;
+
+		Ok(())
+	}
+
+	async fn update_team_competitions(
+		&mut self,
+		updates: &[(TeamNumber, HashSet<Competition>)],
+	) -> anyhow::Result<()> {
+		self.sql.update_team_competitions(updates).await?;
+		self.cache.update_team_competitions(updates).await?;
+
+		Ok(())
 	}
 
 	async fn create_match_stats(

@@ -200,16 +200,6 @@ pub fn selected_attr(val: bool) -> &'static str {
 	}
 }
 
-/// Creates a vector of the same element
-pub fn vector_splat<T: Clone>(e: T, n: usize) -> Vec<T> {
-	let mut out = Vec::with_capacity(n);
-	for _ in 0..n {
-		out.push(e.clone());
-	}
-
-	out
-}
-
 /// Renders a progress ring
 pub fn render_progress_ring(size: f32, progress: f32) -> String {
 	let out = include_str!("routes/components/ui/ring.min.html");

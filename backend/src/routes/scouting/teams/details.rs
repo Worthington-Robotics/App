@@ -10,8 +10,8 @@ use crate::{
 	db::Database,
 	routes::OptionalSessionID,
 	scouting::{
-		game::GamePiece, stats::CombinedTeamStats, status::RobotStatus, Competition,
-		DriveTrainType, TeamNumber,
+		game::ClimbAbility, stats::CombinedTeamStats, status::RobotStatus, Competition,
+		DriveTrainType, IntakeType, TeamNumber,
 	},
 	State,
 };
@@ -19,9 +19,9 @@ use crate::{
 use crate::routes::scouting::{
 	create_page,
 	stats::{
-		render_stat_card, render_stat_card_float, render_stat_card_optional,
-		render_stat_card_optional_bool, render_stat_card_optional_float, stat_card_float,
-		stat_card_other, stat_card_pct, STAT_ALGAE, STAT_CORAL,
+		render_stat_card_float, render_stat_card_optional, render_stat_card_optional_bool,
+		render_stat_card_optional_float, stat_card_float, stat_card_other, stat_card_pct,
+		STAT_FUEL,
 	},
 	PageOrRedirect, Scope,
 };
@@ -125,6 +125,8 @@ pub async fn team_details(
 	let default_stats = CombinedTeamStats::default();
 	let lock2 = state.team_stats.read().await;
 	let team_stats = lock2.get(&id).unwrap_or(&default_stats);
+
+	// Overall
 	let page = page.replace(
 		"{{apa}}",
 		stat_card_float!(team_stats, "APA", apa, "apa", true),
@@ -156,81 +158,53 @@ pub async fn team_details(
 		),
 	);
 	let page = page.replace(
-		"{{total-coral}}",
-		stat_card_other!(team_stats, "Total Coral", total_coral, "total_coral", false),
+		"{{ranking-points}}",
+		stat_card_float!(team_stats, "RP", ranking_points, "ranking_points", true),
 	);
 	let page = page.replace(
-		"{{total-algae}}",
-		stat_card_other!(team_stats, "Total Algae", total_algae, "total_algae", false),
+		"{{fuel-rp}}",
+		stat_card_float!(team_stats, "Fuel RP", fuel_rp, "fuel_rp", false),
+	);
+	let page = page.replace(
+		"{{climb-rp}}",
+		stat_card_float!(team_stats, "Climb RP", climb_rp, "climb_rp", false),
+	);
+	let page = page.replace(
+		"{{total-fuel}}",
+		stat_card_other!(team_stats, "Total Fuel", total_fuel, "total_fuel", false),
 	);
 	let page = page.replace(
 		"{{high-score}}",
 		stat_card_other!(team_stats, "High Score", high_score, "high_score", false),
 	);
-	let page = page.replace(
-		"{{coral-rp-contribution}}",
-		stat_card_pct!(
-			team_stats,
-			"Coral RP",
-			coral_rp_contribution,
-			"coral_rp_contribution",
-			false
-		),
-	);
-	let page = page.replace(
-		"{{barge-rp-contribution}}",
-		stat_card_pct!(
-			team_stats,
-			"Barge RP",
-			barge_rp_contribution,
-			"barge_rp_contribution",
-			false
-		),
-	);
-	let page = page.replace(
-		"{{litter}}",
-		stat_card_float!(team_stats, "Litter", litter, "litter", false),
-	);
+
+	// Auto
 	let page = page.replace(
 		"{{auto-score}}",
 		stat_card_float!(team_stats, "Score", auto_score, "auto_score", true),
 	);
 	let page = page.replace(
-		"{{auto-coral}}",
-		stat_card_float!(team_stats, STAT_CORAL, auto_coral, "auto_coral", true),
+		"{{auto-fuel}}",
+		stat_card_float!(team_stats, STAT_FUEL, auto_fuel, "auto_fuel", true),
 	);
 	let page = page.replace(
-		"{{auto-algae}}",
-		stat_card_float!(team_stats, STAT_ALGAE, auto_algae, "auto_algae", true),
-	);
-	let page = page.replace(
-		"{{auto-coral-accuracy}}",
+		"{{auto-fuel-accuracy}}",
 		stat_card_pct!(
 			team_stats,
-			&format!("{STAT_CORAL} Acc"),
-			auto_coral_accuracy,
-			"auto_coral_accuracy",
-			true
-		),
-	);
-	let page = page.replace(
-		"{{auto-algae-accuracy}}",
-		stat_card_pct!(
-			team_stats,
-			&format!("{STAT_ALGAE} Acc"),
-			auto_algae_accuracy,
-			"auto_algae_accuracy",
-			true
-		),
-	);
-	let page = page.replace(
-		"{{auto-intake-accuracy}}",
-		stat_card_pct!(
-			team_stats,
-			&format!("Intake Acc"),
-			auto_intake_accuracy,
-			"auto_intake_accuracy",
+			&format!("{STAT_FUEL} Acc"),
+			auto_fuel_accuracy,
+			"auto_fuel_accuracy",
 			false
+		),
+	);
+	let page = page.replace(
+		"{{auto-climb-accuracy}}",
+		stat_card_pct!(
+			team_stats,
+			&format!("Climb Acc"),
+			auto_climb_accuracy,
+			"auto_climb_accuracy",
+			true
 		),
 	);
 	let page = page.replace(
@@ -243,6 +217,8 @@ pub async fn team_details(
 			false
 		),
 	);
+
+	// Teleop
 	let page = page.replace(
 		"{{cycle-time}}",
 		stat_card_float!(team_stats, "CT", cycle_time, "cycle_time", true),
@@ -272,157 +248,63 @@ pub async fn team_details(
 		stat_card_float!(team_stats, "Score", teleop_score, "teleop_score", true),
 	);
 	let page = page.replace(
-		"{{coral-score}}",
-		stat_card_float!(
-			team_stats,
-			&format!("{STAT_CORAL} Sco"),
-			coral_score,
-			"coral_score",
-			true
-		),
-	);
-	let page = page.replace(
-		"{{coral-average}}",
-		stat_card_float!(
-			team_stats,
-			&format!("{STAT_CORAL} Avg"),
-			coral_average,
-			"coral_average",
-			true
-		),
-	);
-	let page = page.replace(
-		"{{coral-accuracy}}",
+		"{{active-efficiency}}",
 		stat_card_pct!(
 			team_stats,
-			&format!("{STAT_CORAL} Acc"),
-			coral_accuracy,
-			"coral_accuracy",
+			"Active Eff",
+			active_efficiency,
+			"active_efficiency",
+			false
+		),
+	);
+	let page = page.replace(
+		"{{inactive-efficiency}}",
+		stat_card_pct!(
+			team_stats,
+			"Inactive Eff",
+			inactive_efficiency,
+			"inactive_efficiency",
+			false
+		),
+	);
+	let page = page.replace(
+		"{{fuel-score}}",
+		stat_card_float!(
+			team_stats,
+			&format!("{STAT_FUEL} Sco"),
+			fuel_score,
+			"fuel_score",
 			true
 		),
 	);
 	let page = page.replace(
-		"{{algae-score}}",
-		stat_card_float!(
+		"{{fuel-accuracy}}",
+		stat_card_pct!(
 			team_stats,
-			&format!("{STAT_ALGAE} Sco"),
-			algae_score,
-			"algae_score",
+			&format!("{STAT_FUEL} Acc"),
+			fuel_accuracy,
+			"fuel_accuracy",
 			true
 		),
 	);
 	let page = page.replace(
-		"{{processor-average}}",
-		stat_card_float!(
-			team_stats,
-			"Proc Avg",
-			processor_average,
-			"processor_average",
-			false
-		),
+		"{{intake-speed}}",
+		stat_card_float!(team_stats, "Itk Speed", intake_speed, "intake_speed", false),
 	);
 	let page = page.replace(
-		"{{processor-accuracy}}",
-		stat_card_pct!(
-			team_stats,
-			"Proc Acc",
-			processor_accuracy,
-			"processor_accuracy",
-			false
-		),
+		"{{fuel-per-intake}}",
+		stat_card_float!(team_stats, "FPI", fuel_per_intake, "fuel_per_intake", false),
 	);
 	let page = page.replace(
-		"{{net-average}}",
-		stat_card_float!(team_stats, "Net Avg", net_average, "net_average", false),
+		"{{pass-average}}",
+		stat_card_float!(team_stats, "Pass Avg", pass_average, "pass_average", false),
 	);
 	let page = page.replace(
-		"{{intake-accuracy}}",
-		stat_card_pct!(
-			team_stats,
-			"Intk Acc",
-			intake_accuracy,
-			"intake_accuracy",
-			false
-		),
+		"{{fuel-per-pass}}",
+		stat_card_float!(team_stats, "FPP", fuel_per_pass, "fuel_per_pass", false),
 	);
-	let page = page.replace(
-		"{{offense-average}}",
-		stat_card_float!(
-			team_stats,
-			"Off Avg",
-			offense_average,
-			"offense_average",
-			false
-		),
-	);
-	let page = page.replace(
-		"{{defense-average}}",
-		stat_card_float!(
-			team_stats,
-			"Def Avg",
-			defense_average,
-			"defense_average",
-			false
-		),
-	);
-	let page = page.replace(
-		"{{time-to-first-cycle}}",
-		stat_card_float!(
-			team_stats,
-			"TTFC",
-			time_to_first_cycle,
-			"time_to_first_cycle",
-			false
-		),
-	);
-	let page = page.replace(
-		"{{l1-count}}",
-		stat_card_other!(team_stats, "L1 #", l1_count, "l1_count", false),
-	);
-	let page = page.replace(
-		"{{l2-count}}",
-		stat_card_other!(team_stats, "L2 #", l2_count, "l2_count", false),
-	);
-	let page = page.replace(
-		"{{l3-count}}",
-		stat_card_other!(team_stats, "L3 #", l3_count, "l3_count", false),
-	);
-	let page = page.replace(
-		"{{l4-count}}",
-		stat_card_other!(team_stats, "L4 #", l4_count, "l4_count", false),
-	);
-	let page = page.replace(
-		"{{l1-accuracy}}",
-		stat_card_pct!(team_stats, "L1 Acc", l1_accuracy, "l1_accuracy", false),
-	);
-	let page = page.replace(
-		"{{l2-accuracy}}",
-		stat_card_pct!(team_stats, "L2 Acc", l2_accuracy, "l2_accuracy", false),
-	);
-	let page = page.replace(
-		"{{l3-accuracy}}",
-		stat_card_pct!(team_stats, "L3 Acc", l3_accuracy, "l3_accuracy", false),
-	);
-	let page = page.replace(
-		"{{l4-accuracy}}",
-		stat_card_pct!(team_stats, "L4 Acc", l4_accuracy, "l4_accuracy", false),
-	);
-	let page = page.replace(
-		"{{l1-value}}",
-		stat_card_float!(team_stats, "L1 Value", l1_value, "l1_value", false),
-	);
-	let page = page.replace(
-		"{{l2-value}}",
-		stat_card_float!(team_stats, "L2 Value", l2_value, "l2_value", false),
-	);
-	let page = page.replace(
-		"{{l3-value}}",
-		stat_card_float!(team_stats, "L3 Value", l3_value, "l3_value", false),
-	);
-	let page = page.replace(
-		"{{l4-value}}",
-		stat_card_float!(team_stats, "L4 Value", l4_value, "l4_value", false),
-	);
+
+	// Climb
 	let page = page.replace(
 		"{{climb-accuracy}}",
 		stat_card_pct!(
@@ -498,102 +380,92 @@ pub async fn team_details(
 		),
 	);
 	let page = page.replace(
-		"{{can-pickup-algae}}",
-		&render_stat_card_optional_bool(
-			&format!("{STAT_ALGAE} Int?"),
-			"",
-			team_info.can_pickup_algae,
-			false,
-			"",
-		),
-	);
-	let page = page.replace(
-		"{{can-pickup-coral}}",
-		&render_stat_card_optional_bool(
-			&format!("{STAT_CORAL} Int?"),
-			"",
-			team_info.can_pickup_coral,
-			false,
-			"",
-		),
-	);
-	let page = page.replace(
-		"{{can-hold-both}}",
-		&render_stat_card_optional_bool("Hold Both?", "", team_info.can_hold_both, false, ""),
-	);
-	let page = page.replace(
-		"{{can-ground-intake-algae}}",
-		&render_stat_card_optional_bool(
-			&format!("{STAT_ALGAE} Ground?"),
-			"",
-			team_info.can_ground_intake_algae,
-			false,
-			"",
-		),
-	);
-	let page = page.replace(
-		"{{can-ground-intake-coral}}",
-		&render_stat_card_optional_bool(
-			&format!("{STAT_CORAL} Ground?"),
-			"",
-			team_info.can_ground_intake_coral,
-			false,
-			"",
-		),
-	);
-	let page = page.replace(
-		"{{can-slide-intake}}",
-		&render_stat_card_optional_bool("Slide Int?", "", team_info.can_slide_intake, false, ""),
-	);
-	let page = page.replace(
-		"{{can-reef}}",
-		&render_stat_card_optional_bool("Reef?", "", team_info.can_reef, false, ""),
-	);
-	let page = page.replace(
-		"{{can-processor}}",
-		&render_stat_card_optional_bool("Processor?", "", team_info.can_processor, false, ""),
-	);
-	let page = page.replace(
-		"{{can-net}}",
-		&render_stat_card_optional_bool("Net?", "", team_info.can_net, false, ""),
-	);
-	let page = page.replace(
-		"{{can-agitate}}",
-		&render_stat_card_optional_bool("Agitate?", "", team_info.can_agitate, false, ""),
-	);
-
-	let l1_elem = render_reef_level(team_info.can_l1.unwrap_or_default());
-	let l2_elem = render_reef_level(team_info.can_l2.unwrap_or_default());
-	let l3_elem = render_reef_level(team_info.can_l3.unwrap_or_default());
-	let l4_elem = render_reef_level(team_info.can_l4.unwrap_or_default());
-	let reef_level =
-		format!("<div class=\"reef-ability\">{l1_elem}{l2_elem}{l3_elem}{l4_elem}</div>");
-	let page = page.replace(
-		"{{reef-ability}}",
-		&render_stat_card("Reef Lvls", "", reef_level, true, ""),
-	);
-
-	let page = page.replace(
-		"{{can-shallow}}",
-		&render_stat_card_optional_bool("Shallow?", "", team_info.can_shallow, false, ""),
-	);
-	let page = page.replace(
-		"{{can-deep}}",
-		&render_stat_card_optional_bool("Deep?", "", team_info.can_deep, false, ""),
-	);
-
-	let page = page.replace(
-		"{{preferred-piece}}",
+		"{{intake-type}}",
 		&render_stat_card_optional(
-			"Fave",
+			"Intake",
 			"",
-			team_info.preferred_piece.map(|x| match x {
-				GamePiece::Algae => {
-					"<img src=\"/assets/icons/algae.svg\" style=\"width:1.7rem\" />"
-				}
-				GamePiece::Coral => {
-					"<img src=\"/assets/icons/coral.svg\" style=\"width:1.2rem\" />"
-				}
+			team_info.intake_type.map(|x| match x {
+				IntakeType::OverBumper => "OtB",
+				IntakeType::UnderBumper => "UtB",
+			}),
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{can-pass-trench}}",
+		&render_stat_card_optional_bool("Under Trench?", "", team_info.can_pass_trench, false, ""),
+	);
+	let page = page.replace(
+		"{{can-pass-bump}}",
+		&render_stat_card_optional_bool("Over Bump?", "", team_info.can_pass_bump, false, ""),
+	);
+	let page = page.replace(
+		"{{can-ground-intake}}",
+		&render_stat_card_optional_bool("Ground Intk?", "", team_info.can_ground_intake, false, ""),
+	);
+	let page = page.replace(
+		"{{can-station-intake}}",
+		&render_stat_card_optional_bool(
+			"Station Intk?",
+			"",
+			team_info.can_station_intake,
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{can-score-close}}",
+		&render_stat_card_optional_bool("Score Close?", "", team_info.can_score_close, false, ""),
+	);
+	let page = page.replace(
+		"{{can-score-far}}",
+		&render_stat_card_optional_bool("Score Far?", "", team_info.can_score_far, false, ""),
+	);
+	let page = page.replace(
+		"{{can-climb-auto}}",
+		&render_stat_card_optional_bool("Auto Climb?", "", team_info.can_climb_auto, false, ""),
+	);
+	let page = page.replace(
+		"{{auto-fuel}}",
+		&render_stat_card_optional(
+			&format!("Auto {STAT_FUEL}"),
+			"",
+			team_info.auto_fuel,
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{fuel-per-shift}}",
+		&render_stat_card_optional(
+			&format!("{STAT_FUEL} Per Shift"),
+			"",
+			team_info.fuel_per_shift,
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{fuel-storage}}",
+		&render_stat_card_optional(
+			&format!("{STAT_FUEL} Storage"),
+			"",
+			team_info.fuel_storage,
+			false,
+			"",
+		),
+	);
+	let page = page.replace(
+		"{{climb-ability}}",
+		&render_stat_card_optional(
+			"Climb",
+			"",
+			team_info.climb_ability.map(|x| match x {
+				ClimbAbility::None => "None",
+				ClimbAbility::L1 => "L1",
+				ClimbAbility::L2 => "L2",
+				ClimbAbility::L3 => "L3",
 			}),
 			false,
 			"",
@@ -616,42 +488,6 @@ pub async fn team_details(
 		&render_stat_card_optional_bool("Intk Align?", "", team_info.align_intake, false, ""),
 	);
 	let page = page.replace(
-		"{{auto-crosses-line}}",
-		&render_stat_card_optional_bool("Auto Cross?", "", team_info.auto_crosses_line, false, ""),
-	);
-	let page = page.replace(
-		"{{auto-scores-front}}",
-		&render_stat_card_optional_bool("Auto Front?", "", team_info.auto_scores_front, false, ""),
-	);
-	let page = page.replace(
-		"{{auto-scores-back}}",
-		&render_stat_card_optional_bool("Auto Back?", "", team_info.auto_scores_back, false, ""),
-	);
-	let page = page.replace(
-		"{{auto-scores-side}}",
-		&render_stat_card_optional_bool("Auto Side?", "", team_info.auto_scores_side, false, ""),
-	);
-	let page = page.replace(
-		"{{pit-auto-algae}}",
-		&render_stat_card_optional_float(
-			&format!("{STAT_ALGAE} Auto"),
-			"",
-			team_info.auto_algae,
-			false,
-			"",
-		),
-	);
-	let page = page.replace(
-		"{{pit-auto-coral}}",
-		&render_stat_card_optional_float(
-			&format!("{STAT_CORAL} Auto"),
-			"",
-			team_info.auto_coral,
-			false,
-			"",
-		),
-	);
-	let page = page.replace(
 		"{{uses-pathplanner}}",
 		&render_stat_card_optional_bool("PP?", "", team_info.uses_pathplanner, false, ""),
 	);
@@ -672,12 +508,4 @@ pub async fn team_details(
 		PageOrRedirect::Page(RawHtml(page)),
 		CompressionLevel::Fastest,
 	))
-}
-
-fn render_reef_level(enabled: bool) -> &'static str {
-	if enabled {
-		"<div class=\"reef-level selected\"></div>"
-	} else {
-		"<div class=\"reef-level\"></div>"
-	}
 }

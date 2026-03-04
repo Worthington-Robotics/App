@@ -210,7 +210,6 @@ pub async fn random_assign(
 	session_id.verify_elevated(state).await?;
 
 	let excluded: Vec<_> = excluded.split(',').collect();
-	dbg!(&excluded);
 
 	let mut lock = state.db.write().await;
 

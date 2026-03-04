@@ -132,14 +132,9 @@ pub fn icon_location() -> CacheFor<Svg> {
 	)
 }
 
-#[rocket::get("/assets/icons/coral.svg")]
-pub fn icon_coral() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/coral.svg")), ONE_YEAR)
-}
-
-#[rocket::get("/assets/icons/algae.svg")]
-pub fn icon_algae() -> CacheFor<Svg> {
-	CacheFor(Svg(include_bytes!("../assets/icons/algae.svg")), ONE_YEAR)
+#[rocket::get("/assets/icons/fuel.svg")]
+pub fn icon_fuel() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/fuel.svg")), ONE_YEAR)
 }
 
 #[rocket::get("/assets/icons/error.svg")]
@@ -188,6 +183,11 @@ pub fn icon_refresh() -> CacheFor<Svg> {
 #[rocket::get("/assets/icons/play.svg")]
 pub fn icon_play() -> CacheFor<Svg> {
 	CacheFor(Svg(include_bytes!("../assets/icons/play.svg")), ONE_YEAR)
+}
+
+#[rocket::get("/assets/icons/share.svg")]
+pub fn icon_share() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/share.svg")), ONE_YEAR)
 }
 
 #[derive(Responder)]

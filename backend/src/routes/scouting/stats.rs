@@ -85,9 +85,7 @@ pub fn render_stat_card(
 	let long_title = if let Some(result) = StatInfo::get(id) {
 		result.name.to_string()
 	} else {
-		title
-			.replace(STAT_CORAL, "Coral")
-			.replace(STAT_ALGAE, "Algae")
+		title.replace(STAT_FUEL, "Fuel")
 	};
 	let fixed_title = format!("\"{}\"", escape_html(&long_title));
 	let out = out.replace("{{data-title}}", &fixed_title);
@@ -156,12 +154,9 @@ pub fn render_stat_card_optional_float(
 	}
 }
 
-/// Icon for coral in stat cards
-pub static STAT_CORAL: &str =
-	"<img src=\"/assets/icons/coral.svg\" style=\"width:0.75rem;margin-right:-0.5rem\" />";
-/// Icon for algae in stat cards
-pub static STAT_ALGAE: &str =
-	"<img src=\"/assets/icons/algae.svg\" style=\"width:1.2rem;margin-right:-0.5rem\" />";
+/// Icon for fuel in stat cards
+pub static STAT_FUEL: &str =
+	"<img src=\"/assets/icons/fuel.svg\" style=\"width:1.2rem;margin-right:-0.5rem\" />";
 
 /// Info about a team stat
 pub struct StatInfo {
@@ -210,53 +205,37 @@ macro_rules! stat_info {
 stat_info! {
 	apa, "apa" => "APA", "Average Points Added", "The average number of points that this team scores";
 	win_rate, "win_rate" => "WR", "Win Rate", "How often this team wins";
-	coral_score, "coral_score" => "CSCO", "Coral Score", "Average points from coral in teleop";
-	coral_average, "coral_average" => "CAVG", "Coral Average", "Average number of coral scored in teleop";
-	coral_accuracy, "coral_accuracy" => "CACC", "Coral Accuracy", "Success rate for scoring coral";
-	algae_score, "algae_score" => "ALSCO", "Algae Score", "Average points from algae in teleop";
-	processor_average, "processor_average" => "PAVG", "Processor Average", "Average number of teleop algae scored in the processor";
-	processor_accuracy, "processor_accuracy" => "PACC", "Processor Accuracy", "Success rate for the processor";
-	net_average, "net_average" => "NAVG", "Net Average", "Average number of net scores";
-	intake_accuracy, "intake_accuracy" => "IACC", "Intake Accuracy", "Intake success rate in teleop";
+	ranking_points, "ranking_points" => "RP", "Ranking Points", "Average number of ranking points contributed";
+	fuel_rp, "fuel_rp" => "FRP", "Fuel RP", "Average number of ranking points contributed for fuel";
+	climb_rp, "climb_rp" => "CRP", "Climb RP", "Average number of ranking points contributed for climbing";
+	teleop_score, "teleop_score" => "TSCO", "Teleop Score", "Average number of points scored in teleop";
+	active_efficiency, "active_efficiency" => "AE", "Active Efficiency", "% of time spent scoring during active shifts";
+	inactive_efficiency, "inactive_efficiency" => "IE", "Inactive Efficiency", "% of time spent intaking during inactive shifts";
+	fuel_score, "fuel_score" => "FSCO", "Fuel Score", "Average number of points scored from fuel";
+	fuel_accuracy, "fuel_accuracy" => "FACC", "Fuel Accuracy", "% of fuel shots that go in";
+	fuel_speed, "fuel_speed" => "FSPD", "Fuel Speed", "Fuel shots per second";
+	fuel_per_volley, "fuel_per_volley" => "FPV", "Fuel Per Volley", "Average fuel per group of shots";
+	intake_speed, "intake_speed" => "ISPD", "Intake Speed", "Fuel intakes per second";
+	fuel_per_intake, "fuel_per_intake" => "FPI", "Fuel Per Intake", "Average fuel per group of intakes";
+	pass_average, "pass_average" => "PAVG", "Pass Average", "Average number of fuel passes per match";
+	fuel_per_pass, "fuel_per_pass" => "FPP", "Fuel Per Pass", "Average number of fuel in each group of passes";
 	climb_accuracy, "climb_accuracy" => "CACC", "Climb Accuracy", "Climb success rate";
 	climb_time, "climb_time" => "CLT", "Climb Time", "Average time to climb";
 	climb_fall_percent, "climb_fall_percent" => "CFP", "Climb Fall Percent", "Rate at which the team falls when climbing";
-	auto_coral, "auto_coral" => "AC", "Auto Coral", "Average number of coral scored in auto";
-	auto_algae, "auto_algae" => "AA", "Auto Algae", "Average number of algae scored in auto";
-	auto_coral_accuracy, "auto_coral_accuracy" => "ACA", "Auto Coral Accuracy", "Success rate for scoring coral in auto";
-	auto_algae_accuracy, "auto_algae_accuracy" => "AAA", "Auto Algae Accuracy", "Success rate for scoring algae in auto";
-	auto_intake_accuracy, "auto_intake_accuracy" => "AINTK", "Auto Intake Accuracy", "Success rate for intaking in auto";
+	climb_score, "climb_score" => "CSCO", "Climb Score", "Average number of points scored from climbing";
+	auto_fuel, "auto_fuel" => "AF", "Auto Fuel", "Average number of fuel scored during auto";
+	auto_fuel_accuracy, "auto_fuel_accuracy" => "AFACC", "Auto Fuel Accuracy", "% of shots made during auto";
+	auto_climb_accuracy, "auto_climb_accuracy" => "ACACC", "Auto Climb Accuracy", "% of success climbing in auto";
 	auto_collisions, "auto_collisions" => "ACOL", "Auto Collisions", "Total times this team hit another robot during auto";
-	offense_average, "offense_average" => "OA", "Offense Average", "Average number of offensive moves";
-	defense_average, "defense_average" => "DA", "Defense Average", "Average number of defensive moves";
+	auto_score, "auto_score" => "ASCO", "Auto Score", "Average number of points scored in auto";
 	cycle_time, "cycle_time" => "CT", "Cycle Time", "Average time between intake, score, and the next intake";
 	cycle_time_consistency, "cycle_time_consistency" => "CTC", "Cycle Time Consistency", "How close to a linear fit this team's cycles are";
 	cycle_time_deviation, "cycle_time_deviation" => "CTD", "Cycle Time Deviation", "Standard deviation of this team's cycle times";
-	time_to_first_cycle, "time_to_first_cycle" => "TTFC", "Time To First Cycle", "Average time before the first score in teleop";
 	penalties, "penalties" => "Pen", "Penalties", "Total number of penalties across all matches";
 	reliability, "reliability" => "RB", "Reliability", "How often this team plays a match without breaking";
 	matches, "matches" => "MA", "Matches", "How many matches have been scouted for this team";
-	auto_score, "auto_score" => "ASCO", "Auto Score", "Average number of points scored in auto";
-	teleop_score, "teleop_score" => "TSCO", "Teleop Score", "Average number of points scored in teleop";
-	climb_score, "climb_score" => "CSCO", "Climb Score", "Average number of points scored from climbing";
-	l1_accuracy, "l1_accuracy" => "L1ACC", "L1 Accuracy", "Success rate scoring on L1";
-	l2_accuracy, "l2_accuracy" => "L2ACC", "L2 Accuracy", "Success rate scoring on L2";
-	l3_accuracy, "l3_accuracy" => "L3ACC", "L3 Accuracy", "Success rate scoring on L3";
-	l4_accuracy, "l4_accuracy" => "L4ACC", "L4 Accuracy", "Success rate scoring on L4";
-	l1_value, "l1_value" => "L1VAL", "L1 Value", "Average points gained from a single L1 score attempt";
-	l2_value, "l2_value" => "L2VAL", "L2 Value", "Average points gained from a single L2 score attempt";
-	l3_value, "l3_value" => "L3VAL", "L3 Value", "Average points gained from a single L3 score attempt";
-	l4_value, "l4_value" => "L4VAL", "L4 Value", "Average points gained from a single L4 score attempt";
-	l1_count, "l1_count" => "L1CNT", "L1 Count", "Total times this team has scored on L1";
-	l2_count, "l2_count" => "L2CNT", "L2 Count", "Total times this team has scored on L2";
-	l3_count, "l3_count" => "L3CNT", "L3 Count", "Total times this team has scored on L3";
-	l4_count, "l4_count" => "L4CNT", "L4 Count", "Total times this team has scored on L4";
-	litter, "litter" => "LTTR", "Litter", "The amount of pieces dropped, with algae being worth 3 coral";
-	coral_rp_contribution, "coral_rp_contribution" => "CRP", "Coral RP Contribution", "How much of the coral RP this team contributes";
-	barge_rp_contribution, "barge_rp_contribution" => "BRP", "Barge RP Contribution", "How much of the barge RP this team contributes";
 	total_points, "total_points" => "TP", "Total Points", "How many points this team has scored in all matches";
-	total_coral, "total_coral" => "TC", "Total Coral", "How many coral this team has scored in all matches";
-	total_algae, "total_algae" => "TA", "Total Algae", "How many algae this team has scored in all matches";
+	total_fuel, "total_fuel" => "TF", "Total Fuel", "How many fuel this team has scored in all matches";
 	high_score, "high_score" => "HS", "High Score", "The highest number of points this team has scored";
 }
 

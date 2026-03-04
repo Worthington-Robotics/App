@@ -13,7 +13,7 @@ use chrono_tz::{
 	Tz,
 	US::{Central, Eastern},
 };
-use game::{ClimbAbility, GamePiece, ReefLevel};
+use game::ClimbAbility;
 use rocket::FromFormField;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, IntoStaticStr};
@@ -66,6 +66,7 @@ impl Team {
 	IntoStaticStr,
 	FromFormField,
 	Default,
+	Debug,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum Competition {
@@ -136,6 +137,35 @@ impl Competition {
 		match self {
 			Self::Champs => Central,
 			_ => Eastern,
+		}
+	}
+
+	/// Gets the week of this event
+	pub fn get_week(&self) -> Option<u8> {
+		match self {
+			Self::Week1 => Some(1),
+			Self::Week2 => Some(2),
+			Self::Week3 => Some(3),
+			Self::Week4 => Some(4),
+			Self::Week5 => Some(5),
+			Self::Week6 => Some(6),
+			Self::Buckeye => Some(3),
+			Self::MiamiValley => Some(5),
+			Self::Pittsburgh => Some(3),
+			_ => None,
+		}
+	}
+
+	/// Creates a prescouting competition from a week number
+	pub fn from_week(week: u8) -> Option<Self> {
+		match week {
+			1 => Some(Self::Week1),
+			2 => Some(Self::Week2),
+			3 => Some(Self::Week3),
+			4 => Some(Self::Week4),
+			5 => Some(Self::Week5),
+			6 => Some(Self::Week6),
+			_ => None,
 		}
 	}
 }
@@ -225,33 +255,23 @@ pub struct TeamInfo {
 	pub width: Option<f32>,
 	/// The drivetrain type of the robot
 	pub drivetrain_type: Option<DriveTrainType>,
-	pub can_pickup_algae: Option<bool>,
-	pub can_pickup_coral: Option<bool>,
-	pub can_hold_both: Option<bool>,
-	pub can_ground_intake_algae: Option<bool>,
-	pub can_ground_intake_coral: Option<bool>,
-	pub can_slide_intake: Option<bool>,
-	pub can_reef: Option<bool>,
-	pub can_processor: Option<bool>,
-	pub can_net: Option<bool>,
-	pub can_agitate: Option<bool>,
-	pub can_l1: Option<bool>,
-	pub can_l2: Option<bool>,
-	pub can_l3: Option<bool>,
-	pub can_l4: Option<bool>,
-	pub can_shallow: Option<bool>,
-	pub can_deep: Option<bool>,
-	pub preferred_piece: Option<GamePiece>,
+	/// The intake type of the robot
+	pub intake_type: Option<IntakeType>,
+	pub can_pass_trench: Option<bool>,
+	pub can_pass_bump: Option<bool>,
+	pub can_ground_intake: Option<bool>,
+	pub can_station_intake: Option<bool>,
+	pub can_score_close: Option<bool>,
+	pub can_score_far: Option<bool>,
+	pub can_climb_auto: Option<bool>,
+	pub auto_fuel: Option<u8>,
+	pub fuel_per_shift: Option<u8>,
+	pub fuel_storage: Option<u8>,
+	pub climb_ability: Option<ClimbAbility>,
 	pub cycle_time: Option<f32>,
 	pub climb_time: Option<f32>,
 	pub align_score: Option<bool>,
 	pub align_intake: Option<bool>,
-	pub auto_crosses_line: Option<bool>,
-	pub auto_scores_front: Option<bool>,
-	pub auto_scores_back: Option<bool>,
-	pub auto_scores_side: Option<bool>,
-	pub auto_algae: Option<f32>,
-	pub auto_coral: Option<f32>,
 	pub uses_pathplanner: Option<bool>,
 	pub two_can_networks: Option<bool>,
 	/// Additional notes about the robot

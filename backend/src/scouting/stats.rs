@@ -12,12 +12,13 @@ use tracing::error;
 
 use crate::{
 	db::{Database, DatabaseImpl},
+	scouting::matches::EventVolley,
 	util::{fix_zero, standard_deviation},
 };
 
 use super::{
 	autos::{calculate_auto_stats, AutoStats},
-	game::{get_coral_points, ClimbAbility, ClimbResult, ReefLevel},
+	game::{ClimbAbility, ClimbResult},
 	matches::MatchStats,
 	status::RobotStatus,
 	Competition, TeamNumber,
@@ -89,66 +90,52 @@ impl CombinedTeamStats {
 /// Stored and calculated stats for a single team
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct TeamStats {
+	// General
 	pub number: TeamNumber,
+	pub win_rate: f32,
+	// Points
 	pub epa: f32,
 	pub apa: f32,
-	pub win_rate: f32,
-	pub coral_score: f32,
-	pub coral_average: f32,
-	pub coral_accuracy: f32,
-	pub algae_score: f32,
-	pub processor_average: f32,
-	pub processor_accuracy: f32,
-	pub net_average: f32,
-	pub intake_accuracy: f32,
+	// RP
+	pub ranking_points: f32,
+	pub fuel_rp: f32,
+	pub climb_rp: f32,
+	// Teleop
 	pub teleop_score: f32,
+	pub active_efficiency: f32,
+	pub inactive_efficiency: f32,
+	// Fuel
+	pub fuel_score: f32,
+	pub fuel_accuracy: f32,
+	pub fuel_speed: f32,
+	pub fuel_per_volley: f32,
+	// Intake
+	pub intake_speed: f32,
+	pub fuel_per_intake: f32,
+	// Pass
+	pub pass_average: f32,
+	pub fuel_per_pass: f32,
+	// Climb
 	pub climb_accuracy: f32,
 	pub climb_time: f32,
 	pub climb_fall_percent: f32,
 	pub climb_score: f32,
-	pub auto_coral: f32,
-	pub auto_algae: f32,
-	pub auto_coral_accuracy: f32,
-	pub auto_algae_accuracy: f32,
-	pub auto_intake_accuracy: f32,
+	// Auto
+	pub auto_fuel: f32,
+	pub auto_fuel_accuracy: f32,
+	pub auto_climb_accuracy: f32,
 	pub auto_collisions: u8,
 	pub auto_score: f32,
-	pub l1_accuracy: f32,
-	pub l2_accuracy: f32,
-	pub l3_accuracy: f32,
-	pub l4_accuracy: f32,
-	pub l1_value: f32,
-	pub l2_value: f32,
-	pub l3_value: f32,
-	pub l4_value: f32,
-	pub l1_count: u16,
-	pub l2_count: u16,
-	pub l3_count: u16,
-	pub l4_count: u16,
-	/// Average number of offensive moves per match
-	pub offense_average: f32,
-	/// Average number of defensive moves per match
-	pub defense_average: f32,
 	/// Average cycle time
 	pub cycle_time: f32,
 	/// Consistency of cycle time
 	pub cycle_time_consistency: f32,
 	/// Standard deviation for cycle time
 	pub cycle_time_deviation: f32,
-	/// Average time to the first teleop cycle
-	pub time_to_first_cycle: f32,
-	/// Average amount of litter left on the field, with algae worth more than coral
-	pub litter: f32,
-	/// Contribution out of 1 that this team provides to the coral RP
-	pub coral_rp_contribution: f32,
-	/// Contribution out of 1 that this team provides to the barge RP
-	pub barge_rp_contribution: f32,
 	/// Total number of points scored
-	pub total_points: i16,
-	/// Total number of coral scored
-	pub total_coral: u16,
-	/// Total number of algae scored
-	pub total_algae: u16,
+	pub total_points: i32,
+	/// Total number of fuel scored
+	pub total_fuel: u32,
 	/// Highest scoring match
 	pub high_score: i16,
 	/// Total number of penalties
@@ -175,11 +162,7 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		process_match(m, &mut ctx);
 	}
 
-	let mut match_count_f32 = ctx.total_matches as f32;
-	// Account for all div by zero cases by just setting the denominator to 1
-	if match_count_f32 == 0.0 {
-		match_count_f32 = 1.0;
-	}
+	let match_count_f32 = fix_zero(ctx.total_matches as f32);
 
 	let cycle_time_average = ctx.cycle_time_sum as f32 / fix_zero(ctx.cycle_time_count as f32);
 	let cycle_time_deviation = standard_deviation(&ctx.cycle_times, cycle_time_average);
@@ -190,92 +173,55 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		(ctx.attendance - ctx.breaks as u16) as f32 / match_count_f32
 	};
 
-	let l1_accuracy =
-		ctx.coral_level_scores[0] as f32 / fix_zero(ctx.coral_level_attempts[0] as f32);
-	let l2_accuracy =
-		ctx.coral_level_scores[1] as f32 / fix_zero(ctx.coral_level_attempts[1] as f32);
-	let l3_accuracy =
-		ctx.coral_level_scores[2] as f32 / fix_zero(ctx.coral_level_attempts[2] as f32);
-	let l4_accuracy =
-		ctx.coral_level_scores[3] as f32 / fix_zero(ctx.coral_level_attempts[3] as f32);
-
-	// Calculate contribution to coral RP. Each level is how much of 5 coral is contributed
-	let l1_contribution = (ctx.coral_level_scores[0] as f32 / match_count_f32 / 5.0).min(1.0);
-	let l2_contribution = (ctx.coral_level_scores[1] as f32 / match_count_f32 / 5.0).min(1.0);
-	let l3_contribution = (ctx.coral_level_scores[2] as f32 / match_count_f32 / 5.0).min(1.0);
-	let l4_contribution = (ctx.coral_level_scores[3] as f32 / match_count_f32 / 5.0).min(1.0);
-	// Get average contribution
-	let coral_rp_contribution =
-		(l1_contribution + l2_contribution + l3_contribution + l4_contribution) / 4.0;
-	// This just makes it more accurate
-	let coral_rp_contribution = coral_rp_contribution * 2.0;
+	// NOTICE: Update once (not if) we get to champs
+	let energized_rp_avg = ctx.fuel_scores as f32 / 100.0 / match_count_f32;
+	let supercharged_rp_avg = ctx.fuel_scores as f32 / 360.0 / match_count_f32;
+	let fuel_rp_avg = energized_rp_avg + supercharged_rp_avg;
+	let climb_rp_avg = ctx.climb_score_total as f32 / 50.0 / match_count_f32;
 
 	let auto_score_total = ctx.auto_score_total;
 	let teleop_score_total = ctx.teleop_score_total;
 	let climb_score_total = ctx.climb_score_total;
-	let points_scored = auto_score_total + teleop_score_total + climb_score_total as i16
-		- (ctx.penalties as i16 * 4);
+	let points_scored = auto_score_total + teleop_score_total + climb_score_total as i32
+		- (ctx.penalties as i32 * 4);
 
 	TeamStats {
 		number: team,
+		win_rate: ctx.wins as f32 / match_count_f32,
 		epa: 0.0,
 		apa: points_scored as f32 / match_count_f32,
-		win_rate: ctx.wins as f32 / match_count_f32,
-		intake_accuracy: ctx.intake_successes as f32 / fix_zero(ctx.intake_attempts as f32),
-		coral_score: ctx.coral_score_total as f32 / match_count_f32,
-		coral_average: ctx.coral_scores as f32 / match_count_f32,
-		coral_accuracy: ctx.coral_scores as f32 / fix_zero(ctx.coral_attempts as f32),
-		algae_score: ctx.algae_score_total as f32 / match_count_f32,
-		processor_average: ctx.processor_scores as f32 / match_count_f32,
-		processor_accuracy: ctx.processor_scores as f32 / fix_zero(ctx.processor_attempts as f32),
-		net_average: ctx.net_scores as f32 / match_count_f32,
+		ranking_points: fuel_rp_avg + climb_rp_avg,
+		fuel_rp: fuel_rp_avg,
+		climb_rp: climb_rp_avg,
+		teleop_score: teleop_score_total as f32 / match_count_f32,
+		active_efficiency: ctx.active_efficiency_total / match_count_f32,
+		inactive_efficiency: ctx.inactive_efficiency_total / match_count_f32,
+		fuel_score: ctx.fuel_scores as f32 / match_count_f32,
+		fuel_accuracy: ctx.fuel_scores as f32 / fix_zero(ctx.fuel_attempts as f32),
+		fuel_speed: ctx.fuel_speed_total / fix_zero(ctx.timeable_fuel_volleys as f32),
+		fuel_per_volley: ctx.fuel_attempts as f32 / fix_zero(ctx.fuel_volleys as f32),
+		intake_speed: ctx.intake_speed_total / fix_zero(ctx.timeable_intake_volleys as f32),
+		fuel_per_intake: ctx.intakes as f32 / fix_zero(ctx.intake_volleys as f32),
+		pass_average: ctx.passes as f32 / match_count_f32,
+		fuel_per_pass: ctx.passes as f32 / fix_zero(ctx.pass_volleys as f32),
 		climb_accuracy: ctx.climb_successes as f32 / fix_zero(ctx.climb_attempts as f32),
 		climb_time: ctx.climb_time_total / fix_zero(ctx.climb_successes as f32),
-		auto_coral: ctx.auto_coral_scores as f32 / match_count_f32,
 		climb_fall_percent: ctx.climb_falls as f32 / fix_zero(ctx.climb_attempts as f32),
-		auto_coral_accuracy: ctx.auto_coral_scores as f32
-			/ fix_zero(ctx.auto_coral_attempts as f32),
-		auto_algae: ctx.auto_algae_scores as f32 / match_count_f32,
-		auto_algae_accuracy: ctx.auto_algae_scores as f32
-			/ fix_zero(ctx.auto_algae_attempts as f32),
-		auto_intake_accuracy: ctx.auto_intake_successes as f32
-			/ fix_zero(ctx.auto_intake_attempts as f32),
+		climb_score: climb_score_total as f32 / match_count_f32,
+		auto_fuel: ctx.auto_fuel_scores as f32 / match_count_f32,
+		auto_fuel_accuracy: ctx.auto_fuel_scores as f32 / fix_zero(ctx.auto_fuel_attempts as f32),
+		auto_climb_accuracy: ctx.auto_climb_successes as f32 / fix_zero(ctx.auto_climb_attempts as f32),
 		auto_collisions: ctx.auto_collisions,
-		offense_average: (ctx.coral_scores as f32
-			+ ctx.processor_scores as f32
-			+ ctx.net_scores as f32)
-			/ match_count_f32,
-		defense_average: ctx.defenses as f32 / match_count_f32,
+		auto_score: auto_score_total as f32 / match_count_f32,
 		cycle_time: cycle_time_average,
 		cycle_time_consistency: ctx.cycle_time_consistency_sum as f32
 			/ fix_zero(ctx.cycle_time_consistency_count as f32),
 		cycle_time_deviation,
-		time_to_first_cycle: ctx.time_to_first_cycle_sum
-			/ fix_zero(ctx.time_to_first_cycle_count as f32),
 		penalties: ctx.penalties,
 		reliability,
 		matches: ctx.total_matches as u16,
-		auto_score: auto_score_total as f32 / match_count_f32,
-		teleop_score: teleop_score_total as f32 / match_count_f32,
-		climb_score: climb_score_total as f32 / match_count_f32,
-		l1_accuracy,
-		l2_accuracy,
-		l3_accuracy,
-		l4_accuracy,
-		l1_value: l1_accuracy * get_coral_points(ReefLevel::L1, false) as f32,
-		l2_value: l2_accuracy * get_coral_points(ReefLevel::L2, false) as f32,
-		l3_value: l3_accuracy * get_coral_points(ReefLevel::L3, false) as f32,
-		l4_value: l4_accuracy * get_coral_points(ReefLevel::L4, false) as f32,
-		l1_count: ctx.coral_level_scores[0],
-		l2_count: ctx.coral_level_scores[1],
-		l3_count: ctx.coral_level_scores[2],
-		l4_count: ctx.coral_level_scores[3],
-		litter: ctx.total_litter as f32 / match_count_f32,
-		coral_rp_contribution,
-		barge_rp_contribution: ctx.climb_score_total as f32 / match_count_f32 / 14.0,
 		total_points: points_scored,
-		total_coral: ctx.coral_scores + ctx.auto_coral_scores,
-		total_algae: ctx.auto_algae_scores + ctx.processor_scores + ctx.net_scores,
+		total_fuel: ctx.fuel_scores + ctx.auto_fuel_scores,
 		high_score: ctx.high_score,
 		..Default::default()
 	}
@@ -286,26 +232,26 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 struct StatsContext {
 	total_matches: u16,
 	high_score: i16,
-	auto_coral_attempts: u16,
-	auto_coral_scores: u16,
-	auto_algae_attempts: u16,
-	auto_algae_scores: u16,
-	auto_intake_attempts: u16,
-	auto_intake_successes: u16,
+	auto_fuel_attempts: u32,
+	auto_fuel_scores: u32,
+	auto_climb_attempts: u8,
+	auto_climb_successes: u8,
 	auto_collisions: u8,
-	auto_score_total: i16,
-	coral_attempts: u16,
-	coral_scores: u16,
-	coral_score_total: u16,
-	coral_level_attempts: [u16; 4],
-	coral_level_scores: [u16; 4],
-	processor_attempts: u16,
-	processor_scores: u16,
-	net_scores: u16,
-	algae_score_total: u16,
-	intake_attempts: u16,
-	intake_successes: u16,
-	teleop_score_total: i16,
+	auto_score_total: i32,
+	fuel_attempts: u32,
+	fuel_scores: u32,
+	fuel_volleys: u16,
+	timeable_fuel_volleys: u16,
+	fuel_speed_total: f32,
+	intakes: u32,
+	intake_volleys: u16,
+	timeable_intake_volleys: u16,
+	passes: u32,
+	pass_volleys: u16,
+	intake_speed_total: f32,
+	active_efficiency_total: f32,
+	inactive_efficiency_total: f32,
+	teleop_score_total: i32,
 	climb_attempts: u16,
 	climb_successes: u16,
 	climb_time_total: f32,
@@ -320,9 +266,6 @@ struct StatsContext {
 	cycle_time_consistency_count: u16,
 	/// All cycle times
 	cycle_times: Vec<f32>,
-	time_to_first_cycle_sum: f32,
-	time_to_first_cycle_count: u16,
-	total_litter: u16,
 	breaks: u8,
 	/// Total number of times the team showed up for the match
 	attendance: u16,
@@ -336,100 +279,71 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 	let mut climb_score = 0;
 
 	ctx.total_matches += 1;
-	ctx.auto_coral_attempts += stats.auto_coral_attempts.len() as u16;
-	ctx.auto_coral_scores += stats
-		.auto_coral_attempts
-		.iter()
-		.filter(|x| x.successful)
-		.count() as u16;
-	ctx.auto_algae_attempts += stats.auto_algae_attempts as u16;
-	ctx.auto_algae_scores += stats.auto_algae_scores as u16;
-	ctx.auto_intake_attempts += stats.auto_intake_attempts as u16;
-	ctx.auto_intake_successes += stats.auto_intake_successes as u16;
+
+	// Auto
+
+	for volley in &stats.auto_fuel_volleys {
+		ctx.auto_fuel_attempts += volley.shots_attempted as u32;
+		ctx.auto_fuel_scores += volley.shots_made as u32;
+		auto_score += volley.shots_made as i32;
+	}
+
+	if stats.auto_climb_attempted {
+		ctx.auto_climb_attempts += 1;
+		if stats.auto_climb_successful {
+			ctx.auto_climb_successes += 1;
+			auto_score += 15;
+		}
+	}
 
 	if stats.auto_collision {
 		ctx.auto_collisions += 1;
+		auto_score -= 3;
 	}
 
-	for attempt in &stats.auto_coral_attempts {
-		if attempt.successful {
-			auto_score += get_coral_points(attempt.level, true) as i16;
-		} else {
-			ctx.total_litter += 1;
+	// Teleop
+
+	for volley in &stats.teleop_fuel_volleys {
+		ctx.fuel_volleys += 1;
+		ctx.fuel_attempts += volley.shots_attempted as u32;
+		ctx.fuel_scores += volley.shots_made as u32;
+		teleop_score += volley.shots_made as i32;
+		if let Some(speed) = volley.get_rate() {
+			ctx.fuel_speed_total += speed;
+			ctx.timeable_fuel_volleys += 1;
 		}
 	}
 
-	if stats.auto_algae_attempts > 0
-		|| !stats.auto_coral_attempts.is_empty()
-		|| stats.auto_intake_attempts > 0
-		|| stats.auto_collision
-	{
-		auto_score += 3;
-	}
-
-	ctx.coral_attempts += stats.teleop_coral_attempts.len() as u16;
-	ctx.coral_scores += stats
-		.teleop_coral_attempts
-		.iter()
-		.filter(|x| x.successful)
-		.count() as u16;
-	ctx.processor_attempts += stats.processor_attempts as u16;
-	ctx.processor_scores += stats.processor_scores as u16;
-	ctx.net_scores += stats.net_shots as u16;
-	ctx.intake_attempts += stats.teleop_intake_attempts as u16;
-	ctx.intake_successes += stats.teleop_intake_successes as u16;
-
-	let mut coral_score_total = 0;
-	for attempt in &stats.teleop_coral_attempts {
-		if attempt.successful {
-			coral_score_total += get_coral_points(attempt.level, false) as i16;
-			ctx.coral_level_scores[attempt.level as usize] += 1;
-		} else {
-			ctx.total_litter += 1;
+	for volley in &stats.teleop_intake_volleys {
+		ctx.intake_volleys += 1;
+		ctx.intakes += volley.shots_made as u32;
+		if let Some(speed) = volley.get_rate() {
+			ctx.intake_speed_total += speed;
+			ctx.timeable_intake_volleys += 1;
 		}
-		ctx.coral_level_attempts[attempt.level as usize] += 1;
 	}
-	ctx.coral_score_total += coral_score_total as u16;
 
-	let algae_score_total = stats.processor_scores as u16 * 2 + stats.net_shots as u16 * 4;
-	ctx.algae_score_total += algae_score_total;
+	for volley in &stats.teleop_pass_volleys {
+		ctx.pass_volleys += 1;
+		ctx.passes += volley.shots_made as u32;
+	}
 
-	teleop_score += coral_score_total;
-	teleop_score += algae_score_total as i16;
+	ctx.active_efficiency_total += calculate_shift_efficiency(&stats.teleop_fuel_volleys);
+	ctx.inactive_efficiency_total += calculate_shift_efficiency(&stats.teleop_intake_volleys);
+
+	// Climb
 
 	if stats.climb_attempted != ClimbAbility::None {
 		ctx.climb_attempts += 1;
-	}
 
-	if stats.climb_result == ClimbResult::Succeeded && stats.climb_time > 0.0 {
-		ctx.climb_successes += 1;
-		ctx.climb_time_total += stats.climb_time;
-		if stats.climb_attempted == ClimbAbility::Shallow {
-			climb_score += 6;
-		} else if stats.climb_attempted == ClimbAbility::Deep {
-			climb_score += 12;
+		if stats.climb_result == ClimbResult::Succeeded && stats.climb_time > 0.0 {
+			ctx.climb_successes += 1;
+			ctx.climb_time_total += stats.climb_time;
+			climb_score += stats.climb_attempted.get_score();
+		} else if stats.climb_result == ClimbResult::Fell {
+			ctx.climb_falls += 1;
 		}
-	} else if stats.park {
-		// Park points only count if you don't climb
-		climb_score += 2;
 	}
-	if stats.climb_result == ClimbResult::Fell {
-		ctx.climb_falls += 1;
-	}
-
-	if stats.auto_algae_scores < stats.auto_algae_attempts {
-		ctx.total_litter += (stats.auto_algae_attempts - stats.auto_algae_scores) as u16 * 3;
-	}
-	if stats.auto_intake_successes < stats.auto_intake_attempts {
-		ctx.total_litter += (stats.auto_intake_attempts - stats.auto_intake_successes) as u16;
-	}
-	if stats.teleop_intake_successes < stats.teleop_intake_attempts {
-		ctx.total_litter += (stats.teleop_intake_attempts - stats.teleop_intake_successes) as u16;
-	}
-	if stats.processor_scores < stats.processor_attempts {
-		ctx.total_litter += (stats.processor_attempts - stats.processor_scores) as u16 * 3;
-	}
-	ctx.total_litter += stats.agitations as u16 * 3;
 
 	ctx.defenses += stats.defenses as u16;
 	ctx.penalties += stats.penalties;
@@ -452,13 +366,6 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 
 	ctx.cycle_times.extend(cycle_deltas);
 
-	if let Some(first) = stats.cycle_times.first() {
-		if *first > 15.0 {
-			ctx.time_to_first_cycle_count += 1;
-			ctx.time_to_first_cycle_sum += *first - 15.0;
-		}
-	}
-
 	if stats.status != RobotStatus::Good {
 		ctx.breaks += 1;
 	}
@@ -469,9 +376,9 @@ fn process_match(stats: &MatchStats, ctx: &mut StatsContext) {
 		ctx.wins += 1;
 	}
 
-	let total_score = auto_score + teleop_score + climb_score;
-	if total_score > ctx.high_score {
-		ctx.high_score = total_score;
+	let total_score = auto_score + teleop_score + climb_score as i32;
+	if total_score > ctx.high_score as i32 {
+		ctx.high_score = total_score as i16;
 	}
 	ctx.auto_score_total += auto_score;
 	ctx.teleop_score_total += teleop_score;
@@ -587,6 +494,64 @@ impl Fairing for UpdateStats {
 				rocket::tokio::time::sleep(Duration::from_secs(20)).await;
 			}
 		});
+	}
+}
+
+/// Calculate the average amount of each shift that a team spends doing some volley
+fn calculate_shift_efficiency(volleys: &[EventVolley]) -> f32 {
+	let shift_time = 25.0;
+	let start = 20.0;
+
+	let mut sum = 0.0;
+	let mut count = 0;
+
+	// Calculate transition shift
+	if let Some(transition_usage) = calculate_single_shift_usage(start, start + 10.0, volleys) {
+		sum += transition_usage;
+		count += 1;
+	}
+
+	// Calculate normal shifts
+	let start = start + 10.0;
+	for i in 0..4 {
+		let start = start + i as f32 * shift_time;
+		let end = start + shift_time;
+
+		if let Some(usage) = calculate_single_shift_usage(start, end, volleys) {
+			sum += usage;
+			count += 1;
+		}
+	}
+
+	sum / fix_zero(count as f32)
+}
+
+fn calculate_single_shift_usage(
+	start_time: f32,
+	end_time: f32,
+	volleys: &[EventVolley],
+) -> Option<f32> {
+	if volleys.is_empty() {
+		return None;
+	}
+
+	let mut sum = 0.0;
+	for volley in volleys {
+		if volley.start_time < start_time || volley.end_time > end_time {
+			continue;
+		}
+
+		let Some(duration) = volley.duration() else {
+			continue;
+		};
+
+		sum += duration;
+	}
+
+	if sum == 0.0 {
+		None
+	} else {
+		Some(sum)
 	}
 }
 
