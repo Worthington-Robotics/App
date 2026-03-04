@@ -158,6 +158,8 @@ async fn rocket() -> _ {
 				routes::assets::icon_refresh,
 				routes::assets::icon_play,
 				routes::assets::icon_share,
+				routes::assets::icon_arrow_down,
+				routes::assets::icon_arrow_up,
 				routes::login::login,
 				routes::login::authenticate,
 				routes::login::logout,

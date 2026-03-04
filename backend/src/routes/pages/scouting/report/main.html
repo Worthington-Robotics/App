@@ -38,7 +38,7 @@
 			<div class="cont col">
 				<h3>Match Report</h3>
 			</div>
-			<div class="cont"><button class="next-section">🡓</button></div>
+			<div class="cont"><button class="next-section"><img src="/assets/icons/arrow_down.svg" /></button></div>
 		</div>
 		<div class="cont">
 			<button onclick="history.back()">Back</button>
@@ -52,9 +52,9 @@
 	</div>
 	<div class="cont col section" id="section-1">
 		<div class="section-header">
-			<div class="cont"><button class="prev-section">🡑</button></div>
+			<div class="cont"><button class="prev-section"><img src="/assets/icons/arrow_up.svg" /></button></div>
 			<h3 class="cont">Pre-Match</h3>
-			<div class="cont"><button class="next-section">🡓</button></div>
+			<div class="cont"><button class="next-section"><img src="/assets/icons/arrow_down.svg" /></button></div>
 		</div>
 		<label for="team-number">Team Number</label>
 		<input type="number" class="field" name="team-number" id="team-number" placeholder="0000" value="{team-number}" />
@@ -77,9 +77,9 @@
 	</div>
 	<div class="cont col section" id="section-2">
 		<div class="section-header">
-			<div class="cont"><button class="prev-section">🡑</button></div>
+			<div class="cont"><button class="prev-section"><img src="/assets/icons/arrow_up.svg" /></button></div>
 			<h3 class="cont">Auto</h3>
-			<div class="cont"><button class="next-section">🡓</button></div>
+			<div class="cont"><button class="next-section"><img src="/assets/icons/arrow_down.svg" /></button></div>
 		</div>
 		<div class="section-grid" id="auto-grid">
 			<div id="auto-fuel" class="cont fuel-bg grid-button-tall swipe-button-container four">
@@ -108,9 +108,9 @@
 	</div>
 	<div class="cont col section" id="section-3">
 		<div class="section-header">
-			<div class="cont"><button class="prev-section">🡑</button></div>
+			<div class="cont"><button class="prev-section"><img src="/assets/icons/arrow_up.svg" /></button></div>
 			<h3 class="cont">Teleop</h3>
-			<div class="cont"><button class="next-section">🡓</button></div>
+			<div class="cont"><button class="next-section"><img src="/assets/icons/arrow_down.svg" /></button></div>
 		</div>
 		<div class="section-grid" id="teleop-grid">
 			<div id="teleop-fuel" class="cont fuel-bg grid-button-tall swipe-button-container four">
@@ -143,9 +143,9 @@
 	</div>
 	<div class="cont col section" id="section-4">
 		<div class="section-header">
-			<div class="cont"><button class="prev-section">🡑</button></div>
+			<div class="cont"><button class="prev-section"><img src="/assets/icons/arrow_up.svg" /></button></div>
 			<h3 class="cont">Climb</h3>
-			<div class="cont"><button class="next-section">🡓</button></div>
+			<div class="cont"><button class="next-section"><img src="/assets/icons/arrow_down.svg" /></button></div>
 		</div>
 		<div class="section-grid">
 			<button id="start-l3" class="cont grid-button"><img src="/assets/icons/box.svg" class="grid-icon" />
@@ -166,9 +166,9 @@
 	</div>
 	<div class="cont col section" id="section-5">
 		<div class="section-header">
-			<div class="cont"><button class="prev-section">🡑</button></div>
+			<div class="cont"><button class="prev-section"><img src="/assets/icons/arrow_up.svg" /></button></div>
 			<h3 class="cont">Post-Match</h3>
-			<div class="cont"><button class="next-section">🡓</button></div>
+			<div class="cont"><button class="next-section"><img src="/assets/icons/arrow_down.svg" /></button></div>
 		</div>
 		<div class="cont">
 			<input type="checkbox" name="won" id="won" class="field" />
@@ -214,7 +214,7 @@
 	</div>
 	<div class="cont col section" style="justify-content: flex-start;" id="section-6">
 		<div class="section-header">
-			<div class="cont"><button class="prev-section">🡑</button></div>
+			<div class="cont"><button class="prev-section"><img src="/assets/icons/arrow_up.svg" /></button></div>
 			<h3 class="cont">Review</h3>
 		</div>
 		<div id="events" class="cont col">
@@ -868,7 +868,7 @@
 	function eventToVolley(event) {
 		return {
 			shots_attempted: event.hitCount + event.missCount,
-			shots_made: event.missCount,
+			shots_made: event.hitCount,
 			start_time: event.startTime,
 			end_time: event.endTime == undefined ? event.startTime : event.endTime,
 		};
@@ -1186,19 +1186,19 @@
 
 	#match-report {
 		overflow: hidden;
-		height: 90vh;
+		height: 85svh;
 		width: 100%;
 		margin-top: -5rem;
 	}
 
 	.section {
-		height: 90vh;
+		height: 85svh;
 		width: 100%;
 		box-sizing: border-box;
 		overflow-y: auto;
 		padding-top: 7rem;
 		justify-content: flex-start;
-		border-top: 1px solid white;
+		border-top: 1px solid var(--bg2);
 	}
 
 	.section-header {

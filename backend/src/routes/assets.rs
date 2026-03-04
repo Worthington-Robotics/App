@@ -190,6 +190,16 @@ pub fn icon_share() -> CacheFor<Svg> {
 	CacheFor(Svg(include_bytes!("../assets/icons/share.svg")), ONE_YEAR)
 }
 
+#[rocket::get("/assets/icons/arrow_down.svg")]
+pub fn icon_arrow_down() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/arrow_down.svg")), ONE_YEAR)
+}
+
+#[rocket::get("/assets/icons/arrow_up.svg")]
+pub fn icon_arrow_up() -> CacheFor<Svg> {
+	CacheFor(Svg(include_bytes!("../assets/icons/arrow_up.svg")), ONE_YEAR)
+}
+
 #[derive(Responder)]
 #[response(content_type = "image/x-icon")]
 pub struct Ico(pub &'static [u8]);
