@@ -24,6 +24,7 @@ use rocket_async_compression::CachedCompression;
 use routes::{scouting::populate_teams, Ratelimit};
 use scouting::{autos::AutoStats, stats::CombinedTeamStats, stats::UpdateStats, TeamNumber};
 use tracing::error;
+use tracing_subscriber::FmtSubscriber;
 
 mod announcements;
 mod api;
@@ -42,7 +43,11 @@ mod util;
 #[rocket::launch]
 async fn rocket() -> _ {
 	println!("Starting server...");
-	let subscriber = tracing_subscriber::FmtSubscriber::new();
+	let mut subscriber = FmtSubscriber::builder();
+	if std::env::var("DISABLE_COLORS").is_ok_and(|x| x == "1") {
+		subscriber = subscriber.with_ansi(false);
+	}
+	let subscriber = subscriber.finish();
 	tracing::subscriber::set_global_default(subscriber)
 		.expect("Failed to set global tracing subscriber");
 

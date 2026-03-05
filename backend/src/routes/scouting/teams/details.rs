@@ -288,6 +288,16 @@ pub async fn team_details(
 		),
 	);
 	let page = page.replace(
+		"{{fuel-speed}}",
+		stat_card_float!(
+			team_stats,
+			&format!("{STAT_FUEL} Speed"),
+			fuel_speed,
+			"fuel_speed",
+			false
+		),
+	);
+	let page = page.replace(
 		"{{intake-speed}}",
 		stat_card_float!(team_stats, "Itk Speed", intake_speed, "intake_speed", false),
 	);

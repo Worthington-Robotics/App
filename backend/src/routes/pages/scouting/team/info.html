@@ -43,23 +43,36 @@
 	<label for="intake-type">Intake Type</label>
 	<select name="intake-type" id="intake-type" class="field">
 		<option value="none">Unknown</option>
-		<option value="under_the_bumper" {{under-the-bumper-selected}}>Under the Bumper</option>
-		<option value="over_the_bumper" {{over-the-bumper-selected}}>Over the Bumper</option>
+		<option value="under_bumper" {{under-the-bumper-selected}}>Under the Bumper</option>
+		<option value="over_bumper" {{over-the-bumper-selected}}>Over the Bumper</option>
 	</select>
 	<h2>Capabilities</h2>
-	<label for="can-pass-trench">Can Drive Under Trench?</label>
-	<input type="checkbox" class="field" name="can-pass-trench" id="can-pass-trench" {{can-pass-trench-checked}} />
-	<label for="can-pass-bump">Can Drive Over Bump?</label>
-	<input type="checkbox" class="field" name="can-pass-bump" id="can-pass-bump" {{can-pass-bump-checked}} />
-	<label for="can-ground-intake">Can Ground Intake?</label>
-	<input type="checkbox" class="field" name="can-ground-intake" id="can-ground-intake" {{can-ground-intake-checked}} />
-	<label for="can-station-intake">Can Station Intake?</label>
-	<input type="checkbox" class="field" name="can-station-intake" id="can-station-intake"
-		{{can-station-intake-checked}} />
-	<label for="can-score-close">Can Score Close?</label>
-	<input type="checkbox" class="field" name="can-score-close" id="can-score-close" {{can-score-close-checked}} />
-	<label for="can-score-far">Can Score Far?</label>
-	<input type="checkbox" class="field" name="can-score-far" id="can-score-far" {{can-score-far-checked}} />
+	<div class="cont">
+		<input type="checkbox" class="field" name="can-pass-trench" id="can-pass-trench" {{can-pass-trench-checked}} />
+		<label for="can-pass-trench">Can Drive Under Trench?</label>
+	</div>
+	<div class="cont">
+		<input type="checkbox" class="field" name="can-pass-bump" id="can-pass-bump" {{can-pass-bump-checked}} />
+		<label for="can-pass-bump">Can Drive Over Bump?</label>
+	</div>
+	<div class="cont">
+		<input type="checkbox" class="field" name="can-ground-intake" id="can-ground-intake"
+			{{can-ground-intake-checked}} />
+		<label for="can-ground-intake">Can Ground Intake?</label>
+	</div>
+	<div class="cont">
+		<input type="checkbox" class="field" name="can-station-intake" id="can-station-intake"
+			{{can-station-intake-checked}} />
+		<label for="can-station-intake">Can Station Intake?</label>
+	</div>
+	<div class="cont">
+		<input type="checkbox" class="field" name="can-score-close" id="can-score-close" {{can-score-close-checked}} />
+		<label for="can-score-close">Can Score Close?</label>
+	</div>
+	<div class="cont">
+		<input type="checkbox" class="field" name="can-score-far" id="can-score-far" {{can-score-far-checked}} />
+		<label for="can-score-far">Can Score Far?</label>
+	</div>
 
 	<h2>Teleop</h2>
 	<label for="fuel-storage">Fuel Storage</label>
@@ -83,10 +96,14 @@
 	<label for="cycle-time">Climb Time</label>
 	<input type="number" name="climb-time" id="climb-time" class="field" placeholder="0.00" step=any
 		value="{{cycle-time}}" />
-	<label for="align-score">Can Score Align?</label>
-	<input type="checkbox" class="field" name="align-score" id="align-score" {{align-score-checked}} />
-	<label for="align-intake">Can Intake Align?</label>
-	<input type="checkbox" class="field" name="align-intake" id="align-intake" {{align-intake-checked}} />
+	<div class="cont">
+		<input type="checkbox" class="field" name="align-score" id="align-score" {{align-score-checked}} />
+		<label for="align-score">Can Score Align?</label>
+	</div>
+	<div class="cont">
+		<input type="checkbox" class="field" name="align-intake" id="align-intake" {{align-intake-checked}} />
+		<label for="align-intake">Can Intake Align?</label>
+	</div>
 
 	<h2>Auto</h2>
 	<label for="auto-fuel">Auto Fuel</label>
@@ -119,9 +136,14 @@
 			drivetrainType = null;
 		}
 
-		let preferredPiece = document.getElementById("preferred-piece").value;
-		if (preferredPiece == "unknown") {
-			preferredPiece = null;
+		let intakeType = document.getElementById("intake-type").value;
+		if (intakeType == "none") {
+			intakeType = null;
+		}
+
+		let climbAbility = document.getElementById("climb-ability").value;
+		if (climbAbility == "none") {
+			climbAbility = null;
 		}
 
 		// We do lots of conversions to numbers with * 1 here
@@ -133,33 +155,21 @@
 			length: document.getElementById("length").value.replace("in", "") * 1,
 			width: document.getElementById("width").value.replace("in", "") * 1,
 			drivetrain_type: drivetrainType,
-			can_pickup_algae: document.getElementById("can-pickup-algae").checked,
-			can_pickup_coral: document.getElementById("can-pickup-coral").checked,
-			can_hold_both: document.getElementById("can-hold-both").checked,
-			can_ground_intake_algae: document.getElementById("can-ground-intake-algae").checked,
-			can_ground_intake_coral: document.getElementById("can-ground-intake-coral").checked,
-			can_slide_intake: document.getElementById("can-slide-intake").checked,
-			can_reef: document.getElementById("can-reef").checked,
-			can_processor: document.getElementById("can-processor").checked,
-			can_net: document.getElementById("can-net").checked,
-			can_agitate: document.getElementById("can-agitate").checked,
-			can_l1: document.getElementById("can-l1").checked,
-			can_l2: document.getElementById("can-l2").checked,
-			can_l3: document.getElementById("can-l3").checked,
-			can_l4: document.getElementById("can-l4").checked,
-			can_shallow: document.getElementById("can-shallow").checked,
-			can_deep: document.getElementById("can-deep").checked,
-			preferred_piece: preferredPiece,
+			intake_type: intakeType,
+			can_pass_trench: document.getElementById("can-pass-trench").checked,
+			can_pass_bump: document.getElementById("can-pass-bump").checked,
+			can_ground_intake: document.getElementById("can-ground-intake").checked,
+			can_station_intake: document.getElementById("can-station-intake").checked,
+			can_score_close: document.getElementById("can-score-close").checked,
+			can_score_far: document.getElementById("can-score-far").checked,
+			fuel_storage: document.getElementById("fuel-storage").value * 1,
 			cycle_time: document.getElementById("cycle-time").value * 1,
+			climb_ability: climbAbility,
 			climb_time: document.getElementById("climb-time").value * 1,
 			align_score: document.getElementById("align-score").checked,
 			align_intake: document.getElementById("align-intake").checked,
-			auto_crosses_line: document.getElementById("auto-crosses-line").checked,
-			auto_scores_front: document.getElementById("auto-scores-front").checked,
-			auto_scores_back: document.getElementById("auto-scores-back").checked,
-			auto_scores_side: document.getElementById("auto-scores-side").checked,
-			auto_algae: document.getElementById("auto-algae").value * 1,
-			auto_coral: document.getElementById("auto-coral").value * 1,
+			auto_fuel: document.getElementById("auto-fuel").value * 1,
+			can_climb_auto: document.getElementById("can-climb-auto").checked,
 			uses_pathplanner: document.getElementById("uses-pathplanner").checked,
 			two_can_networks: document.getElementById("two-can-networks").checked,
 			progress: document.getElementById("progress").value,

@@ -53,15 +53,3 @@ pub struct MatchClaims {
 	pub blue_2: Option<String>,
 	pub blue_3: Option<String>,
 }
-
-impl MatchClaims {
-	/// Checks if this match has been fully claimed
-	pub fn is_full(&self) -> bool {
-		self.red_1.is_some()
-			&& self.red_2.is_some()
-			&& self.red_3.is_some()
-			&& self.blue_1.is_some()
-			&& self.blue_2.is_some()
-			&& self.blue_3.is_some()
-	}
-}
