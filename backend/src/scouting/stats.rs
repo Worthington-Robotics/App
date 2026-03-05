@@ -173,10 +173,8 @@ pub fn calculate_team_stats(team: TeamNumber, matches: &[MatchStats]) -> TeamSta
 		(ctx.attendance - ctx.breaks as u16) as f32 / match_count_f32
 	};
 
-	// NOTICE: Update once (not if) we get to champs
-	let energized_rp_avg = ctx.fuel_scores as f32 / 100.0 / match_count_f32;
-	let supercharged_rp_avg = ctx.fuel_scores as f32 / 360.0 / match_count_f32;
-	let fuel_rp_avg = energized_rp_avg + supercharged_rp_avg;
+	// NOTICE: Update when (not if) we get to champs
+	let fuel_rp_avg = calculate_fuel_rp(ctx.fuel_scores as f32 / match_count_f32);
 	let climb_rp_avg = ctx.climb_score_total as f32 / 50.0 / match_count_f32;
 
 	let auto_score_total = ctx.auto_score_total;
@@ -551,7 +549,7 @@ fn calculate_single_shift_usage(
 	if sum == 0.0 {
 		None
 	} else {
-		Some(sum)
+		Some(sum / (end_time - start_time))
 	}
 }
 
@@ -603,4 +601,15 @@ fn calculate_cycle_consistency(cycle_times: &[f32]) -> Option<f32> {
 	} else {
 		Some(r_2)
 	}
+}
+
+/// Calculates 
+fn calculate_fuel_rp(fuel_avg: f32) -> f32 {
+	let energized = 100.0;
+	let supercharged = 360.0;
+
+	let energized_avg = fuel_avg.clamp(0.0, energized) / energized;
+	let supercharged_avg = (fuel_avg - energized).clamp(0.0, f32::INFINITY) / (supercharged - energized);
+
+	energized_avg + supercharged_avg
 }
