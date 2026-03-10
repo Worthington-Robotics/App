@@ -178,7 +178,6 @@ pub async fn populate_team_competitions(
 
 	let mut tasks = JoinSet::new();
 	for comp in [
-		Competition::Pittsburgh,
 		Competition::Buckeye,
 		Competition::MiamiValley,
 		Competition::Champs,
